@@ -1,0 +1,76 @@
+services:
+  mongo:
+    image: mongo:8.0
+    restart: unless-stopped
+    command: ["mongod", "--quiet"]
+    environment:
+      MONGO_INITDB_DATABASE: ${MONGODB_DATABASE:-chronos}
+      MONGO_INITDB_ROOT_USERNAME: ${MONGODB_ROOT_USERNAME:?MONGODB_ROOT_USERNAME must be set}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGODB_ROOT_PASSWORD:?MONGODB_ROOT_PASSWORD must be set}
+    ports:
+      - "${MONGODB_HOST_PORT:-27017}:27017"
+    volumes:
+      - mongo-data:/data/db
+    healthcheck:
+      test:
+        ["CMD-SHELL", "mongosh --quiet --username \"$$MONGO_INITDB_ROOT_USERNAME\" --password \"$$MONGO_INITDB_ROOT_PASSWORD\" --authenticationDatabase admin --eval \"db.adminCommand({ ping: 1 }).ok\" localhost:27017/admin | grep -q 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  backend:
+    build:
+      context: ./backend
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      HOST: 0.0.0.0
+      PORT: ${PORT:-3000}
+      PUBLIC_API_URL: ${PUBLIC_API_URL:-http://localhost:3000}
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:${FRONTEND_PORT:-5173}}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      MONGODB_URI: mongodb://mongo:27017/${MONGODB_DATABASE:-chronos}
+      MONGODB_DATABASE: ${MONGODB_DATABASE:-chronos}
+      MONGODB_USERNAME: ${MONGODB_ROOT_USERNAME:?MONGODB_ROOT_USERNAME must be set}
+      MONGODB_PASSWORD: ${MONGODB_ROOT_PASSWORD:?MONGODB_ROOT_PASSWORD must be set}
+      MONGODB_AUTH_SOURCE: admin
+      DATABASE_AUTO_INITIALIZE: ${DATABASE_AUTO_INITIALIZE:-true}
+      MONGODB_SERVER_SELECTION_TIMEOUT_MS: ${MONGODB_SERVER_SELECTION_TIMEOUT_MS:-5000}
+      MONGODB_CONNECT_RETRY_DELAY_MS: ${MONGODB_CONNECT_RETRY_DELAY_MS:-5000}
+      MONGODB_MAX_POOL_SIZE: ${MONGODB_MAX_POOL_SIZE:-10}
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET must be set}
+      EXTERNAL_SERVICE_CLIENT_ID: ${EXTERNAL_SERVICE_CLIENT_ID:-}
+      EXTERNAL_SERVICE_CLIENT_SECRET: ${EXTERNAL_SERVICE_CLIENT_SECRET:-}
+    ports:
+      - "${PORT:-3000}:${PORT:-3000}"
+    depends_on:
+      mongo:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:' + process.env.PORT + '/api/health').then((response) => process.exit(response.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 15s
+
+  frontend:
+    build:
+      context: ./frontend
+    restart: unless-stopped
+    environment:
+      API_URL: ${FRONTEND_API_URL:-http://localhost:3000/api}
+    ports:
+      - "${FRONTEND_PORT:-5173}:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O - http://127.0.0.1/health | grep -q healthy"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+
+volumes:
+  mongo-data:
