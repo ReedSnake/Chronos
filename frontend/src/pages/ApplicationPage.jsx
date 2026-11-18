@@ -13,6 +13,9 @@ export function ApplicationPage() {
           <nav aria-label="Main navigation" className="navigation">
             <NavLink className={getNavigationClass} to="/" end>Connection</NavLink>
             <NavLink className={getNavigationClass} to="/status">Status</NavLink>
+            <NavLink className={getNavigationClass} to="/register">Register</NavLink>
+            <NavLink className={getNavigationClass} to="/login">Login</NavLink>
+            <NavLink className={getNavigationClass} to="/account">Account</NavLink>
           </nav>
         </header>
         <Outlet />

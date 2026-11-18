@@ -28,6 +28,12 @@ const userSchema = new Schema({
     trim: true,
     match: /^[A-Z]{2}$/,
   },
+  emailVerifiedAt: { type: Date, default: null },
+  emailVerification: {
+    tokenHash: { type: String, select: false, index: true, sparse: true },
+    expiresAt: { type: Date },
+    requestedAt: { type: Date },
+  },
 }, {
   collection: 'users',
   timestamps: true,

@@ -21,7 +21,7 @@ const options = {
     info: {
       title: 'Chronos API',
       version: '1.0.0',
-      description: 'Chronos server API. Authentication is currently represented by a documented stub endpoint.',
+      description: 'Chronos server API, with email registration and session-based authentication.',
     },
     servers: [{
       url: config.documentation.serverUrl,
@@ -29,7 +29,7 @@ const options = {
     }],
     tags: [
       { name: 'System', description: 'Server and database status endpoints.' },
-      { name: 'Auth', description: 'Authentication module placeholder endpoints.' },
+      { name: 'Auth', description: 'Email registration, verification and cookie sessions.' },
     ],
     components: {
       schemas: {
@@ -46,8 +46,8 @@ const options = {
           required: ['service', 'status', 'timestamp'],
           properties: {
             service: { type: 'string', example: 'auth' },
-            status: { type: 'string', example: 'not_implemented' },
-            message: { type: 'string', example: 'Authentication endpoints are not implemented yet.' },
+            status: { type: 'string', example: 'available' },
+            message: { type: 'string', example: 'Email authentication is available.' },
             timestamp: { type: 'string', format: 'date-time' },
           },
         },
@@ -67,12 +67,57 @@ const options = {
       '/api/auth/status': {
         get: {
           tags: ['Auth'],
-          summary: 'Get authentication module placeholder status',
-          description: 'This endpoint is a stub. It does not authenticate a user.',
+          summary: 'Get authentication module status',
           responses: {
-            200: { description: 'Authentication module placeholder status.', content: { 'application/json': { schema: { $ref: '#/components/schemas/AuthStatus' } } } },
+            200: { description: 'Authentication module status.', content: { 'application/json': { schema: { $ref: '#/components/schemas/AuthStatus' } } } },
           },
         },
+      },
+      '/api/auth/register': {
+        post: {
+          tags: ['Auth'], summary: 'Register with name, email and password',
+          requestBody: { required: true, content: { 'application/json': { schema: {
+            type: 'object', required: ['name', 'email', 'password'], properties: {
+              name: { type: 'string' }, email: { type: 'string', format: 'email' }, password: { type: 'string', format: 'password' },
+            },
+          } } } },
+          responses: { 201: { description: 'Verification email accepted by Gmail SMTP.' }, 409: { description: 'Email already registered.' }, 503: { description: 'Email service unavailable.' } },
+        },
+      },
+      '/api/auth/resend-verification': {
+        post: {
+          tags: ['Auth'], summary: 'Resend a verification link to an unverified account',
+          requestBody: { required: true, content: { 'application/json': { schema: {
+            type: 'object', required: ['email'], properties: { email: { type: 'string', format: 'email' } },
+          } } } },
+          responses: { 200: { description: 'Request processed.' }, 429: { description: 'Rate limit or resend cooldown.' }, 503: { description: 'Email service unavailable.' } },
+        },
+      },
+      '/api/auth/verify-email': {
+        post: {
+          tags: ['Auth'], summary: 'Consume one-time verification token and sign in',
+          requestBody: { required: true, content: { 'application/json': { schema: {
+            type: 'object', required: ['token'], properties: { token: { type: 'string' } },
+          } } } },
+          responses: { 200: { description: 'Verified; session cookie set.' }, 400: { description: 'Expired or invalid token.' } },
+        },
+      },
+      '/api/auth/login': {
+        post: {
+          tags: ['Auth'], summary: 'Sign in with a verified email',
+          requestBody: { required: true, content: { 'application/json': { schema: {
+            type: 'object', required: ['email', 'password'], properties: {
+              email: { type: 'string', format: 'email' }, password: { type: 'string', format: 'password' },
+            },
+          } } } },
+          responses: { 200: { description: 'Session cookie set.' }, 401: { description: 'Invalid credentials.' }, 403: { description: 'Email not verified.' } },
+        },
+      },
+      '/api/auth/me': {
+        get: { tags: ['Auth'], summary: 'Get signed-in user', responses: { 200: { description: 'User details.' }, 401: { description: 'Authentication required.' } } },
+      },
+      '/api/auth/logout': {
+        post: { tags: ['Auth'], summary: 'Revoke current session and clear the cookie', responses: { 204: { description: 'Signed out.' } } },
       },
     },
   },

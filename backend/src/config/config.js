@@ -1,7 +1,6 @@
 const path = require('node:path');
 const dotenv = require('dotenv');
 
-// The repository root is the single source of environment configuration.
 const rootEnvPath = path.resolve(__dirname, '../../../.env');
 dotenv.config({ path: rootEnvPath, quiet: true });
 
@@ -9,18 +8,14 @@ function getInteger(name, value, fallback, { min = 0, max = Number.MAX_SAFE_INTE
   if (value === undefined || value === '') {
     return fallback;
   }
-
   const normalized = String(value).trim();
   if (!/^\d+$/.test(normalized)) {
     throw new Error(`${name} must be an integer between ${min} and ${max}`);
   }
-
   const parsed = Number.parseInt(normalized, 10);
-
   if (!Number.isInteger(parsed) || parsed < min || parsed > max) {
     throw new Error(`${name} must be an integer between ${min} and ${max}`);
   }
-
   return parsed;
 }
 
@@ -28,12 +23,10 @@ function getOrigins(value) {
   if (!value) {
     return ['http://localhost:5173'];
   }
-
   const origins = value
     .split(',')
     .map((origin) => origin.trim())
     .filter(Boolean);
-
   return origins.map((origin) => (origin === '*' ? origin : validateUrl('CORS_ORIGIN', origin)));
 }
 
@@ -47,17 +40,14 @@ function isPlaceholder(value) {
 
 function validateUrl(name, value) {
   let url;
-
   try {
     url = new URL(value);
   } catch {
     throw new Error(`${name} must be an absolute URL`);
   }
-
   if (!['http:', 'https:'].includes(url.protocol)) {
     throw new Error(`${name} must use http or https`);
   }
-
   return value;
 }
 
@@ -65,7 +55,6 @@ function validateMongoUri(value) {
   if (!/^mongodb(\+srv)?:\/\//i.test(value)) {
     throw new Error('MONGODB_URI must start with mongodb:// or mongodb+srv://');
   }
-
   return value;
 }
 
@@ -103,7 +92,6 @@ if ((process.env.NODE_ENV || 'development') === 'production') {
   if (isPlaceholder(process.env.JWT_SECRET)) {
     throw new Error('JWT_SECRET must be set to a non-placeholder value in production');
   }
-
   if (mongodbUsername && isPlaceholder(mongodbPassword)) {
     throw new Error('MONGODB_PASSWORD must be set to a non-placeholder value when MONGODB_USERNAME is configured in production');
   }
@@ -142,6 +130,14 @@ const config = Object.freeze({
   },
   jwt: {
     secret: process.env.JWT_SECRET,
+  },
+  auth: {
+    secureCookies: process.env.COOKIE_SECURE === 'true',
+  },
+  mail: {
+    user: getOptionalValue(process.env.GMAIL_USER),
+    appPassword: getOptionalValue(process.env.GMAIL_APP_PASSWORD),
+    frontendUrl: getOrigins(process.env.CORS_ORIGIN).find((origin) => origin !== '*'),
   },
 });
 

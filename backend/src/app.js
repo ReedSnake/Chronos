@@ -40,7 +40,6 @@ app.use(pinoHttp({
     return requestId;
   },
   customLogLevel: (req, res, error) => {
-    // A 503 from /api/health is an expected degraded state while MongoDB reconnects.
     if ((error || res.statusCode >= 500) && res.statusCode !== 503) return 'error';
     if (res.statusCode >= 400) return 'warn';
     return 'info';
@@ -51,11 +50,11 @@ app.use(cors({
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Request-Id'],
   maxAge: 86400,
+  credentials: true,
 }));
 app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: false, limit: '1mb' }));
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
-
 app.use('/api/health', healthRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpecification, {

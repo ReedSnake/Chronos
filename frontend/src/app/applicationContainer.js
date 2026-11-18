@@ -1,6 +1,7 @@
 import { HttpClient } from '../api/HttpClient';
 import { runtimeConfigValues } from '../config/runtimeConfig';
 import { HealthService } from '../services/HealthService';
+import { AuthService } from '../services/AuthService';
 
 const httpClient = new HttpClient({
   baseUrl: runtimeConfigValues.apiBaseUrl,
@@ -9,4 +10,5 @@ const httpClient = new HttpClient({
 
 export const applicationContainer = Object.freeze({
   healthService: new HealthService(httpClient),
+  authService: new AuthService(httpClient),
 });

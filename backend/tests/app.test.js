@@ -50,19 +50,20 @@ test('health endpoint reports a degraded server before MongoDB is connected', as
   assert.ok(response.headers['x-request-id']);
 });
 
-test('auth status explicitly exposes the authentication stub', async () => {
+test('auth status reports authentication available', async () => {
   const response = await request('/api/auth/status');
   const body = JSON.parse(response.body);
 
   assert.equal(response.statusCode, 200);
   assert.equal(body.service, 'auth');
-  assert.equal(body.status, 'not_implemented');
+  assert.equal(body.status, 'available');
 });
 
-test('Swagger only describes the available API routes', () => {
+test('Swagger describes the available API routes', () => {
   assert.ok(swaggerSpecification.paths['/api/health']);
   assert.ok(swaggerSpecification.paths['/api/auth/status']);
-  assert.equal(swaggerSpecification.paths['/api/auth/login'], undefined);
+  assert.ok(swaggerSpecification.paths['/api/auth/login']);
+  assert.ok(swaggerSpecification.paths['/api/auth/register']);
   assert.equal(swaggerSpecification.servers[0].url, config.documentation.serverUrl);
 });
 
