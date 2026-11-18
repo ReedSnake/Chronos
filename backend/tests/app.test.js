@@ -50,19 +50,20 @@ test('health endpoint reports a degraded server before MongoDB is connected', as
   assert.ok(response.headers['x-request-id']);
 });
 
-test('auth status explicitly exposes the authentication stub', async () => {
+test('auth status reports authentication available', async () => {
   const response = await request('/api/auth/status');
   const body = JSON.parse(response.body);
 
   assert.equal(response.statusCode, 200);
   assert.equal(body.service, 'auth');
-  assert.equal(body.status, 'not_implemented');
+  assert.equal(body.status, 'available');
 });
 
-test('Swagger only describes the available API routes', () => {
+test('Swagger describes the available API routes', () => {
   assert.ok(swaggerSpecification.paths['/api/health']);
   assert.ok(swaggerSpecification.paths['/api/auth/status']);
-  assert.equal(swaggerSpecification.paths['/api/auth/login'], undefined);
+  assert.ok(swaggerSpecification.paths['/api/auth/login']);
+  assert.ok(swaggerSpecification.paths['/api/auth/register']);
   assert.equal(swaggerSpecification.servers[0].url, config.documentation.serverUrl);
 });
 
@@ -72,7 +73,7 @@ test('logger formats numeric Pino levels as readable severity names', () => {
   assert.deepEqual(formatLogLevel('fatal'), { level: 'FATAL' });
 });
 
-test('user model normalizes ISO country codes and requires the initial fields', async () => {
+test('user model normalizes a country code when provided and permits no country', async () => {
   const user = new User({
     email: 'tester@example.test',
     passwordHash: 'hash',
@@ -83,4 +84,12 @@ test('user model normalizes ISO country codes and requires the initial fields', 
   await user.validate();
   assert.equal(user.country, 'UA');
   assert.equal(user.email, 'tester@example.test');
+
+  const userWithoutCountry = new User({
+    email: 'no-country@example.test',
+    passwordHash: 'hash',
+    name: 'No Country User',
+  });
+  await userWithoutCountry.validate();
+  assert.equal(userWithoutCountry.country, undefined);
 });

@@ -16,14 +16,27 @@ export class HttpClient {
     this.#timeoutMs = timeoutMs;
   }
 
-  async get(path, { allowedStatusCodes = [] } = {}) {
+  async get(path, { allowedStatusCodes = [], timeoutMs } = {}) {
+    return this.#request('GET', path, undefined, { allowedStatusCodes, timeoutMs });
+  }
+
+  async post(path, body, { timeoutMs } = {}) {
+    return this.#request('POST', path, body, { timeoutMs });
+  }
+
+  async #request(method, path, body, { allowedStatusCodes = [], timeoutMs } = {}) {
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), this.#timeoutMs);
+    const timeout = setTimeout(() => controller.abort(), timeoutMs || this.#timeoutMs);
 
     try {
       const response = await fetch(this.#buildUrl(path), {
-        method: 'GET',
-        headers: { Accept: 'application/json' },
+        method,
+        credentials: 'include',
+        headers: {
+          Accept: 'application/json',
+          ...(body === undefined ? {} : { 'Content-Type': 'application/json' }),
+        },
+        ...(body === undefined ? {} : { body: JSON.stringify(body) }),
         signal: controller.signal,
       });
       const payload = await this.#readPayload(response);
@@ -37,7 +50,6 @@ export class HttpClient {
       if (error.name === 'AbortError') {
         throw new HttpError('Request timed out');
       }
-
       throw error;
     } finally {
       clearTimeout(timeout);

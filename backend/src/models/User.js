@@ -23,10 +23,15 @@ const userSchema = new Schema({
   },
   country: {
     type: String,
-    required: true,
     uppercase: true,
     trim: true,
     match: /^[A-Z]{2}$/,
+  },
+  emailVerifiedAt: { type: Date, default: null },
+  emailVerification: {
+    tokenHash: { type: String, select: false, index: true, sparse: true },
+    expiresAt: { type: Date },
+    requestedAt: { type: Date },
   },
 }, {
   collection: 'users',
