@@ -51,7 +51,6 @@ async function register({ name, email, password }) {
       name,
       email,
       passwordHash,
-      country: 'XX', // Unknown ISO-style placeholder; registration does not request country.
       emailVerifiedAt: null,
       emailVerification: {
         tokenHash: verification.tokenHash,

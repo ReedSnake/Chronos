@@ -21,7 +21,7 @@ export function EmailVerificationPage() {
       return;
     }
     applicationContainer.authService.verifyEmail(token)
-      .then(() => navigate('/account', { replace: true }))
+      .then(() => navigate('/', { replace: true }))
       .catch((requestError) => {
         setStatus('');
         setError(requestError.message || 'Email verification failed.');

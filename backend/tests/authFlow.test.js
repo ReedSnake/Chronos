@@ -45,6 +45,7 @@ test('registration stores verification hash, bcrypt hash and only reports succes
   });
   await service.register({ name: 'Jane', email: 'jane@example.com', password: 'my-long-password' });
   assert.equal(created.passwordHash, 'bcrypt-hash');
+  assert.equal(created.country, undefined);
   assert.equal(created.emailVerifiedAt, null);
   assert.equal(created.emailVerification.tokenHash,
     createHash('sha256').update(sent.token).digest('hex'));

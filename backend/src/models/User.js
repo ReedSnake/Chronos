@@ -23,10 +23,17 @@ const userSchema = new Schema({
   },
   country: {
     type: String,
-    required: true,
     uppercase: true,
     trim: true,
     match: /^[A-Z]{2}$/,
+  },
+  bio: { type: String, trim: true, maxlength: 500, default: '' },
+  avatarUpdatedAt: { type: Date, default: null },
+  settings: {
+    language: { type: String, enum: ['en', 'uk', 'ru'], default: 'en' },
+    timeZone: { type: String, default: 'UTC' },
+    weekStartsOn: { type: String, enum: ['monday', 'sunday'], default: 'monday' },
+    timeFormat: { type: String, enum: ['12h', '24h'], default: '24h' },
   },
   emailVerifiedAt: { type: Date, default: null },
   emailVerification: {

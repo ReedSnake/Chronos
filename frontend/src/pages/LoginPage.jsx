@@ -16,7 +16,7 @@ export function LoginPage() {
     setSubmitting(true);
     try {
       await applicationContainer.authService.login(email.trim(), password);
-      navigate('/account', { replace: true });
+      navigate('/', { replace: true });
     } catch (requestError) {
       setError(requestError.message || 'Sign in failed.');
     } finally {

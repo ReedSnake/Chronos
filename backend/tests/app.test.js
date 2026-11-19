@@ -73,7 +73,7 @@ test('logger formats numeric Pino levels as readable severity names', () => {
   assert.deepEqual(formatLogLevel('fatal'), { level: 'FATAL' });
 });
 
-test('user model normalizes ISO country codes and requires the initial fields', async () => {
+test('user model normalizes a country code when provided and permits no country', async () => {
   const user = new User({
     email: 'tester@example.test',
     passwordHash: 'hash',
@@ -84,4 +84,12 @@ test('user model normalizes ISO country codes and requires the initial fields', 
   await user.validate();
   assert.equal(user.country, 'UA');
   assert.equal(user.email, 'tester@example.test');
+
+  const userWithoutCountry = new User({
+    email: 'no-country@example.test',
+    passwordHash: 'hash',
+    name: 'No Country User',
+  });
+  await userWithoutCountry.validate();
+  assert.equal(userWithoutCountry.country, undefined);
 });

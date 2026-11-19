@@ -30,6 +30,7 @@ const options = {
     tags: [
       { name: 'System', description: 'Server and database status endpoints.' },
       { name: 'Auth', description: 'Email registration, verification and cookie sessions.' },
+      { name: 'Users', description: 'Profile and account management.' },
     ],
     components: {
       schemas: {
@@ -114,7 +115,42 @@ const options = {
         },
       },
       '/api/auth/me': {
-        get: { tags: ['Auth'], summary: 'Get signed-in user', responses: { 200: { description: 'User details.' }, 401: { description: 'Authentication required.' } } },
+        get: { tags: ['Auth'], summary: 'Backward-compatible alias for GET /api/users/me', responses: { 200: { description: 'Own profile.' }, 401: { description: 'Authentication required.' } } },
+      },
+      '/api/users/me': {
+        get: { tags: ['Users'], summary: 'Get own full profile (requires session cookie)', responses: { 200: { description: 'Full profile, email and preferences.' }, 401: { description: 'Not signed in.' } } },
+        patch: { tags: ['Users'], summary: 'Update own name and/or bio', requestBody: { required: true, content: { 'application/json': { schema: {
+          type: 'object', properties: { name: { type: 'string', maxLength: 120 }, bio: { type: 'string', maxLength: 500 } }, additionalProperties: false,
+        } } } }, responses: { 200: { description: 'Updated own profile.' }, 400: { description: 'Invalid update.' }, 401: { description: 'Not signed in.' } } },
+        delete: { tags: ['Users'], summary: 'Permanently delete own account, avatar and all sessions', responses: { 204: { description: 'Account deleted.' }, 401: { description: 'Not signed in.' } } },
+      },
+      '/api/users/me/country': {
+        patch: { tags: ['Users'], summary: 'Update or clear country', requestBody: { required: true, content: { 'application/json': { schema: {
+          type: 'object', required: ['country'], additionalProperties: false, properties: { country: { type: 'string', nullable: true, description: 'Two-letter code or null' } },
+        } } } }, responses: { 200: { description: 'Updated.' }, 400: { description: 'Invalid country.' }, 401: { description: 'Not signed in.' } } },
+      },
+      '/api/users/me/settings': {
+        patch: { tags: ['Users'], summary: 'Update one or more stored preferences', requestBody: { required: true, content: { 'application/json': { schema: {
+          type: 'object', additionalProperties: false, properties: {
+            language: { type: 'string', enum: ['uk', 'en', 'ru'] }, timeZone: { type: 'string', example: 'Europe/Kyiv' },
+            weekStartsOn: { type: 'string', enum: ['monday', 'sunday'] }, timeFormat: { type: 'string', enum: ['12h', '24h'] },
+          },
+        } } } }, responses: { 200: { description: 'Updated preferences.' }, 400: { description: 'Invalid values.' }, 401: { description: 'Not signed in.' } } },
+      },
+      '/api/users/me/avatar': {
+        put: { tags: ['Users'], summary: 'Replace avatar with raw image bytes, maximum 2 MB', requestBody: { required: true, content: {
+          'image/jpeg': { schema: { type: 'string', format: 'binary' } },
+          'image/png': { schema: { type: 'string', format: 'binary' } },
+          'image/webp': { schema: { type: 'string', format: 'binary' } },
+        } }, responses: { 200: { description: 'Avatar updated.' }, 400: { description: 'Invalid image.' }, 413: { description: 'Image too large.' }, 415: { description: 'Unsupported format.' } } },
+        delete: { tags: ['Users'], summary: 'Remove own avatar', responses: { 200: { description: 'Avatar removed.' }, 401: { description: 'Not signed in.' } } },
+      },
+      '/api/users/{id}': {
+        get: { tags: ['Users'], summary: 'Get limited public fields of another profile (session required)', parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
+          responses: { 200: { description: 'Name, bio, country, avatar and join date; no email, settings or secrets.' }, 400: { description: 'Invalid ID.' }, 401: { description: 'Not signed in.' }, 404: { description: 'Profile not found.' } } },
+      },
+      '/api/users/{id}/avatar': {
+        get: { tags: ['Users'], summary: 'Fetch publicly displayable profile image (no session required)', parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }], responses: { 200: { description: 'JPEG, PNG or WebP image.' }, 404: { description: 'No image.' } } },
       },
       '/api/auth/logout': {
         post: { tags: ['Auth'], summary: 'Revoke current session and clear the cookie', responses: { 204: { description: 'Signed out.' } } },

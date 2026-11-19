@@ -11,6 +11,7 @@ const errorHandler = require('./middlewares/errorHandler');
 const notFound = require('./middlewares/notFound');
 const authRoutes = require('./routes/authRoutes');
 const healthRoutes = require('./routes/healthRoutes');
+const userRoutes = require('./routes/userRoutes');
 const AppError = require('./utils/AppError');
 
 const app = express();
@@ -57,6 +58,7 @@ app.use(express.urlencoded({ extended: false, limit: '1mb' }));
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 app.use('/api/health', healthRoutes);
 app.use('/api/auth', authRoutes);
+app.use('/api/users', userRoutes);
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpecification, {
   customSiteTitle: 'Chronos API documentation',
 }));

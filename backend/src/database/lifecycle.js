@@ -3,12 +3,14 @@ const logger = require('../config/logger');
 const { connectDatabase } = require('./connection');
 const User = require('../models/User');
 const AuthSession = require('../models/AuthSession');
+const Avatar = require('../models/Avatar');
 const { seedDatabase } = require('./seeders');
 
 async function initializeDatabase({ seed = true } = {}) {
   await connectDatabase({ retry: false });
   await User.createIndexes();
   await AuthSession.createIndexes();
+  await Avatar.createIndexes();
   logger.info('Database indexes initialized');
   if (seed) {
     await seedDatabase();

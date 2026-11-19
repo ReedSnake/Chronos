@@ -31,13 +31,9 @@ async function login(req, res) {
   res.status(200).json(data);
 }
 
-async function me(req, res) {
-  res.status(200).json({ user: authService.publicUser(req.authUser) });
-}
-
 async function logout(req, res) {
   await authService.logout(req, res);
   res.status(204).end();
 }
 
-module.exports = { getStatus, register, resendVerification, verifyEmail, login, me, logout };
+module.exports = { getStatus, register, resendVerification, verifyEmail, login, logout };

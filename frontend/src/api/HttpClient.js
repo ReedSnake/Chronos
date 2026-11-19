@@ -24,19 +24,33 @@ export class HttpClient {
     return this.#request('POST', path, body, { timeoutMs });
   }
 
+  async patch(path, body) {
+    return this.#request('PATCH', path, body);
+  }
+
+  async putImage(path, file) {
+    return this.#request('PUT', path, file, { timeoutMs: 30000 });
+  }
+
+  async delete(path) {
+    return this.#request('DELETE', path);
+  }
+
   async #request(method, path, body, { allowedStatusCodes = [], timeoutMs } = {}) {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), timeoutMs || this.#timeoutMs);
 
     try {
+      const binary = typeof Blob !== 'undefined' && body instanceof Blob;
+      const contentType = binary ? body.type : 'application/json';
       const response = await fetch(this.#buildUrl(path), {
         method,
         credentials: 'include',
         headers: {
           Accept: 'application/json',
-          ...(body === undefined ? {} : { 'Content-Type': 'application/json' }),
+          ...(body === undefined ? {} : { 'Content-Type': contentType }),
         },
-        ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+        ...(body === undefined ? {} : { body: binary ? body : JSON.stringify(body) }),
         signal: controller.signal,
       });
       const payload = await this.#readPayload(response);

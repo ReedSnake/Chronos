@@ -129,3 +129,20 @@ body {
   background: #e66b6b;
   box-shadow: 0 0 0 6px rgb(230 107 107 / 15%);
 }
+
+
+/* Simple account UI; existing status and authentication styles remain unchanged. */
+.account-section { display: grid; gap: 16px; width: min(100%, 680px); }
+.account-section h1, .account-card h2 { margin: 0; }
+.account-section p { margin: 0; }
+.account-card { display: grid; gap: 12px; background: #182235; border: 1px solid #2a3852; padding: 20px; border-radius: 12px; }
+.account-form { display: grid; gap: 10px; }
+.account-form input, .account-form textarea, .account-form select, .account-card input[type="file"] {
+  font: inherit; width: 100%; padding: 9px; border: 1px solid #51617c; border-radius: 6px;
+  color: #e7edf8; background: #101827;
+}
+.account-section button { font: inherit; width: fit-content; color: #e7edf8; background: #25334b; border: 1px solid #51617c; border-radius: 8px; padding: 10px 14px; cursor: pointer; }
+.account-section button:disabled { opacity: .5; cursor: not-allowed; }
+.account-section button.danger-button { background: #62303a; }
+.profile-avatar { width: 110px; height: 110px; border-radius: 50%; object-fit: cover; background: #25334b; }
+@media (max-width: 600px) { .application-header { align-items: flex-start; flex-direction: column; } .navigation { flex-wrap: wrap; } }
