@@ -25,11 +25,11 @@ export function ResendVerificationForm({ initialEmail = '' }) {
   }
 
   return (
-    <form onSubmit={handleSubmit}>
+    <form className="auth-form" onSubmit={handleSubmit}>
       <h2>Resend verification email</h2>
-      <label htmlFor="resend-email">Email</label>{' '}
+      <label htmlFor="resend-email">Email</label>
       <input id="resend-email" type="email" value={email} autoComplete="email" required
-        onChange={(event) => setEmail(event.target.value)} />{' '}
+        onChange={(event) => setEmail(event.target.value)} />
       <button type="submit" disabled={submitting}>{submitting ? 'Sending...' : 'Resend'}</button>
       {status && <p role="status">{status}</p>}
       {error && <p role="alert">{error}</p>}

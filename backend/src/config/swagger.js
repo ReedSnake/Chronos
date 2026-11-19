@@ -125,9 +125,9 @@ const options = {
         delete: { tags: ['Users'], summary: 'Permanently delete own account, avatar and all sessions', responses: { 204: { description: 'Account deleted.' }, 401: { description: 'Not signed in.' } } },
       },
       '/api/users/me/country': {
-        patch: { tags: ['Users'], summary: 'Update or clear country', requestBody: { required: true, content: { 'application/json': { schema: {
+        put: { tags: ['Users'], summary: 'Update or clear country after validating it with the countries provider', requestBody: { required: true, content: { 'application/json': { schema: {
           type: 'object', required: ['country'], additionalProperties: false, properties: { country: { type: 'string', nullable: true, description: 'Two-letter code or null' } },
-        } } } }, responses: { 200: { description: 'Updated.' }, 400: { description: 'Invalid country.' }, 401: { description: 'Not signed in.' } } },
+        } } } }, responses: { 200: { description: 'Updated.' }, 400: { description: 'Invalid or unsupported country.' }, 401: { description: 'Not signed in.' }, 503: { description: 'Countries provider is unavailable.' } } },
       },
       '/api/users/me/settings': {
         patch: { tags: ['Users'], summary: 'Update one or more stored preferences', requestBody: { required: true, content: { 'application/json': { schema: {

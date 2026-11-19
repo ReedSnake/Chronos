@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { applicationContainer } from '../app/applicationContainer';
 import { ResendVerificationForm } from '../components/auth/ResendVerificationForm';
+import { AuthPageTemplate } from '../components/layout/PageTemplate';
 
 export function RegisterPage() {
   const [name, setName] = useState('');
@@ -36,21 +37,20 @@ export function RegisterPage() {
   }
 
   return (
-    <main>
-      <h1>Register</h1>
-      <form onSubmit={handleSubmit}>
-        <div><label htmlFor="register-name">Name</label> <input id="register-name" value={name}
-          onChange={(event) => setName(event.target.value)} required maxLength={120} autoComplete="name" /></div>
-        <div><label htmlFor="register-email">Email</label> <input id="register-email" type="email" value={email}
-          onChange={(event) => setEmail(event.target.value)} required maxLength={254} autoComplete="email" /></div>
-        <div><label htmlFor="register-password">Password</label> <input id="register-password" type="password" value={password}
-          onChange={(event) => setPassword(event.target.value)} required minLength={10} autoComplete="new-password" /></div>
-        <button type="submit" disabled={submitting}>{submitting ? 'Registering...' : 'Register'}</button>
-      </form>
-      {status && <p role="status">{status}</p>}
-      {error && <p role="alert">{error}</p>}
-      {showResend && <ResendVerificationForm initialEmail={email} />}
-      <p><Link to="/login">Already registered? Sign in</Link></p>
-    </main>
+    <AuthPageTemplate title="Register">
+        <form className="auth-form" onSubmit={handleSubmit}>
+          <label htmlFor="register-name">Name</label>
+          <input id="register-name" value={name} onChange={(event) => setName(event.target.value)} required maxLength={120} autoComplete="name" />
+          <label htmlFor="register-email">Email</label>
+          <input id="register-email" type="email" value={email} onChange={(event) => setEmail(event.target.value)} required maxLength={254} autoComplete="email" />
+          <label htmlFor="register-password">Password</label>
+          <input id="register-password" type="password" value={password} onChange={(event) => setPassword(event.target.value)} required minLength={10} autoComplete="new-password" />
+          <button type="submit" disabled={submitting}>{submitting ? 'Registering...' : 'Register'}</button>
+        </form>
+        {status && <p role="status">{status}</p>}
+        {error && <p role="alert">{error}</p>}
+        {showResend && <ResendVerificationForm initialEmail={email} />}
+        <p><Link to="/login">Already registered? Sign in</Link></p>
+    </AuthPageTemplate>
   );
 }

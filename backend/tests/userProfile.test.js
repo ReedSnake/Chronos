@@ -60,22 +60,47 @@ test('own profile includes email/settings but limited profile never includes the
   assert.equal(limited.name, own.name);
 });
 
-test('updates whitelist $set fields, country null unsets, and nonexistent public profiles return 404', async () => {
+test('updates whitelist $set fields, verifies countries externally, and clears a country without a provider call', async () => {
   const calls = [];
   const user = { _id: '0123456789abcdef01234567', name: 'Maya', email: 'm@example.test' };
+  const verifiedCountries = [];
   const service = loadWithMocks('../src/services/userService.js', {
     '../models/User': {
       findByIdAndUpdate: async (...args) => { calls.push(args); return user; },
       findById: async () => null,
     },
     '../models/Avatar': {}, '../models/AuthSession': {}, './sessionService': {},
+    './countryService': { ensureCountryIsAvailable: async (country) => { verifiedCountries.push(country); } },
   });
   await service.updateProfile(user._id, validateProfile({ name: ' Hello ' }));
   assert.deepEqual(calls[0][1], { $set: { name: 'Hello' } });
   assert.equal(calls[0][2].runValidators, true);
+  await service.updateCountry(user._id, validateCountry({ country: 'ua' }));
+  assert.deepEqual(verifiedCountries, ['UA']);
+  assert.deepEqual(calls[1][1], { $set: { country: 'UA' } });
   await service.updateCountry(user._id, validateCountry({ country: null }));
-  assert.deepEqual(calls[1][1], { $unset: { country: '' } });
+  assert.deepEqual(calls[2][1], { $unset: { country: '' } });
+  assert.deepEqual(verifiedCountries, ['UA']);
   await assert.rejects(() => service.getPublicProfile('0123456789abcdef01234567'), (e) => e.statusCode === 404);
+});
+
+test('country provider accepts listed codes, rejects unlisted codes, and maps failures to 503', async (t) => {
+  const countryService = require('../src/services/countryService');
+  const originalFetch = global.fetch;
+  t.after(() => { global.fetch = originalFetch; });
+
+  global.fetch = async (url, options) => {
+    assert.equal(url, 'https://date.nager.at/api/v3/AvailableCountries');
+    assert.equal(options.headers.Accept, 'application/json');
+    return { ok: true, json: async () => [{ countryCode: 'UA', name: 'Ukraine' }] };
+  };
+  await countryService.ensureCountryIsAvailable('UA');
+  await assert.rejects(() => countryService.ensureCountryIsAvailable('DE'),
+    (error) => error.statusCode === 400 && error.code === 'UNSUPPORTED_COUNTRY');
+
+  global.fetch = async () => { throw new Error('Network unavailable'); };
+  await assert.rejects(() => countryService.ensureCountryIsAvailable('UA'),
+    (error) => error.statusCode === 503 && error.code === 'COUNTRIES_SERVICE_UNAVAILABLE');
 });
 
 test('image service rejects unsupported, oversized and spoofed images', async () => {

@@ -2,6 +2,7 @@ const User = require('../models/User');
 const Avatar = require('../models/Avatar');
 const AuthSession = require('../models/AuthSession');
 const sessionService = require('./sessionService');
+const countryService = require('./countryService');
 const AppError = require('../utils/AppError');
 
 const DEFAULT_SETTINGS = Object.freeze({
@@ -54,9 +55,12 @@ async function updateProfile(userId, values) {
 }
 
 async function updateCountry(userId, { country }) {
-  return updateUser(userId, country === null
-    ? { $unset: { country: '' } }
-    : { $set: { country } });
+  if (country === null) {
+    return updateUser(userId, { $unset: { country: '' } });
+  }
+
+  await countryService.ensureCountryIsAvailable(country);
+  return updateUser(userId, { $set: { country } });
 }
 
 async function updateSettings(userId, fields) {

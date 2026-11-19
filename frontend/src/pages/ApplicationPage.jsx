@@ -1,20 +1,14 @@
-import { useEffect, useState } from 'react';
 import { Link, NavLink, Outlet } from 'react-router-dom';
-import { applicationContainer } from '../app/applicationContainer';
+import { useAuth } from '../features/auth/AuthContext';
 
 function getNavigationClass({ isActive }) {
   return isActive ? 'navigation-link active' : 'navigation-link';
 }
 
 export function ApplicationPage() {
-  const [signedIn, setSignedIn] = useState(false);
-  useEffect(() => {
-    let active = true;
-    applicationContainer.userService.getMe()
-      .then(() => { if (active) setSignedIn(true); })
-      .catch(() => { if (active) setSignedIn(false); });
-    return () => { active = false; };
-  }, []);
+  const { status } = useAuth();
+  const signedIn = status === 'authenticated';
+  const authResolved = status !== 'loading';
   return (
     <main className="page">
       <section className="application-shell">
@@ -23,8 +17,8 @@ export function ApplicationPage() {
           <nav aria-label="Main navigation" className="navigation">
             <NavLink className={getNavigationClass} to="/" end>Home</NavLink>
             <NavLink className={getNavigationClass} to="/status">Status</NavLink>
-            {!signedIn && <NavLink className={getNavigationClass} to="/register">Register</NavLink>}
-            {!signedIn && <NavLink className={getNavigationClass} to="/login">Login</NavLink>}
+            {authResolved && !signedIn && <NavLink className={getNavigationClass} to="/register">Register</NavLink>}
+            {authResolved && !signedIn && <NavLink className={getNavigationClass} to="/login">Login</NavLink>}
             <NavLink className={getNavigationClass} to="/account">Account</NavLink>
           </nav>
         </header>

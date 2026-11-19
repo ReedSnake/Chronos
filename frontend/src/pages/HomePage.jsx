@@ -1,46 +1,20 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { applicationContainer } from '../app/applicationContainer';
+import { PageTemplate } from '../components/layout/PageTemplate';
+import { useAuth } from '../features/auth/AuthContext';
 
 export function HomePage() {
   const navigate = useNavigate();
-  const [user, setUser] = useState(null);
-  const [checking, setChecking] = useState(true);
-  const [loadError, setLoadError] = useState('');
-  const [needsSignIn, setNeedsSignIn] = useState(false);
-  const [retryCount, setRetryCount] = useState(0);
   const [lookupId, setLookupId] = useState('');
+  const { status, user, error, refresh } = useAuth();
 
-  useEffect(() => {
-    let alive = true;
-    setChecking(true);
-    setLoadError('');
-    setNeedsSignIn(false);
-    setUser(null);
-
-    applicationContainer.userService.getMe()
-      .then(({ user: result }) => {
-        if (!alive) return;
-        if (result) setUser(result);
-        else setLoadError('Unable to load your profile. Please try again.');
-      })
-      .catch((error) => {
-        if (!alive) return;
-        if (error?.statusCode === 401) setNeedsSignIn(true);
-        else setLoadError(error?.message || 'Unable to load your profile.');
-      })
-      .finally(() => { if (alive) setChecking(false); });
-
-    return () => { alive = false; };
-  }, [retryCount]);
-
-  if (checking) return <p role="status">Loading...</p>;
-  if (needsSignIn) return <p>Please <Link to="/login">sign in</Link> to access your workspace.</p>;
-  if (loadError) return (
-    <section className="account-section">
-      <p role="alert">{loadError}</p>
-      <button type="button" onClick={() => setRetryCount((value) => value + 1)}>Try again</button>
-    </section>
+  if (status === 'loading') return <PageTemplate><p role="status">Loading...</p></PageTemplate>;
+  if (status === 'anonymous') return <PageTemplate><p>Please <Link to="/login">sign in</Link> to access your workspace.</p></PageTemplate>;
+  if (status === 'error') return (
+    <PageTemplate>
+      <p role="alert">{error || 'Unable to load your profile.'}</p>
+      <button type="button" onClick={() => { void refresh(); }}>Try again</button>
+    </PageTemplate>
   );
 
   function findUser(event) {

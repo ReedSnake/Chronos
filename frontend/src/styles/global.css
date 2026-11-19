@@ -145,4 +145,12 @@ body {
 .account-section button:disabled { opacity: .5; cursor: not-allowed; }
 .account-section button.danger-button { background: #62303a; }
 .profile-avatar { width: 110px; height: 110px; border-radius: 50%; object-fit: cover; background: #25334b; }
+.auth-page { justify-items: stretch; }
+.auth-card { display: grid; gap: 16px; width: min(100%, 460px); padding: 28px; background: #182235; border: 1px solid #2a3852; border-radius: 12px; }
+.auth-card h1, .auth-card p { margin: 0; }
+.auth-form { display: grid; gap: 10px; }
+.auth-form h2 { margin: 8px 0 0; font-size: 1.1rem; }
+.auth-form input { font: inherit; width: 100%; padding: 9px; border: 1px solid #51617c; border-radius: 6px; color: #e7edf8; background: #101827; }
+.auth-form button { font: inherit; width: fit-content; color: #e7edf8; background: #25334b; border: 1px solid #51617c; border-radius: 8px; padding: 10px 14px; cursor: pointer; }
+.auth-form button:disabled { opacity: .5; cursor: not-allowed; }
 @media (max-width: 600px) { .application-header { align-items: flex-start; flex-direction: column; } .navigation { flex-wrap: wrap; } }

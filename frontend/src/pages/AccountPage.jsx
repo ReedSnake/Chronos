@@ -1,15 +1,55 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { applicationContainer } from '../app/applicationContainer';
+import { useAuth } from '../features/auth/AuthContext';
 
 const users = applicationContainer.userService;
+const countries = applicationContainer.countryService;
+const timeZoneService = applicationContainer.timeZoneService;
+const DEFAULT_SETTINGS = Object.freeze({
+  language: 'en', timeZone: 'UTC', weekStartsOn: 'monday', timeFormat: '24h',
+});
+
+function normalizeSettings(values) {
+  const settings = { ...DEFAULT_SETTINGS, ...values };
+  return {
+    ...settings,
+    language: settings.language === 'uk' ? 'uk' : 'en',
+    timeZone: typeof settings.timeZone === 'string' && settings.timeZone
+      ? settings.timeZone
+      : DEFAULT_SETTINGS.timeZone,
+  };
+}
+
+function groupTimeZones(timeZones) {
+  const groups = new Map();
+  for (const timeZone of timeZones) {
+    if (!timeZone.includes('/')) continue;
+    const [region] = timeZone.split('/');
+    const zones = groups.get(region) || [];
+    zones.push(timeZone);
+    groups.set(region, zones);
+  }
+  return [...groups.entries()]
+    .sort(([first], [second]) => first.localeCompare(second))
+    .map(([region, zones]) => ({ region, zones }));
+}
 
 export function AccountPage() {
   const navigate = useNavigate();
+  const { setAuthenticated, setAnonymous } = useAuth();
   const [user, setUser] = useState(null);
   const [profile, setProfile] = useState({ name: '', bio: '' });
   const [country, setCountry] = useState('');
-  const [settings, setSettings] = useState({ language: 'en', timeZone: 'UTC', weekStartsOn: 'monday', timeFormat: '24h' });
+  const [availableCountries, setAvailableCountries] = useState([]);
+  const [countriesLoading, setCountriesLoading] = useState(true);
+  const [countriesError, setCountriesError] = useState('');
+  const [countryReload, setCountryReload] = useState(0);
+  const [timeZones, setTimeZones] = useState([]);
+  const [timeZonesLoading, setTimeZonesLoading] = useState(true);
+  const [timeZonesError, setTimeZonesError] = useState('');
+  const [timeZoneReload, setTimeZoneReload] = useState(0);
+  const [settings, setSettings] = useState(DEFAULT_SETTINGS);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -17,9 +57,10 @@ export function AccountPage() {
 
   function updateState(nextUser) {
     setUser(nextUser);
+    setAuthenticated(nextUser);
     setProfile({ name: nextUser.name, bio: nextUser.bio || '' });
     setCountry(nextUser.country || '');
-    setSettings(nextUser.settings);
+    setSettings(normalizeSettings(nextUser.settings));
   }
 
   useEffect(() => {
@@ -30,6 +71,32 @@ export function AccountPage() {
       .finally(() => { if (alive) setLoading(false); });
     return () => { alive = false; };
   }, []);
+
+  useEffect(() => {
+    let alive = true;
+    setCountriesLoading(true);
+    setCountriesError('');
+    countries.getAvailableCountries()
+      .then((result) => { if (alive) setAvailableCountries(result); })
+      .catch((requestError) => {
+        if (alive) setCountriesError(requestError.message || 'Unable to load countries. Please try again later or refresh the page.');
+      })
+      .finally(() => { if (alive) setCountriesLoading(false); });
+    return () => { alive = false; };
+  }, [countryReload]);
+
+  useEffect(() => {
+    let alive = true;
+    setTimeZonesLoading(true);
+    setTimeZonesError('');
+    timeZoneService.getAvailableTimeZones()
+      .then((result) => { if (alive) setTimeZones(result); })
+      .catch((requestError) => {
+        if (alive) setTimeZonesError(requestError.message || 'Unable to load time zones. Please try again later or refresh the page.');
+      })
+      .finally(() => { if (alive) setTimeZonesLoading(false); });
+    return () => { alive = false; };
+  }, [timeZoneReload]);
 
   async function submit(action, message) {
     setBusy(true);
@@ -51,6 +118,7 @@ export function AccountPage() {
     setError('');
     try {
       await applicationContainer.authService.logout();
+      setAnonymous();
       navigate('/login', { replace: true });
     } catch (requestError) {
       setError(requestError.message || 'Unable to sign out.');
@@ -64,6 +132,7 @@ export function AccountPage() {
     setError('');
     try {
       await users.deleteAccount();
+      setAnonymous();
       navigate('/register', { replace: true });
     } catch (requestError) {
       setError(requestError.message || 'Unable to delete account.');
@@ -82,6 +151,19 @@ export function AccountPage() {
     void submit(() => users.uploadAvatar(file), 'Profile picture updated.');
     event.target.value = '';
   }
+
+  function updateCountry(event) {
+    event.preventDefault();
+    if (!country || country === user.country) return;
+    void submit(() => users.updateCountry(country), 'Country updated.');
+  }
+
+  function removeCountry() {
+    void submit(() => users.updateCountry(null), 'Country removed.');
+  }
+
+  const timeZoneGroups = groupTimeZones(timeZones);
+  const selectedTimeZoneIsAvailable = timeZones.includes(settings.timeZone);
 
   return (
     <section className="account-section">
@@ -116,15 +198,27 @@ export function AccountPage() {
             onChange={(event) => setProfile({ ...profile, bio: event.target.value })} />
           <button type="submit" disabled={busy}>Save profile</button>
         </form>
-        <form className="account-card account-form" onSubmit={(event) => {
-          event.preventDefault();
-          void submit(() => users.updateCountry(country.trim() || null), 'Country updated.');
-        }}>
+        <form className="account-card account-form" onSubmit={updateCountry}>
           <h2>Country</h2>
-          <label htmlFor="profile-country">Two-letter country code (e.g. UA, DE)</label>
-          <input id="profile-country" value={country} maxLength={2} placeholder="UA"
-            onChange={(event) => setCountry(event.target.value.toUpperCase())} />
-          <button type="submit" disabled={busy}>Save country</button>
+          {countriesLoading && <p role="status">Loading countries...</p>}
+          {countriesError && <>
+            <p role="alert">{countriesError}</p>
+            <button type="button" disabled={busy} onClick={() => setCountryReload((value) => value + 1)}>Try again</button>
+          </>}
+          {!countriesLoading && !countriesError && <>
+            <label htmlFor="profile-country">Country</label>
+            <select id="profile-country" value={country} disabled={busy}
+              onChange={(event) => setCountry(event.target.value)}>
+              <option value="">Select a country</option>
+              {availableCountries.map((availableCountry) => (
+                <option key={availableCountry.countryCode} value={availableCountry.countryCode}>
+                  {availableCountry.name}
+                </option>
+              ))}
+            </select>
+            {country && country !== user.country && <button type="submit" disabled={busy}>Save country</button>}
+          </>}
+          {user.country && <button type="button" disabled={busy} onClick={removeCountry}>Remove country</button>}
         </form>
         <form className="account-card account-form" onSubmit={(event) => {
           event.preventDefault();
@@ -134,11 +228,24 @@ export function AccountPage() {
           <label htmlFor="profile-language">Language</label>
           <select id="profile-language" value={settings.language}
             onChange={(event) => setSettings({ ...settings, language: event.target.value })}>
-            <option value="en">English</option><option value="uk">Українська</option><option value="ru">Русский</option>
+            <option value="en">English</option><option value="uk">Українська</option>
           </select>
           <label htmlFor="profile-timezone">Time zone (IANA)</label>
-          <input id="profile-timezone" value={settings.timeZone} maxLength={100}
-            onChange={(event) => setSettings({ ...settings, timeZone: event.target.value })} />
+          {timeZonesLoading && <p role="status">Loading time zones...</p>}
+          {timeZonesError && <>
+            <p role="alert">{timeZonesError}</p>
+            <button type="button" disabled={busy} onClick={() => setTimeZoneReload((value) => value + 1)}>Try again</button>
+          </>}
+          {!timeZonesLoading && !timeZonesError && <select id="profile-timezone" value={settings.timeZone}
+            disabled={busy} onChange={(event) => setSettings({ ...settings, timeZone: event.target.value })}>
+            {!selectedTimeZoneIsAvailable && <option value={settings.timeZone}>{settings.timeZone} (saved value)</option>}
+            <option value="UTC">UTC</option>
+            {timeZoneGroups.map(({ region, zones }) => (
+              <optgroup key={region} label={region}>
+                {zones.map((timeZone) => <option key={timeZone} value={timeZone}>{timeZone}</option>)}
+              </optgroup>
+            ))}
+          </select>}
           <label htmlFor="profile-week">Week starts on</label>
           <select id="profile-week" value={settings.weekStartsOn}
             onChange={(event) => setSettings({ ...settings, weekStartsOn: event.target.value })}>

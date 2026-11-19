@@ -13,11 +13,11 @@ export function AppRoutes() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/register" element={<RegisterPage />} />
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/verify-email" element={<EmailVerificationPage />} />
         <Route element={<ApplicationPage />}>
           <Route index element={<HomePage />} />
+          <Route path="register" element={<RegisterPage />} />
+          <Route path="login" element={<LoginPage />} />
+          <Route path="verify-email" element={<EmailVerificationPage />} />
           <Route path="account" element={<AccountPage />} />
           <Route path="users/:id" element={<PublicProfilePage />} />
           <Route path="status" element={<ConnectionPage title="System status" />} />

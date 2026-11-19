@@ -2,12 +2,15 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { applicationContainer } from '../app/applicationContainer';
 import { ResendVerificationForm } from '../components/auth/ResendVerificationForm';
+import { AuthPageTemplate } from '../components/layout/PageTemplate';
+import { useAuth } from '../features/auth/AuthContext';
 
 export function EmailVerificationPage() {
   const navigate = useNavigate();
   const attempted = useRef(false);
   const [status, setStatus] = useState('Verifying your email...');
   const [error, setError] = useState('');
+  const { setAuthenticated } = useAuth();
 
   useEffect(() => {
     if (attempted.current) return;
@@ -21,20 +24,22 @@ export function EmailVerificationPage() {
       return;
     }
     applicationContainer.authService.verifyEmail(token)
-      .then(() => navigate('/', { replace: true }))
+      .then((result) => {
+        setAuthenticated(result.user);
+        navigate('/', { replace: true });
+      })
       .catch((requestError) => {
         setStatus('');
         setError(requestError.message || 'Email verification failed.');
       });
-  }, [navigate]);
+  }, [navigate, setAuthenticated]);
 
   return (
-    <main>
-      <h1>Email verification</h1>
-      {status && <p role="status">{status}</p>}
-      {error && <p role="alert">{error}</p>}
-      {error && <ResendVerificationForm />}
-      <p><Link to="/login">Go to sign in</Link></p>
-    </main>
+    <AuthPageTemplate title="Email verification">
+        {status && <p role="status">{status}</p>}
+        {error && <p role="alert">{error}</p>}
+        {error && <ResendVerificationForm />}
+        <p><Link to="/login">Go to sign in</Link></p>
+    </AuthPageTemplate>
   );
 }

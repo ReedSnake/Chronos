@@ -28,6 +28,10 @@ export class HttpClient {
     return this.#request('PATCH', path, body);
   }
 
+  async put(path, body) {
+    return this.#request('PUT', path, body);
+  }
+
   async putImage(path, file) {
     return this.#request('PUT', path, file, { timeoutMs: 30000 });
   }
