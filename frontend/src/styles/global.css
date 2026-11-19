@@ -48,6 +48,27 @@ body {
   gap: 8px;
 }
 
+.locale-switcher select {
+  font: inherit;
+  padding: 8px;
+  color: #e7edf8;
+  background: #101827;
+  border: 1px solid #51617c;
+  border-radius: 8px;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 .navigation-link,
 .back-link {
   padding: 8px 12px;
@@ -71,8 +92,7 @@ body {
   gap: 12px;
 }
 
-.eyebrow,
-.status-code {
+.not-found-code {
   margin: 0;
   color: #9eacc4;
   font-size: 0.85rem;
@@ -81,57 +101,33 @@ body {
   text-transform: uppercase;
 }
 
-.status-card {
+.not-found-card {
   display: grid;
-  justify-items: center;
+  justify-items: start;
   gap: 12px;
   width: min(100%, 460px);
   padding: 48px 32px;
-  text-align: center;
+  text-align: left;
   background: #182235;
   border: 1px solid #2a3852;
   border-radius: 18px;
   box-shadow: 0 20px 60px rgb(0 0 0 / 25%);
 }
 
-.not-found {
-  justify-items: start;
-  text-align: left;
-}
-
-.status-card h1,
-.status-card p {
+.not-found-card h1,
+.not-found-card p {
   margin: 0;
 }
 
-.status-card h1 {
+.not-found-card h1 {
   font-size: clamp(1.5rem, 4vw, 2rem);
 }
 
-.status-card p {
+.not-found-card p {
   color: #9eacc4;
 }
 
-.indicator {
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  background: #efb34d;
-  box-shadow: 0 0 0 6px rgb(239 179 77 / 15%);
-}
-
-.indicator.connected {
-  background: #52d18c;
-  box-shadow: 0 0 0 6px rgb(82 209 140 / 15%);
-}
-
-.indicator.failed {
-  background: #e66b6b;
-  box-shadow: 0 0 0 6px rgb(230 107 107 / 15%);
-}
-
-
-/* Simple account UI; existing status and authentication styles remain unchanged. */
+/* Simple account UI; existing authentication styles remain unchanged. */
 .account-section { display: grid; gap: 16px; width: min(100%, 680px); }
 .account-section h1, .account-card h2 { margin: 0; }
 .account-section p { margin: 0; }

@@ -132,7 +132,7 @@ const options = {
       '/api/users/me/settings': {
         patch: { tags: ['Users'], summary: 'Update one or more stored preferences', requestBody: { required: true, content: { 'application/json': { schema: {
           type: 'object', additionalProperties: false, properties: {
-            language: { type: 'string', enum: ['uk', 'en', 'ru'] }, timeZone: { type: 'string', example: 'Europe/Kyiv' },
+            timeZone: { type: 'string', example: 'Europe/Kyiv' },
             weekStartsOn: { type: 'string', enum: ['monday', 'sunday'] }, timeFormat: { type: 'string', enum: ['12h', '24h'] },
           },
         } } } }, responses: { 200: { description: 'Updated preferences.' }, 400: { description: 'Invalid values.' }, 401: { description: 'Not signed in.' } } },

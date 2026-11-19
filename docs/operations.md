@@ -17,7 +17,7 @@ Copy-Item .env.example .env
 
 ```powershell
 # Build and start every service in this order:
-# mongo (healthy) -> backend (healthy) -> frontend
+# mongo -> backend -> frontend
 docker compose up --build
 
 # Start one service together with the dependencies it needs
@@ -59,7 +59,7 @@ docker compose logs --no-log-prefix -f backend |
 docker compose logs --since 10m backend
 ```
 
-The frontend healthcheck uses `/health` with Nginx access logging disabled. MongoDB runs with `--quiet`, which suppresses routine connection-accepted/closed records while preserving useful startup and failure output.
+Docker readiness checks are internal only: the backend healthcheck requests `GET /api/health` and succeeds only when MongoDB is connected; the frontend healthcheck requests Nginx's static `/health` response with access logging disabled. Neither endpoint has a page or navigation item in the application. MongoDB runs with `--quiet`, which suppresses routine connection-accepted/closed records while preserving useful startup and failure output.
 
 ## Database commands
 

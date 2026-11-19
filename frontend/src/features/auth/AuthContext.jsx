@@ -18,7 +18,7 @@ export function AuthProvider({ children }) {
     } catch (error) {
       if (version === requestVersion.current) {
         const status = error?.statusCode === 401 ? 'anonymous' : 'error';
-        setAuth({ status, user: null, error: error?.message || 'Unable to check your session.' });
+        setAuth({ status, user: null, error: error?.message || '' });
       }
       return null;
     }

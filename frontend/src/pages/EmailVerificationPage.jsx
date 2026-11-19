@@ -4,42 +4,44 @@ import { applicationContainer } from '../app/applicationContainer';
 import { ResendVerificationForm } from '../components/auth/ResendVerificationForm';
 import { AuthPageTemplate } from '../components/layout/PageTemplate';
 import { useAuth } from '../features/auth/AuthContext';
+import { useLocale } from '../i18n/LocaleProvider';
 
 export function EmailVerificationPage() {
   const navigate = useNavigate();
   const attempted = useRef(false);
-  const [status, setStatus] = useState('Verifying your email...');
+  const [status, setStatus] = useState('verification.checking');
   const [error, setError] = useState('');
   const { setAuthenticated } = useAuth();
+  const { localizedPath, t } = useLocale();
 
   useEffect(() => {
     if (attempted.current) return;
     attempted.current = true;
     const token = new URLSearchParams(window.location.hash.slice(1)).get('token');
     // Prevent the one-time URL token from remaining in browser history/referrers.
-    window.history.replaceState(window.history.state, '', '/verify-email');
+    window.history.replaceState(window.history.state, '', localizedPath('/verify-email'));
     if (!token) {
       setStatus('');
-      setError('Verification link is missing.');
+      setError(t('verification.missingLink'));
       return;
     }
     applicationContainer.authService.verifyEmail(token)
       .then((result) => {
         setAuthenticated(result.user);
-        navigate('/', { replace: true });
+        navigate(localizedPath('/'), { replace: true });
       })
       .catch((requestError) => {
         setStatus('');
-        setError(requestError.message || 'Email verification failed.');
+        setError(requestError.message || t('verification.failed'));
       });
-  }, [navigate, setAuthenticated]);
+  }, [localizedPath, navigate, setAuthenticated, t]);
 
   return (
-    <AuthPageTemplate title="Email verification">
-        {status && <p role="status">{status}</p>}
+    <AuthPageTemplate title={t('verification.title')}>
+        {status && <p role="status">{t(status)}</p>}
         {error && <p role="alert">{error}</p>}
         {error && <ResendVerificationForm />}
-        <p><Link to="/login">Go to sign in</Link></p>
+        <p><Link to={localizedPath('/login')}>{t('verification.goToLogin')}</Link></p>
     </AuthPageTemplate>
   );
 }

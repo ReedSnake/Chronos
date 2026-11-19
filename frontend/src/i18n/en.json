@@ -1,0 +1,137 @@
+{
+  "common": {
+    "email": "Email",
+    "loading": "Loading...",
+    "retry": "Try again",
+    "signIn": "Sign in"
+  },
+  "navigation": {
+    "label": "Main navigation",
+    "home": "Home",
+    "register": "Register",
+    "login": "Login",
+    "account": "Account"
+  },
+  "languageSwitcher": {
+    "label": "Language",
+    "en": "English",
+    "uk": "Ukrainian"
+  },
+  "login": {
+    "title": "Sign in",
+    "password": "Password",
+    "submitting": "Signing in...",
+    "submit": "Sign in",
+    "createAccount": "Create an account",
+    "error": "Sign in failed."
+  },
+  "register": {
+    "title": "Register",
+    "name": "Name",
+    "password": "Password",
+    "submitting": "Registering...",
+    "submit": "Register",
+    "signIn": "Already registered? Sign in",
+    "validationError": "Enter a name, a valid email, and a password of 10 characters to 72 bytes.",
+    "error": "Registration failed."
+  },
+  "verification": {
+    "title": "Email verification",
+    "checking": "Verifying your email...",
+    "missingLink": "Verification link is missing.",
+    "failed": "Email verification failed.",
+    "goToLogin": "Go to sign in"
+  },
+  "resendVerification": {
+    "title": "Resend verification email",
+    "submitting": "Sending...",
+    "submit": "Resend",
+    "error": "Unable to resend the email."
+  },
+  "home": {
+    "signInBefore": "Please ",
+    "signInAfter": " to access your workspace.",
+    "loadError": "Unable to load your profile.",
+    "welcome": "Welcome to Chronos, {name}!",
+    "description": "Your workspace is ready. Planner features will appear here as they are implemented.",
+    "manageAccount": "Manage your account",
+    "lookupLabel": "View another user's profile by ID",
+    "lookupPlaceholder": "MongoDB user ID",
+    "viewProfile": "View profile"
+  },
+  "account": {
+    "title": "Account",
+    "loading": "Loading account...",
+    "loadError": "Unable to load account.",
+    "saveError": "Unable to save changes.",
+    "signOutError": "Unable to sign out.",
+    "deleteError": "Unable to delete account.",
+    "signIn": "Sign in",
+    "emailStatus": {
+      "verified": "verified",
+      "notVerified": "not verified"
+    },
+    "id": "Your ID",
+    "avatar": {
+      "title": "Profile picture",
+      "alt": "Your profile avatar",
+      "upload": "Upload a picture (JPEG, PNG or WebP, up to 2 MB)",
+      "remove": "Remove picture",
+      "invalid": "Choose a JPEG, PNG or WebP image up to 2 MB.",
+      "updated": "Profile picture updated.",
+      "removed": "Picture removed."
+    },
+    "profile": {
+      "title": "Edit profile",
+      "name": "Name",
+      "bio": "About me",
+      "save": "Save profile",
+      "updated": "Profile updated."
+    },
+    "country": {
+      "title": "Country",
+      "loading": "Loading countries...",
+      "unavailable": "Unable to load countries. Please try again later or refresh the page.",
+      "select": "Select a country",
+      "save": "Save country",
+      "remove": "Remove country",
+      "updated": "Country updated.",
+      "removed": "Country removed."
+    },
+    "preferences": {
+      "title": "Preferences",
+      "timeZone": "Time zone (IANA)",
+      "timeZonesLoading": "Loading time zones...",
+      "timeZonesUnavailable": "Unable to load time zones. Please try again later or refresh the page.",
+      "savedTimeZone": "{timeZone} (saved value)",
+      "weekStartsOn": "Week starts on",
+      "monday": "Monday",
+      "sunday": "Sunday",
+      "timeFormat": "Time format",
+      "format24": "24-hour",
+      "format12": "12-hour",
+      "save": "Save preferences",
+      "updated": "Preferences saved."
+    },
+    "actions": {
+      "title": "Account actions",
+      "signOut": "Sign out",
+      "delete": "Delete account permanently",
+      "confirmDelete": "Delete your account and profile permanently? This cannot be undone."
+    }
+  },
+  "publicProfile": {
+    "title": "User profile",
+    "error": "Profile not found",
+    "avatarAlt": "Profile avatar",
+    "emptyBio": "No biography yet.",
+    "country": "Country: {country}",
+    "memberSince": "Member since: {date}",
+    "back": "Back to home"
+  },
+  "notFound": {
+    "title": "Page not found",
+    "description": "No content is available for {path}.",
+    "back": "Return to home"
+  }
+}

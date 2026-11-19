@@ -6,7 +6,7 @@ const countryService = require('./countryService');
 const AppError = require('../utils/AppError');
 
 const DEFAULT_SETTINGS = Object.freeze({
-  language: 'en', timeZone: 'UTC', weekStartsOn: 'monday', timeFormat: '24h',
+  timeZone: 'UTC', weekStartsOn: 'monday', timeFormat: '24h',
 });
 
 function avatarUrl(user) {
@@ -25,7 +25,6 @@ function ownProfile(user) {
     avatarUrl: avatarUrl(user),
     createdAt: user.createdAt || null,
     settings: {
-      language: user.settings?.language || DEFAULT_SETTINGS.language,
       timeZone: user.settings?.timeZone || DEFAULT_SETTINGS.timeZone,
       weekStartsOn: user.settings?.weekStartsOn || DEFAULT_SETTINGS.weekStartsOn,
       timeFormat: user.settings?.timeFormat || DEFAULT_SETTINGS.timeFormat,

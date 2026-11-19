@@ -33,9 +33,10 @@ test('country, settings and user ID validation rejects invalid values and fields
   assert.deepEqual(validateCountry({ country: null }), { country: null });
   assert.throws(() => validateCountry({ country: 'Ukraine' }));
   assert.throws(() => validateCountry({ country: 'UA', role: 'admin' }));
-  assert.deepEqual(validateSettings({ language: 'uk', timeZone: 'Europe/Kyiv', weekStartsOn: 'monday' }), {
-    'settings.language': 'uk', 'settings.timeZone': 'Europe/Kyiv', 'settings.weekStartsOn': 'monday',
+  assert.deepEqual(validateSettings({ timeZone: 'Europe/Kyiv', weekStartsOn: 'monday' }), {
+    'settings.timeZone': 'Europe/Kyiv', 'settings.weekStartsOn': 'monday',
   });
+  assert.throws(() => validateSettings({ language: 'uk' }));
   assert.throws(() => validateSettings({ timeZone: 'not-a-time-zone' }));
   assert.throws(() => validateSettings({ emailNotifications: true }));
   assert.throws(() => validateSettings({ timeFormat: '13h' }));
@@ -49,10 +50,10 @@ test('own profile includes email/settings but limited profile never includes the
   });
   const user = { _id: '0123456789abcdef01234567', name: 'Maya', bio: 'Hello', email: 'maya@example.test',
     country: 'UA', emailVerifiedAt: new Date(), avatarUpdatedAt: new Date('2026-01-01'),
-    settings: { language: 'uk' }, createdAt: new Date('2025-01-01') };
+    settings: {}, createdAt: new Date('2025-01-01') };
   const own = service.ownProfile(user);
   assert.equal(own.email, 'maya@example.test');
-  assert.equal(own.settings.language, 'uk');
+  assert.equal(Object.hasOwn(own.settings, 'language'), false);
   assert.equal(own.settings.weekStartsOn, 'monday');
   assert.match(own.avatarUrl, /users\/0123456789abcdef01234567\/avatar\?v=/);
   const limited = service.limitedProfile(user);

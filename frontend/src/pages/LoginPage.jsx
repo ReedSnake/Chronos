@@ -4,6 +4,7 @@ import { applicationContainer } from '../app/applicationContainer';
 import { ResendVerificationForm } from '../components/auth/ResendVerificationForm';
 import { AuthPageTemplate } from '../components/layout/PageTemplate';
 import { useAuth } from '../features/auth/AuthContext';
+import { useLocale } from '../i18n/LocaleProvider';
 
 export function LoginPage() {
   const navigate = useNavigate();
@@ -12,6 +13,7 @@ export function LoginPage() {
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const { setAuthenticated } = useAuth();
+  const { localizedPath, t } = useLocale();
 
   async function handleSubmit(event) {
     event.preventDefault();
@@ -20,26 +22,26 @@ export function LoginPage() {
     try {
       const result = await applicationContainer.authService.login(email.trim(), password);
       setAuthenticated(result.user);
-      navigate('/', { replace: true });
+      navigate(localizedPath('/'), { replace: true });
     } catch (requestError) {
-      setError(requestError.message || 'Sign in failed.');
+      setError(requestError.message || t('login.error'));
     } finally {
       setSubmitting(false);
     }
   }
 
   return (
-    <AuthPageTemplate title="Sign in">
+    <AuthPageTemplate title={t('login.title')}>
         <form className="auth-form" onSubmit={handleSubmit}>
-          <label htmlFor="login-email">Email</label>
+          <label htmlFor="login-email">{t('common.email')}</label>
           <input id="login-email" type="email" value={email} onChange={(event) => setEmail(event.target.value)} required autoComplete="email" />
-          <label htmlFor="login-password">Password</label>
+          <label htmlFor="login-password">{t('login.password')}</label>
           <input id="login-password" type="password" value={password} onChange={(event) => setPassword(event.target.value)} required autoComplete="current-password" />
-          <button type="submit" disabled={submitting}>{submitting ? 'Signing in...' : 'Sign in'}</button>
+          <button type="submit" disabled={submitting}>{submitting ? t('login.submitting') : t('login.submit')}</button>
         </form>
         {error && <p role="alert">{error}</p>}
         <ResendVerificationForm initialEmail={email} />
-        <p><Link to="/register">Create an account</Link></p>
+        <p><Link to={localizedPath('/register')}>{t('login.createAccount')}</Link></p>
     </AuthPageTemplate>
   );
 }

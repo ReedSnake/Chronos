@@ -38,13 +38,12 @@ function validateCountry(body) {
 }
 
 function validateSettings(body) {
-  const allowed = ['language', 'timeZone', 'weekStartsOn', 'timeFormat'];
+  const allowed = ['timeZone', 'weekStartsOn', 'timeFormat'];
   const fields = requireFields(body, allowed);
   const updates = {};
   for (const field of fields) {
     const value = body[field];
     if (typeof value !== 'string') invalid(`${field} must be a string`);
-    if (field === 'language' && !['en', 'uk', 'ru'].includes(value)) invalid('Unsupported language');
     if (field === 'weekStartsOn' && !['monday', 'sunday'].includes(value)) invalid('Invalid start of week');
     if (field === 'timeFormat' && !['12h', '24h'].includes(value)) invalid('Invalid time format');
     if (field === 'timeZone') {
