@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 import { applicationContainer } from '../app/applicationContainer';
 import { formatCountryName, formatDate } from '../i18n/formatters';
 import { useLocale } from '../i18n/LocaleProvider';
+import { getLocalizedApiError } from '../i18n/apiErrors';
 
 export function PublicProfilePage() {
   const { id } = useParams();
@@ -15,7 +16,7 @@ export function PublicProfilePage() {
     let alive = true;
     applicationContainer.userService.getById(id)
       .then(({ user: result }) => { if (alive) setUser(result); })
-      .catch((requestError) => { if (alive) setError(requestError.message || t('publicProfile.error')); })
+      .catch((requestError) => { if (alive) setError(getLocalizedApiError(requestError, t, 'publicProfile.error')); })
       .finally(() => { if (alive) setLoading(false); });
     return () => { alive = false; };
   }, [id]);

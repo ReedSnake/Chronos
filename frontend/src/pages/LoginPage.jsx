@@ -1,13 +1,15 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { applicationContainer } from '../app/applicationContainer';
 import { ResendVerificationForm } from '../components/auth/ResendVerificationForm';
 import { AuthPageTemplate } from '../components/layout/PageTemplate';
 import { useAuth } from '../features/auth/AuthContext';
 import { useLocale } from '../i18n/LocaleProvider';
+import { getLocalizedApiError } from '../i18n/apiErrors';
 
 export function LoginPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -22,9 +24,12 @@ export function LoginPage() {
     try {
       const result = await applicationContainer.authService.login(email.trim(), password);
       setAuthenticated(result.user);
-      navigate(localizedPath('/'), { replace: true });
+      const returnTo = typeof location.state?.returnTo === 'string' && location.state.returnTo.startsWith('/')
+        ? location.state.returnTo
+        : localizedPath('/');
+      navigate(returnTo, { replace: true });
     } catch (requestError) {
-      setError(requestError.message || t('login.error'));
+      setError(getLocalizedApiError(requestError, t, 'login.error'));
     } finally {
       setSubmitting(false);
     }

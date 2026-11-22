@@ -4,6 +4,7 @@ import { applicationContainer } from '../app/applicationContainer';
 import { useAuth } from '../features/auth/AuthContext';
 import { formatCountryName } from '../i18n/formatters';
 import { useLocale } from '../i18n/LocaleProvider';
+import { getLocalizedApiError } from '../i18n/apiErrors';
 
 const users = applicationContainer.userService;
 const countries = applicationContainer.countryService;
@@ -70,7 +71,7 @@ export function AccountPage() {
     let alive = true;
     users.getMe()
       .then(({ user: result }) => { if (alive) updateState(result); })
-      .catch((requestError) => { if (alive) setError(requestError.message || t('account.loadError')); })
+      .catch((requestError) => { if (alive) setError(getLocalizedApiError(requestError, t, 'account.loadError')); })
       .finally(() => { if (alive) setLoading(false); });
     return () => { alive = false; };
   }, []);
@@ -110,7 +111,7 @@ export function AccountPage() {
       updateState(result);
       setStatus(statusKey);
     } catch (requestError) {
-      setError(requestError.message || t('account.saveError'));
+      setError(getLocalizedApiError(requestError, t, 'account.saveError'));
     } finally {
       setBusy(false);
     }
@@ -124,7 +125,7 @@ export function AccountPage() {
       setAnonymous();
       navigate(localizedPath('/login'), { replace: true });
     } catch (requestError) {
-      setError(requestError.message || t('account.signOutError'));
+      setError(getLocalizedApiError(requestError, t, 'account.signOutError'));
       setBusy(false);
     }
   }
@@ -138,7 +139,7 @@ export function AccountPage() {
       setAnonymous();
       navigate(localizedPath('/register'), { replace: true });
     } catch (requestError) {
-      setError(requestError.message || t('account.deleteError'));
+      setError(getLocalizedApiError(requestError, t, 'account.deleteError'));
       setBusy(false);
     }
   }

@@ -64,6 +64,10 @@ test('Swagger describes the available API routes', () => {
   assert.ok(swaggerSpecification.paths['/api/auth/status']);
   assert.ok(swaggerSpecification.paths['/api/auth/login']);
   assert.ok(swaggerSpecification.paths['/api/auth/register']);
+  assert.ok(swaggerSpecification.paths['/api/calendars']);
+  assert.ok(swaggerSpecification.paths['/api/calendars/{id}/events']);
+  assert.ok(swaggerSpecification.paths['/api/calendar-share/events']);
+  assert.ok(swaggerSpecification.paths['/api/integrations']);
   assert.equal(swaggerSpecification.servers[0].url, config.documentation.serverUrl);
 });
 

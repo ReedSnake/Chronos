@@ -151,6 +151,21 @@ test('Gmail SMTP uses TLS 465 and sends a fragment-based one-time link', async (
   assert.equal(transportOptions.auth.user, 'sender@gmail.com');
   assert.ok(emailMessage.text.includes(`/verify-email#token=${token}`));
   assert.ok(!emailMessage.text.includes('?token='));
+
+  await mail.sendVerificationEmail('jane@example.com', token, 'uk');
+  assert.equal(emailMessage.subject, 'Підтвердьте email у Chronos');
+  await mail.sendIntegrationPairingEmail('jane@example.com', {
+    token,
+    integrationName: 'Calendar Bot',
+    scopes: ['calendar:read'],
+  }, 'uk');
+  assert.ok(emailMessage.text.includes('читання календарів'));
+  await mail.sendCalendarInvitationEmail('jane@example.com', {
+    token,
+    calendarName: 'Team',
+    role: 'editor',
+  }, 'uk');
+  assert.ok(emailMessage.text.includes('редагування'));
 });
 
 test('login refuses unverified users and does not create a session', async () => {

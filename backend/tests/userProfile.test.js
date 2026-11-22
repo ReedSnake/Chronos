@@ -20,6 +20,26 @@ function loadWithMocks(relativePath, replacements) {
   return loaded.exports;
 }
 
+function emptyCalendarCleanupMocks() {
+  return {
+    '../models/Calendar': {
+      find: () => ({ select: () => ({ lean: async () => [] }) }),
+      deleteMany: async () => {},
+    },
+    '../models/CalendarMember': { deleteMany: async () => {} },
+    '../models/CalendarShareLink': { deleteMany: async () => {} },
+    '../models/CalendarInvitation': { deleteMany: async () => {} },
+    '../models/Event': { deleteMany: async () => {} },
+    '../models/Integration': {
+      find: () => ({ select: () => ({ lean: async () => [] }) }),
+      deleteMany: async () => {},
+    },
+    '../models/ApiKey': { deleteMany: async () => {} },
+    '../models/IntegrationAccessGrant': { deleteMany: async () => {} },
+    '../models/PairingRequest': { deleteMany: async () => {} },
+  };
+}
+
 test('profile validation only accepts profile fields and safe values', () => {
   assert.deepEqual(validateProfile({ name: '  Maya  ', bio: '  hi  ' }), { name: 'Maya', bio: 'hi' });
   assert.deepEqual(validateProfile({ bio: '' }), { bio: '' });
@@ -137,6 +157,40 @@ test('account deletion revokes sessions and removes avatar before deleting the u
     '../models/AuthSession': {
       deleteMany: async (filter) => { assert.deepEqual(filter, { userId }); calls.push('sessions'); },
     },
+    '../models/Calendar': {
+      find: (filter) => {
+        assert.deepEqual(filter, { ownerUserId: userId });
+        calls.push('calendars');
+        return { select: () => ({ lean: async () => [] }) };
+      },
+      deleteMany: async () => { calls.push('calendar-delete'); },
+    },
+    '../models/CalendarMember': {
+      deleteMany: async (filter) => { assert.deepEqual(filter, { userId }); calls.push('members'); },
+    },
+    '../models/CalendarShareLink': {
+      deleteMany: async (filter) => { assert.deepEqual(filter, { createdByUserId: userId }); calls.push('share-links'); },
+    },
+    '../models/CalendarInvitation': {
+      deleteMany: async (filter) => { assert.deepEqual(filter, { targetUserId: userId }); calls.push('invitations'); },
+    },
+    '../models/ApiKey': {
+      deleteMany: async (filter) => { assert.deepEqual(filter, { ownerUserId: userId }); calls.push('keys'); },
+    },
+    '../models/Integration': {
+      find: (filter) => {
+        assert.deepEqual(filter, { ownerUserId: userId });
+        calls.push('integration-list');
+        return { select: () => ({ lean: async () => [] }) };
+      },
+      deleteMany: async (filter) => { assert.deepEqual(filter, { ownerUserId: userId }); calls.push('integrations'); },
+    },
+    '../models/IntegrationAccessGrant': {
+      deleteMany: async (filter) => { assert.deepEqual(filter, { userId }); calls.push('grants'); },
+    },
+    '../models/PairingRequest': {
+      deleteMany: async (filter) => { assert.deepEqual(filter, { targetUserId: userId }); calls.push('pairings'); },
+    },
     './sessionService': {
       revokeSession: async (request, response) => {
         assert.equal(request, req);
@@ -146,7 +200,7 @@ test('account deletion revokes sessions and removes avatar before deleting the u
     },
   });
   await service.deleteAccount(userId, req, res);
-  assert.deepEqual(calls, ['exists', 'cookie', 'sessions', 'avatar', 'user']);
+  assert.deepEqual(calls, ['exists', 'cookie', 'sessions', 'avatar', 'calendars', 'members', 'share-links', 'invitations', 'integration-list', 'keys', 'pairings', 'grants', 'integrations', 'user']);
 });
 
 test('account deletion returns 404 without clearing data when the user no longer exists', async () => {
@@ -159,6 +213,7 @@ test('account deletion returns 404 without clearing data when the user no longer
     '../models/Avatar': { deleteOne: async () => { calls.push('avatar'); } },
     '../models/AuthSession': { deleteMany: async () => { calls.push('sessions'); } },
     './sessionService': { revokeSession: async () => { calls.push('cookie'); } },
+    ...emptyCalendarCleanupMocks(),
   });
   await assert.rejects(() => service.deleteAccount('0123456789abcdef01234567', {}, {}),
     (error) => error.statusCode === 404 && error.code === 'USER_NOT_FOUND');
@@ -176,6 +231,7 @@ test('account deletion keeps the user when session revocation fails', async () =
     '../models/Avatar': { deleteOne: async () => { calls.push('avatar'); } },
     '../models/AuthSession': { deleteMany: async () => { calls.push('sessions'); } },
     './sessionService': { revokeSession: async () => { calls.push('cookie'); throw failure; } },
+    ...emptyCalendarCleanupMocks(),
   });
   await assert.rejects(() => service.deleteAccount('0123456789abcdef01234567', {}, {}), failure);
   assert.deepEqual(calls, ['cookie']);
@@ -198,6 +254,7 @@ test('account deletion keeps the user when related-data cleanup fails', async ()
         deleteMany: async () => { calls.push('sessions'); if (failingStep === 'sessions') throw failure; },
       },
       './sessionService': { revokeSession: async () => { calls.push('cookie'); } },
+      ...emptyCalendarCleanupMocks(),
     });
     await assert.rejects(() => service.deleteAccount(userId, {}, {}), failure);
     assert.deepEqual(calls, failingStep === 'sessions'
@@ -220,6 +277,7 @@ test('account deletion can be retried after a temporary avatar cleanup failure',
     },
     '../models/AuthSession': { deleteMany: async () => {} },
     './sessionService': { revokeSession: async () => {} },
+    ...emptyCalendarCleanupMocks(),
   });
   await assert.rejects(() => service.deleteAccount(userId, {}, {}), /Temporary database error/);
   assert.equal(deleted, 0);
@@ -238,6 +296,7 @@ test('account deletion reports a race when the final user deletion finds no acco
     '../models/Avatar': { deleteOne: async () => {} },
     '../models/AuthSession': { deleteMany: async () => {} },
     './sessionService': { revokeSession: async () => {} },
+    ...emptyCalendarCleanupMocks(),
   });
   await assert.rejects(() => service.deleteAccount(userId, {}, {}),
     (error) => error.statusCode === 404 && error.code === 'USER_NOT_FOUND');

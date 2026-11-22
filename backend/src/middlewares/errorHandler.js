@@ -1,7 +1,11 @@
 function errorHandler(error, req, res, next) { // eslint-disable-line no-unused-vars
   const isMalformedJson = error.type === 'entity.parse.failed';
   const statusCode = isMalformedJson ? 400 : error.statusCode || error.status || 500;
-  const message = statusCode >= 500 ? 'Internal server error' : error.message;
+  const errorCode = isMalformedJson
+    ? 'VALIDATION_ERROR'
+    : statusCode >= 500
+      ? 'INTERNAL_ERROR'
+      : error.code || 'REQUEST_FAILED';
 
   if (statusCode >= 500) {
     req.log.error({ err: error, requestId: req.id }, 'Request failed with an unexpected error');
@@ -10,7 +14,7 @@ function errorHandler(error, req, res, next) { // eslint-disable-line no-unused-
   }
 
   res.status(statusCode).json({
-    error: message,
+    errorCode,
     requestId: req.id,
   });
 }

@@ -18,7 +18,7 @@ export function AuthProvider({ children }) {
     } catch (error) {
       if (version === requestVersion.current) {
         const status = error?.statusCode === 401 ? 'anonymous' : 'error';
-        setAuth({ status, user: null, error: error?.message || '' });
+        setAuth({ status, user: null, error: error?.code || 'REQUEST_FAILED' });
       }
       return null;
     }

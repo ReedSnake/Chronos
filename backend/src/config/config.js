@@ -73,6 +73,9 @@ const mongodbUsername = getOptionalValue(process.env.MONGODB_USERNAME);
 const mongodbPassword = getOptionalValue(process.env.MONGODB_PASSWORD);
 const externalServiceClientId = getOptionalValue(process.env.EXTERNAL_SERVICE_CLIENT_ID);
 const externalServiceClientSecret = getOptionalValue(process.env.EXTERNAL_SERVICE_CLIENT_SECRET);
+const apiKeyHashSecret = getOptionalValue(process.env.API_KEY_HASH_SECRET || process.env.JWT_SECRET);
+const calendarShareHashSecret = getOptionalValue(process.env.CALENDAR_SHARE_HASH_SECRET || apiKeyHashSecret);
+const calendarInvitationHashSecret = getOptionalValue(process.env.CALENDAR_INVITATION_HASH_SECRET || calendarShareHashSecret);
 const configuredLogLevel = (process.env.LOG_LEVEL || 'INFO').trim().toLowerCase();
 const logLevel = configuredLogLevel === 'warning' ? 'warn' : configuredLogLevel;
 
@@ -91,6 +94,15 @@ validateSecretPair(
 if ((process.env.NODE_ENV || 'development') === 'production') {
   if (isPlaceholder(process.env.JWT_SECRET)) {
     throw new Error('JWT_SECRET must be set to a non-placeholder value in production');
+  }
+  if (isPlaceholder(apiKeyHashSecret)) {
+    throw new Error('API_KEY_HASH_SECRET must be set to a non-placeholder value in production');
+  }
+  if (isPlaceholder(calendarShareHashSecret)) {
+    throw new Error('CALENDAR_SHARE_HASH_SECRET must be set to a non-placeholder value in production');
+  }
+  if (isPlaceholder(calendarInvitationHashSecret)) {
+    throw new Error('CALENDAR_INVITATION_HASH_SECRET must be set to a non-placeholder value in production');
   }
   if (mongodbUsername && isPlaceholder(mongodbPassword)) {
     throw new Error('MONGODB_PASSWORD must be set to a non-placeholder value when MONGODB_USERNAME is configured in production');
@@ -130,6 +142,11 @@ const config = Object.freeze({
   },
   jwt: {
     secret: process.env.JWT_SECRET,
+  },
+  security: {
+    apiKeyHashSecret,
+    calendarShareHashSecret,
+    calendarInvitationHashSecret,
   },
   auth: {
     secureCookies: process.env.COOKIE_SECURE === 'true',

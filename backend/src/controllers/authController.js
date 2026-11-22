@@ -1,4 +1,5 @@
 const authService = require('../services/authService');
+const { requestLocale } = require('../utils/requestLocale');
 const {
   validateRegistration,
   validateLogin,
@@ -12,12 +13,12 @@ async function getStatus(req, res) {
 }
 
 async function register(req, res) {
-  const data = await authService.register(validateRegistration(req.body));
+  const data = await authService.register(validateRegistration(req.body), requestLocale(req));
   res.status(201).json(data);
 }
 
 async function resendVerification(req, res) {
-  const data = await authService.resendVerification(validateResend(req.body));
+  const data = await authService.resendVerification(validateResend(req.body), requestLocale(req));
   res.status(200).json(data);
 }
 

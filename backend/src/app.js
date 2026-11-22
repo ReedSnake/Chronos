@@ -12,6 +12,11 @@ const notFound = require('./middlewares/notFound');
 const authRoutes = require('./routes/authRoutes');
 const healthRoutes = require('./routes/healthRoutes');
 const userRoutes = require('./routes/userRoutes');
+const calendarRoutes = require('./routes/calendarRoutes');
+const integrationRoutes = require('./routes/integrationRoutes');
+const integrationAccessRoutes = require('./routes/integrationAccessRoutes');
+const { sharedCalendarRouter } = require('./routes/calendarShareRoutes');
+const { publicRouter: calendarInvitationRouter } = require('./routes/calendarInvitationRoutes');
 const AppError = require('./utils/AppError');
 
 const app = express();
@@ -59,6 +64,11 @@ app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 app.use('/api/health', healthRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/calendars', calendarRoutes);
+app.use('/api/integrations', integrationRoutes);
+app.use('/api/me', integrationAccessRoutes);
+app.use('/api/calendar-share', sharedCalendarRouter);
+app.use('/api/calendar-invitations', calendarInvitationRouter);
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpecification, {
   customSiteTitle: 'Chronos API documentation',
 }));

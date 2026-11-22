@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { applicationContainer } from '../../app/applicationContainer';
 import { useLocale } from '../../i18n/LocaleProvider';
+import { getLocalizedApiError } from '../../i18n/apiErrors';
 
 export function ResendVerificationForm({ initialEmail = '' }) {
   const [email, setEmail] = useState(initialEmail);
@@ -18,9 +19,9 @@ export function ResendVerificationForm({ initialEmail = '' }) {
     setError('');
     try {
       const result = await applicationContainer.authService.resendVerification(email.trim());
-      setStatus(result.message);
+      setStatus(t(`authMessages.${result.messageCode}`));
     } catch (requestError) {
-      setError(requestError.message || t('resendVerification.error'));
+      setError(getLocalizedApiError(requestError, t, 'resendVerification.error'));
     } finally {
       setSubmitting(false);
     }

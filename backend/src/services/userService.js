@@ -1,6 +1,15 @@
 const User = require('../models/User');
 const Avatar = require('../models/Avatar');
 const AuthSession = require('../models/AuthSession');
+const Calendar = require('../models/Calendar');
+const CalendarMember = require('../models/CalendarMember');
+const CalendarShareLink = require('../models/CalendarShareLink');
+const CalendarInvitation = require('../models/CalendarInvitation');
+const Event = require('../models/Event');
+const Integration = require('../models/Integration');
+const ApiKey = require('../models/ApiKey');
+const IntegrationAccessGrant = require('../models/IntegrationAccessGrant');
+const PairingRequest = require('../models/PairingRequest');
 const sessionService = require('./sessionService');
 const countryService = require('./countryService');
 const AppError = require('../utils/AppError');
@@ -100,6 +109,38 @@ async function removeAvatar(userId) {
   return updateUser(userId, { $set: { avatarUpdatedAt: null } });
 }
 
+async function removeCalendarData(userId) {
+  const ownedCalendars = await Calendar.find({ ownerUserId: userId }).select('_id').lean();
+  const ownedCalendarIds = ownedCalendars.map((calendar) => calendar._id);
+
+  await CalendarMember.deleteMany({ userId });
+  await CalendarShareLink.deleteMany({ createdByUserId: userId });
+  await CalendarInvitation.deleteMany({ targetUserId: userId });
+  if (!ownedCalendarIds.length) return;
+
+  await CalendarMember.deleteMany({ calendarId: { $in: ownedCalendarIds } });
+  await CalendarShareLink.deleteMany({ calendarId: { $in: ownedCalendarIds } });
+  await CalendarInvitation.deleteMany({ calendarId: { $in: ownedCalendarIds } });
+  await Event.deleteMany({ calendarId: { $in: ownedCalendarIds } });
+  await Calendar.deleteMany({ _id: { $in: ownedCalendarIds } });
+}
+
+async function removeIntegrationData(userId) {
+  const ownedIntegrations = await Integration.find({ ownerUserId: userId }).select('_id').lean();
+  const ownedIntegrationIds = ownedIntegrations.map((integration) => integration._id);
+  const relatedAccess = ownedIntegrationIds.length
+    ? { $or: [{ userId }, { integrationId: { $in: ownedIntegrationIds } }] }
+    : { userId };
+  const relatedRequests = ownedIntegrationIds.length
+    ? { $or: [{ targetUserId: userId }, { integrationId: { $in: ownedIntegrationIds } }] }
+    : { targetUserId: userId };
+
+  await ApiKey.deleteMany({ ownerUserId: userId });
+  await PairingRequest.deleteMany(relatedRequests);
+  await IntegrationAccessGrant.deleteMany(relatedAccess);
+  await Integration.deleteMany({ ownerUserId: userId });
+}
+
 async function deleteAccount(userId, req, res) {
   const exists = await User.exists({ _id: userId });
   if (!exists) throw new AppError('User not found', 404, 'USER_NOT_FOUND');
@@ -110,6 +151,8 @@ async function deleteAccount(userId, req, res) {
   await sessionService.revokeSession(req, res);
   await AuthSession.deleteMany({ userId });
   await Avatar.deleteOne({ userId });
+  await removeCalendarData(userId);
+  await removeIntegrationData(userId);
 
   const deleted = await User.deleteOne({ _id: userId });
   if (!deleted.deletedCount) throw new AppError('User not found', 404, 'USER_NOT_FOUND');

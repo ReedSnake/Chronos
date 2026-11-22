@@ -5,6 +5,7 @@ import { ResendVerificationForm } from '../components/auth/ResendVerificationFor
 import { AuthPageTemplate } from '../components/layout/PageTemplate';
 import { useAuth } from '../features/auth/AuthContext';
 import { useLocale } from '../i18n/LocaleProvider';
+import { getLocalizedApiError } from '../i18n/apiErrors';
 
 export function EmailVerificationPage() {
   const navigate = useNavigate();
@@ -32,7 +33,7 @@ export function EmailVerificationPage() {
       })
       .catch((requestError) => {
         setStatus('');
-        setError(requestError.message || t('verification.failed'));
+        setError(getLocalizedApiError(requestError, t, 'verification.failed'));
       });
   }, [localizedPath, navigate, setAuthenticated, t]);
 

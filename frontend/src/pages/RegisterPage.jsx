@@ -4,6 +4,7 @@ import { applicationContainer } from '../app/applicationContainer';
 import { ResendVerificationForm } from '../components/auth/ResendVerificationForm';
 import { AuthPageTemplate } from '../components/layout/PageTemplate';
 import { useLocale } from '../i18n/LocaleProvider';
+import { getLocalizedApiError } from '../i18n/apiErrors';
 
 export function RegisterPage() {
   const [name, setName] = useState('');
@@ -27,11 +28,11 @@ export function RegisterPage() {
     setStatus('');
     try {
       const result = await applicationContainer.authService.register({ name: name.trim(), email: email.trim(), password });
-      setStatus(result.message);
+      setStatus(t(`authMessages.${result.messageCode}`));
       setShowResend(true);
       setPassword('');
     } catch (requestError) {
-      setError(requestError.message || t('register.error'));
+      setError(getLocalizedApiError(requestError, t, 'register.error'));
       if (requestError.statusCode === 409 || requestError.statusCode === 503) setShowResend(true);
     } finally {
       setSubmitting(false);

@@ -1,8 +1,9 @@
 export class HttpError extends Error {
-  constructor(message, statusCode) {
-    super(message);
+  constructor(code, statusCode) {
+    super(code);
     this.name = 'HttpError';
     this.statusCode = statusCode;
+    this.code = code;
   }
 }
 
@@ -16,16 +17,16 @@ export class HttpClient {
     this.#timeoutMs = timeoutMs;
   }
 
-  async get(path, { allowedStatusCodes = [], timeoutMs } = {}) {
-    return this.#request('GET', path, undefined, { allowedStatusCodes, timeoutMs });
+  async get(path, { allowedStatusCodes = [], timeoutMs, headers } = {}) {
+    return this.#request('GET', path, undefined, { allowedStatusCodes, timeoutMs, headers });
   }
 
-  async post(path, body, { timeoutMs } = {}) {
-    return this.#request('POST', path, body, { timeoutMs });
+  async post(path, body, { timeoutMs, headers } = {}) {
+    return this.#request('POST', path, body, { timeoutMs, headers });
   }
 
-  async patch(path, body) {
-    return this.#request('PATCH', path, body);
+  async patch(path, body, { headers } = {}) {
+    return this.#request('PATCH', path, body, { headers });
   }
 
   async put(path, body) {
@@ -36,11 +37,11 @@ export class HttpClient {
     return this.#request('PUT', path, file, { timeoutMs: 30000 });
   }
 
-  async delete(path) {
-    return this.#request('DELETE', path);
+  async delete(path, { headers } = {}) {
+    return this.#request('DELETE', path, undefined, { headers });
   }
 
-  async #request(method, path, body, { allowedStatusCodes = [], timeoutMs } = {}) {
+  async #request(method, path, body, { allowedStatusCodes = [], timeoutMs, headers = {} } = {}) {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), timeoutMs || this.#timeoutMs);
 
@@ -52,6 +53,8 @@ export class HttpClient {
         credentials: 'include',
         headers: {
           Accept: 'application/json',
+          'Accept-Language': document.documentElement.lang || 'en',
+          ...headers,
           ...(body === undefined ? {} : { 'Content-Type': contentType }),
         },
         ...(body === undefined ? {} : { body: binary ? body : JSON.stringify(body) }),
@@ -60,13 +63,13 @@ export class HttpClient {
       const payload = await this.#readPayload(response);
 
       if (!response.ok && !allowedStatusCodes.includes(response.status)) {
-        throw new HttpError(payload?.error || `Request failed with status ${response.status}`, response.status);
+        throw new HttpError(payload?.errorCode || 'REQUEST_FAILED', response.status);
       }
 
       return payload;
     } catch (error) {
       if (error.name === 'AbortError') {
-        throw new HttpError('Request timed out');
+        throw new HttpError('REQUEST_TIMEOUT');
       }
       throw error;
     } finally {

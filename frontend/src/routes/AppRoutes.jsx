@@ -10,6 +10,12 @@ import { EmailVerificationPage } from '../pages/EmailVerificationPage';
 import { AccountPage } from '../pages/AccountPage';
 import { HomePage } from '../pages/HomePage';
 import { PublicProfilePage } from '../pages/PublicProfilePage';
+import { CalendarsPage } from '../pages/CalendarsPage';
+import { CalendarViewPage } from '../pages/CalendarViewPage';
+import { CalendarSharePage } from '../pages/CalendarSharePage';
+import { IntegrationsPage } from '../pages/IntegrationsPage';
+import { IntegrationApprovalPage } from '../pages/IntegrationApprovalPage';
+import { CalendarInvitationPage } from '../pages/CalendarInvitationPage';
 
 export function AppRoutes() {
   return (
@@ -20,6 +26,11 @@ export function AppRoutes() {
         <Route path="login" element={<LegacyRouteRedirect />} />
         <Route path="verify-email" element={<LegacyRouteRedirect />} />
         <Route path="account" element={<LegacyRouteRedirect />} />
+        <Route path="calendars" element={<LegacyRouteRedirect />} />
+        <Route path="calendars/view/*" element={<LegacyRouteRedirect />} />
+        <Route path="calendar-share" element={<LegacyRouteRedirect />} />
+        <Route path="calendar-invite" element={<LegacyRouteRedirect />} />
+        <Route path="integrations/*" element={<LegacyRouteRedirect />} />
         <Route path="users/*" element={<LegacyRouteRedirect />} />
         <Route path=":locale" element={<LocaleRoute />}>
           <Route element={<ApplicationPage />}>
@@ -28,6 +39,13 @@ export function AppRoutes() {
             <Route path="login" element={<LoginPage />} />
             <Route path="verify-email" element={<EmailVerificationPage />} />
             <Route path="account" element={<AccountPage />} />
+            <Route path="calendars" element={<CalendarsPage />} />
+            <Route path="calendars/view" element={<CalendarViewPage />} />
+            <Route path="calendars/view/:calendarId" element={<CalendarViewPage />} />
+            <Route path="calendar-share" element={<CalendarSharePage />} />
+            <Route path="calendar-invite" element={<CalendarInvitationPage />} />
+            <Route path="integrations" element={<IntegrationsPage />} />
+            <Route path="integrations/approve" element={<IntegrationApprovalPage />} />
             <Route path="users/:id" element={<PublicProfilePage />} />
             <Route path="*" element={<NotFoundPage />} />
           </Route>

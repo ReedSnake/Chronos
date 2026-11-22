@@ -5,6 +5,7 @@ const AppError = require('../utils/AppError');
 const logger = require('../config/logger');
 const { ensureMailConfigured, sendVerificationEmail } = require('../config/mail');
 const sessionService = require('./sessionService');
+const { claimPendingCalendarInvitation } = require('./calendarInvitationService');
 
 const VERIFICATION_DURATION_MS = 30 * 60 * 1000;
 const RESEND_COOLDOWN_MS = 60 * 1000;
@@ -29,9 +30,9 @@ function createVerification() {
   };
 }
 
-async function deliverEmail(email, token) {
+async function deliverEmail(email, token, locale) {
   try {
-    await sendVerificationEmail(email, token);
+    await sendVerificationEmail(email, token, locale);
   } catch (error) {
     // Do not log SMTP error objects or URLs: authentication secrets can appear in them.
     logger.warn({ code: error.code || 'SMTP_ERROR' }, 'Verification email delivery failed');
@@ -39,7 +40,7 @@ async function deliverEmail(email, token) {
   }
 }
 
-async function register({ name, email, password }) {
+async function register({ name, email, password }, locale = 'en') {
   ensureMailConfigured();
   const existing = await User.exists({ email });
   if (existing) throw new AppError('An account with this email already exists', 409, 'EMAIL_EXISTS');
@@ -62,14 +63,14 @@ async function register({ name, email, password }) {
     if (error.code === 11000) throw new AppError('An account with this email already exists', 409, 'EMAIL_EXISTS');
     throw error;
   }
-  await deliverEmail(email, verification.token);
-  return { message: 'Registration successful. Check your email for the verification link.' };
+  await deliverEmail(email, verification.token, locale);
+  return { messageCode: 'REGISTRATION_SUCCESS' };
 }
 
-async function resendVerification({ email }) {
+async function resendVerification({ email }, locale = 'en') {
   ensureMailConfigured();
   const user = await User.findOne({ email });
-  const neutralMessage = { message: 'If this is an unverified account, check your email for a verification link.' };
+  const neutralMessage = { messageCode: 'RESEND_VERIFICATION_SENT' };
   if (!user || user.emailVerifiedAt) return neutralMessage;
 
   if (user.emailVerification?.requestedAt &&
@@ -97,7 +98,7 @@ async function resendVerification({ email }) {
   });
   if (!updated) throw new AppError('Please wait before requesting another email', 429, 'RESEND_COOLDOWN');
   try {
-    await deliverEmail(email, verification.token);
+    await deliverEmail(email, verification.token, locale);
   } catch (error) {
     // A failed SMTP attempt should not force a user to wait for the cooldown.
     await User.updateOne({
@@ -121,7 +122,8 @@ async function verifyEmail({ token }, req, res) {
 
   if (!user) throw new AppError('Verification link is invalid or has expired', 400, 'INVALID_VERIFICATION_TOKEN');
   await sessionService.createSession(user._id, req, res);
-  return { message: 'Email verified. You are signed in.', user: publicUser(user) };
+  await claimPendingCalendarInvitationSafely(req, res, user);
+  return { messageCode: 'EMAIL_VERIFIED', user: publicUser(user) };
 }
 
 async function login({ email, password }, req, res) {
@@ -130,8 +132,18 @@ async function login({ email, password }, req, res) {
   if (!valid) throw new AppError('Invalid email or password', 401, 'INVALID_CREDENTIALS');
   if (!user.emailVerifiedAt) throw new AppError('Please verify your email before signing in', 403, 'EMAIL_NOT_VERIFIED');
   await sessionService.createSession(user._id, req, res);
-  return { message: 'Signed in successfully.', user: publicUser(user) };
+  await claimPendingCalendarInvitationSafely(req, res, user);
+  return { messageCode: 'SIGNED_IN', user: publicUser(user) };
 }
+
+async function claimPendingCalendarInvitationSafely(req, res, user) {
+  try {
+    await claimPendingCalendarInvitation(req, res, user);
+  } catch (error) {
+    logger.warn({ code: error.code || 'CALENDAR_INVITATION_CLAIM_FAILED' }, 'Pending calendar invitation claim failed');
+  }
+}
+
 
 async function findAuthenticatedUser(req) {
   return sessionService.findAuthenticatedUser(req);
