@@ -4,9 +4,7 @@ const {
   validateIntegrationUpdate,
   validateApiKeyCreate,
   validateObjectId,
-  validatePairingCreate,
 } = require('../validators/integrationValidators');
-const integrationAccessService = require('../services/integrationAccessService');
 
 async function createIntegration(req, res) {
   const integration = await integrationService.createIntegration(req.authUser._id, validateIntegrationCreate(req.body));
@@ -52,22 +50,6 @@ async function revokeApiKey(req, res) {
   res.status(204).end();
 }
 
-async function createPairingRequest(req, res) {
-  const data = await integrationAccessService.createPairingRequest(
-    req.apiPrincipal,
-    validatePairingCreate(req.body),
-  );
-  res.status(202).json(data);
-}
-
-async function getPairingRequest(req, res) {
-  const request = await integrationAccessService.getPairingRequestForIntegration(
-    req.apiPrincipal,
-    validateObjectId(req.params.id, 'pairing request ID'),
-  );
-  res.status(200).json({ request });
-}
-
 module.exports = {
   createIntegration,
   listIntegrations,
@@ -75,6 +57,4 @@ module.exports = {
   createApiKey,
   listApiKeys,
   revokeApiKey,
-  createPairingRequest,
-  getPairingRequest,
 };

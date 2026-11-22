@@ -45,14 +45,8 @@ async function updateSharedCalendar(req, res) {
   res.status(200).json({ calendar });
 }
 
-async function deleteSharedCalendar(req, res) {
-  await calendarService.deleteCalendarForShareLink(req.calendarShareLink);
-  res.status(204).end();
-}
-
 module.exports = {
   create,
-  deleteSharedCalendar,
   getSharedCalendar,
   list,
   revoke,

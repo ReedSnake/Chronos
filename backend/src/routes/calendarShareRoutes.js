@@ -15,6 +15,5 @@ const sharedCalendarRouter = Router();
 sharedCalendarRouter.get('/events', requireCalendarShareLink('viewer'), asyncHandler(eventController.listShared));
 sharedCalendarRouter.get('/', requireCalendarShareLink('viewer'), asyncHandler(controller.getSharedCalendar));
 sharedCalendarRouter.patch('/', authOrigin, requireCalendarShareLink('editor'), asyncHandler(controller.updateSharedCalendar));
-sharedCalendarRouter.delete('/', authOrigin, requireCalendarShareLink('admin'), asyncHandler(controller.deleteSharedCalendar));
 
 module.exports = { managementRouter, sharedCalendarRouter };

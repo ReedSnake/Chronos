@@ -180,3 +180,9 @@ body {
 .auth-form button { font: inherit; width: fit-content; color: #e7edf8; background: #25334b; border: 1px solid #51617c; border-radius: 8px; padding: 10px 14px; cursor: pointer; }
 .auth-form button:disabled { opacity: .5; cursor: not-allowed; }
 @media (max-width: 600px) { .application-header { align-items: flex-start; flex-direction: column; } .navigation { flex-wrap: wrap; } .calendar-filter-grid { grid-template-columns: 1fr; } .calendar-day { min-height: 76px; } .calendar-event { font-size: .62rem; } }
+
+/* Keep advanced calendar and integration settings discoverable without showing every form. */
+.account-section details > summary { cursor: pointer; font-weight: 600; padding: 7px 0; }
+.account-section details.account-form { display: block; }
+.account-section details.account-form[open] { display: grid; }
+.account-section details.account-card[open] > form { margin-top: 12px; }

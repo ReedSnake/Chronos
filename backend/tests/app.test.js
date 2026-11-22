@@ -71,6 +71,15 @@ test('Swagger describes the available API routes', () => {
   assert.equal(swaggerSpecification.servers[0].url, config.documentation.serverUrl);
 });
 
+test('a public admin share link cannot delete a calendar', async () => {
+  const response = await fetch(`${baseUrl}/api/calendar-share`, {
+    method: 'DELETE',
+    headers: { Authorization: 'CalendarLink cs_abcdefghijkl.fake-token' },
+  });
+  assert.equal(response.status, 404);
+  assert.equal(swaggerSpecification.paths['/api/calendar-share'].delete, undefined);
+});
+
 test('logger formats numeric Pino levels as readable severity names', () => {
   assert.deepEqual(formatLogLevel('warn'), { level: 'WARNING' });
   assert.deepEqual(formatLogLevel('error'), { level: 'ERROR' });

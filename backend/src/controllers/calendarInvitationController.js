@@ -30,7 +30,7 @@ async function createBulk(req, res) {
     validateCalendarInvitationBulkCreate(req.body),
     requestLocale(req),
   );
-  res.status(201).json(data);
+  res.status(202).json(data);
 }
 
 async function revoke(req, res) {

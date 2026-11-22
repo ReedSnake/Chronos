@@ -26,10 +26,10 @@ function emptyCalendarCleanupMocks() {
       find: () => ({ select: () => ({ lean: async () => [] }) }),
       deleteMany: async () => {},
     },
-    '../models/CalendarMember': { deleteMany: async () => {} },
+    '../models/CalendarMember': { deleteMany: async () => {}, updateMany: async () => {} },
     '../models/CalendarShareLink': { deleteMany: async () => {} },
     '../models/CalendarInvitation': { deleteMany: async () => {} },
-    '../models/Event': { deleteMany: async () => {} },
+    '../models/Event': { deleteMany: async () => {}, updateMany: async () => {} },
     '../models/Integration': {
       find: () => ({ select: () => ({ lean: async () => [] }) }),
       deleteMany: async () => {},
@@ -148,7 +148,7 @@ test('account deletion revokes sessions and removes avatar before deleting the u
   const res = {};
   const service = loadWithMocks('../src/services/userService.js', {
     '../models/User': {
-      exists: async (filter) => { assert.deepEqual(filter, { _id: userId }); calls.push('exists'); return { _id: userId }; },
+      findById: (id) => { assert.equal(id, userId); calls.push('lookup'); return { select: () => ({ lean: async () => ({ _id: id, email: 'maya@example.test' }) }) }; },
       deleteOne: async (filter) => { assert.deepEqual(filter, { _id: userId }); calls.push('user'); return { deletedCount: 1 }; },
     },
     '../models/Avatar': {
@@ -167,12 +167,16 @@ test('account deletion revokes sessions and removes avatar before deleting the u
     },
     '../models/CalendarMember': {
       deleteMany: async (filter) => { assert.deepEqual(filter, { userId }); calls.push('members'); },
+      updateMany: async (filter, update) => { assert.deepEqual(filter, { addedByUserId: userId }); assert.deepEqual(update, { $set: { addedByUserId: null } }); calls.push('member-references'); },
     },
     '../models/CalendarShareLink': {
       deleteMany: async (filter) => { assert.deepEqual(filter, { createdByUserId: userId }); calls.push('share-links'); },
     },
     '../models/CalendarInvitation': {
-      deleteMany: async (filter) => { assert.deepEqual(filter, { targetUserId: userId }); calls.push('invitations'); },
+      deleteMany: async (filter) => { assert.deepEqual(filter, { $or: [{ invitedByUserId: userId }, { targetUserId: userId }, { email: 'maya@example.test' }] }); calls.push('invitations'); },
+    },
+    '../models/Event': {
+      updateMany: async (filter, update) => { assert.deepEqual(filter, { 'attendees.email': 'maya@example.test' }); assert.deepEqual(update, { $pull: { attendees: { email: 'maya@example.test' } } }); calls.push('attendees'); },
     },
     '../models/ApiKey': {
       deleteMany: async (filter) => { assert.deepEqual(filter, { ownerUserId: userId }); calls.push('keys'); },
@@ -189,7 +193,7 @@ test('account deletion revokes sessions and removes avatar before deleting the u
       deleteMany: async (filter) => { assert.deepEqual(filter, { userId }); calls.push('grants'); },
     },
     '../models/PairingRequest': {
-      deleteMany: async (filter) => { assert.deepEqual(filter, { targetUserId: userId }); calls.push('pairings'); },
+      deleteMany: async (filter) => { assert.deepEqual(filter, { $or: [{ targetUserId: userId }, { targetEmail: 'maya@example.test' }] }); calls.push('pairings'); },
     },
     './sessionService': {
       revokeSession: async (request, response) => {
@@ -200,14 +204,14 @@ test('account deletion revokes sessions and removes avatar before deleting the u
     },
   });
   await service.deleteAccount(userId, req, res);
-  assert.deepEqual(calls, ['exists', 'cookie', 'sessions', 'avatar', 'calendars', 'members', 'share-links', 'invitations', 'integration-list', 'keys', 'pairings', 'grants', 'integrations', 'user']);
+  assert.deepEqual(calls, ['lookup', 'cookie', 'sessions', 'avatar', 'calendars', 'members', 'member-references', 'share-links', 'invitations', 'attendees', 'integration-list', 'keys', 'pairings', 'grants', 'integrations', 'user']);
 });
 
 test('account deletion returns 404 without clearing data when the user no longer exists', async () => {
   const calls = [];
   const service = loadWithMocks('../src/services/userService.js', {
     '../models/User': {
-      exists: async () => null,
+      findById: () => ({ select: () => ({ lean: async () => null }) }),
       deleteOne: async () => { calls.push('user'); },
     },
     '../models/Avatar': { deleteOne: async () => { calls.push('avatar'); } },
@@ -225,7 +229,7 @@ test('account deletion keeps the user when session revocation fails', async () =
   const failure = new Error('Session store unavailable');
   const service = loadWithMocks('../src/services/userService.js', {
     '../models/User': {
-      exists: async () => ({ _id: '0123456789abcdef01234567' }),
+      findById: () => ({ select: () => ({ lean: async () => ({ _id: '0123456789abcdef01234567', email: 'maya@example.test' }) }) }),
       deleteOne: async () => { calls.push('user'); },
     },
     '../models/Avatar': { deleteOne: async () => { calls.push('avatar'); } },
@@ -244,7 +248,7 @@ test('account deletion keeps the user when related-data cleanup fails', async ()
     const failure = new Error(`${failingStep} cleanup failed`);
     const service = loadWithMocks('../src/services/userService.js', {
       '../models/User': {
-        exists: async () => ({ _id: userId }),
+        findById: () => ({ select: () => ({ lean: async () => ({ _id: userId, email: 'maya@example.test' }) }) }),
         deleteOne: async () => { calls.push('user'); return { deletedCount: 1 }; },
       },
       '../models/Avatar': {
@@ -269,7 +273,7 @@ test('account deletion can be retried after a temporary avatar cleanup failure',
   let deleted = 0;
   const service = loadWithMocks('../src/services/userService.js', {
     '../models/User': {
-      exists: async () => ({ _id: userId }),
+      findById: () => ({ select: () => ({ lean: async () => ({ _id: userId, email: 'maya@example.test' }) }) }),
       deleteOne: async () => { deleted++; return { deletedCount: 1 }; },
     },
     '../models/Avatar': {
@@ -290,7 +294,7 @@ test('account deletion reports a race when the final user deletion finds no acco
   const userId = '0123456789abcdef01234567';
   const service = loadWithMocks('../src/services/userService.js', {
     '../models/User': {
-      exists: async () => ({ _id: userId }),
+      findById: () => ({ select: () => ({ lean: async () => ({ _id: userId, email: 'maya@example.test' }) }) }),
       deleteOne: async () => ({ deletedCount: 0 }),
     },
     '../models/Avatar': { deleteOne: async () => {} },
@@ -300,4 +304,52 @@ test('account deletion reports a race when the final user deletion finds no acco
   });
   await assert.rejects(() => service.deleteAccount(userId, {}, {}),
     (error) => error.statusCode === 404 && error.code === 'USER_NOT_FOUND');
+});
+
+test('account deletion clears owned records and external references to the deleted user', async () => {
+  const userId = '0123456789abcdef01234567';
+  const email = 'maya@example.test';
+  const calendarId = 'aaaaaaaaaaaaaaaaaaaaaaaa';
+  const integrationId = 'bbbbbbbbbbbbbbbbbbbbbbbb';
+  const queries = {};
+  const capture = (key) => async (filter, update) => { (queries[key] ||= []).push({ filter, update }); };
+  const service = loadWithMocks('../src/services/userService.js', {
+    '../models/User': {
+      findById: () => ({ select: () => ({ lean: async () => ({ _id: userId, email }) }) }),
+      deleteOne: async () => ({ deletedCount: 1 }),
+    },
+    '../models/Avatar': { deleteOne: async () => {} },
+    '../models/AuthSession': { deleteMany: async () => {} },
+    './sessionService': { revokeSession: async () => {} },
+    '../models/Calendar': {
+      find: () => ({ select: () => ({ lean: async () => [{ _id: calendarId }] }) }),
+      deleteMany: capture('calendar'),
+    },
+    '../models/CalendarMember': { deleteMany: capture('members'), updateMany: capture('memberReferences') },
+    '../models/CalendarShareLink': { deleteMany: capture('links') },
+    '../models/CalendarInvitation': { deleteMany: capture('invitations') },
+    '../models/Event': { updateMany: capture('attendeeReferences'), deleteMany: capture('events') },
+    '../models/ApiKey': { deleteMany: capture('keys') },
+    '../models/Integration': {
+      find: () => ({ select: () => ({ lean: async () => [{ _id: integrationId }] }) }),
+      deleteMany: capture('integrations'),
+    },
+    '../models/IntegrationAccessGrant': { deleteMany: capture('grants') },
+    '../models/PairingRequest': { deleteMany: capture('pairings') },
+  });
+
+  await service.deleteAccount(userId, {}, {});
+  assert.deepEqual(queries.invitations.map(({ filter }) => filter), [
+    { $or: [{ invitedByUserId: userId }, { targetUserId: userId }, { email }] },
+    { calendarId: { $in: [calendarId] } },
+  ]);
+  assert.deepEqual(queries.memberReferences[0].update, { $set: { addedByUserId: null } });
+  assert.deepEqual(queries.attendeeReferences[0], {
+    filter: { 'attendees.email': email }, update: { $pull: { attendees: { email } } },
+  });
+  assert.deepEqual(queries.events[0].filter, { calendarId: { $in: [calendarId] } });
+  assert.deepEqual(queries.pairings[0].filter, { $or: [
+    { targetUserId: userId }, { targetEmail: email }, { integrationId: { $in: [integrationId] } },
+  ] });
+  assert.deepEqual(queries.grants[0].filter, { $or: [{ userId }, { integrationId: { $in: [integrationId] } }] });
 });

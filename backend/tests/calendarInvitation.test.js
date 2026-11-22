@@ -50,25 +50,33 @@ test('calendar invitations protect email-targeted tokens and validate invite inp
   assert.throws(() => validateCalendarInvitationToken({ token: 'bad' }));
 });
 
-test('bulk invitations deduplicate recipients and report every delivery result', async () => {
+test('bulk invitations acknowledge queued emails before SMTP completes and track delivery outcomes', async () => {
   let sent = 0;
   let nextId = 0;
+  const queued = [];
+  const updates = [];
   const service = loadWithMocks('../src/services/calendarInvitationService.js', {
     '../config/config': { auth: { secureCookies: false }, mail: { frontendUrl: 'https://chronos.example.test' } },
+    '../config/logger': { warn: () => {}, error: () => {} },
     '../models/Calendar': {},
     '../models/User': { findOne: () => ({ select: async () => null }) },
     '../models/CalendarMember': { exists: async () => false },
     '../models/CalendarInvitation': {
-      exists: async () => false,
+      exists: async (filter) => Boolean(filter._id),
       create: async (value) => ({ _id: `invite-${nextId += 1}`, ...value, status: 'pending', createdAt: null }),
-      deleteOne: async () => {},
+      updateOne: async (...args) => { updates.push(args); },
       updateMany: async () => {},
     },
     '../config/mail': {
       ensureMailConfigured: () => {},
-      sendCalendarInvitationEmail: async () => { sent += 1; },
+      sendCalendarInvitationEmail: async (email) => {
+        if (email === 'two@example.test') throw new Error('Simulated SMTP error');
+        sent += 1;
+      },
     },
-    './emailDeliveryQueue': { enqueueEmailDelivery: async (deliver) => deliver() },
+    './emailDeliveryQueue': { enqueueEmailDelivery: (deliver) => new Promise((resolve, reject) => {
+      queued.push(() => Promise.resolve().then(deliver).then(resolve, reject));
+    }) },
     '../utils/calendarInvitation': {
       createCalendarInvitationToken: () => ({ prefix: 'ci_abcdefghijkl', tokenHash: 'ab'.repeat(32), rawToken: 'ci_abcdefghijkl.token' }),
       parseCalendarInvitationToken: () => null,
@@ -81,8 +89,15 @@ test('bulk invitations deduplicate recipients and report every delivery result',
     role: 'viewer',
     expiresInMinutes: 60,
   });
-  assert.deepEqual(result.results.map((item) => item.status), ['sent', 'duplicate', 'sent']);
-  assert.equal(sent, 2);
+  assert.deepEqual(result.results.map((item) => item.status), ['queued', 'duplicate', 'queued']);
+  assert.equal(result.results[0].invitation.deliveryStatus, 'queued');
+  assert.equal(sent, 0, 'sending must not block the HTTP response');
+  assert.equal(queued.length, 2);
+  await Promise.all(queued.map((deliver) => deliver()));
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(sent, 1);
+  assert.deepEqual(updates.map((item) => item[1].$set.deliveryStatus).sort(), ['failed', 'sent']);
+  assert.equal(updates.find((item) => item[1].$set.deliveryStatus === 'failed')[1].$set.status, 'revoked');
 });
 
 test('a single invitation does not duplicate an active invitation', async () => {

@@ -54,6 +54,11 @@ const calendarInvitationSchema = new Schema({
     required: true,
     default: 'pending',
   },
+  deliveryStatus: {
+    type: String,
+    enum: ['queued', 'sent', 'failed'],
+    default: 'sent',
+  },
   expiresAt: { type: Date, required: true },
   respondedAt: { type: Date, default: null },
 }, {
@@ -61,7 +66,6 @@ const calendarInvitationSchema = new Schema({
   timestamps: true,
 });
 
-// Expiry is enforced during authorization; TTL only removes stale invitation records later.
 calendarInvitationSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 calendarInvitationSchema.index({ calendarId: 1, status: 1, createdAt: -1 });
 calendarInvitationSchema.index(

@@ -133,10 +133,6 @@ async function updateCalendarForShareLink(link, values) {
   return calendarResponse(calendar, link.role);
 }
 
-async function deleteCalendarForShareLink(link) {
-  await removeCalendarData(link.calendarId);
-}
-
 async function claimCalendarMembership(userId, link) {
   const calendar = await Calendar.findById(link.calendarId);
   if (!calendar) throw calendarNotFound();
@@ -163,7 +159,6 @@ module.exports = {
   calendarResponse,
   claimCalendarMembership,
   createCalendar,
-  deleteCalendarForShareLink,
   deleteCalendarForUser,
   getCalendarForShareLink,
   getCalendarForUser,

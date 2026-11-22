@@ -305,7 +305,7 @@ const options = {
       },
       '/api/calendars/{id}/invitations/bulk': {
         post: {
-          tags: ['Calendars'], summary: 'Send up to 50 email invitations with per-address delivery results',
+          tags: ['Calendars'], summary: 'Queue up to 50 email invitations and poll the invitation list for delivery status',
           parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
           requestBody: { required: true, content: { 'application/json': { schema: {
             type: 'object', required: ['emails', 'role', 'expiresInMinutes'], additionalProperties: false, properties: {
@@ -314,7 +314,7 @@ const options = {
               expiresInMinutes: { type: 'integer', minimum: 5, maximum: 43200 },
             },
           } } } },
-          responses: { 201: { description: 'Per-recipient sent, duplicate, already-member, already-pending, or failed results.' }, 429: { description: 'Invitation delivery rate limit exceeded.' }, 503: { description: 'Email service unavailable.' } },
+          responses: { 202: { description: 'Per-recipient queued, duplicate, already-member, already-pending, or failed results. Poll GET /api/calendars/{id}/invitations for deliveryStatus.' }, 429: { description: 'Invitation delivery rate limit exceeded.' }, 503: { description: 'Email service unavailable.' } },
         },
       },
       '/api/calendars/{id}/invitations/{invitationId}': {
@@ -347,10 +347,6 @@ const options = {
         patch: {
           tags: ['Calendars'], summary: 'Update a shared calendar with an editor or admin link',
           responses: { 200: { description: 'Calendar updated.' }, 401: { description: 'Invalid or expired link.' }, 403: { description: 'Link lacks required access.' } },
-        },
-        delete: {
-          tags: ['Calendars'], summary: 'Delete a shared calendar with an admin link',
-          responses: { 204: { description: 'Calendar deleted.' }, 401: { description: 'Invalid or expired link.' }, 403: { description: 'Link lacks required access.' } },
         },
       },
       '/api/calendar-share/events': {

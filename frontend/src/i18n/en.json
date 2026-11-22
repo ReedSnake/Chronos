@@ -251,6 +251,8 @@
     "showInvites": "Show invitations",
     "inviteError": "Unable to manage calendar invitations.",
     "invitationStatus": {
+      "cancelled": "Cancelled",
+      "queued": "Queued for sending",
       "sent": "Sent",
       "duplicate": "Duplicate address in this request",
       "already_member": "Already a calendar member",
@@ -282,7 +284,8 @@
     "deleteError": "Unable to delete the calendar.",
     "confirmDelete": "Delete {name} permanently?",
     "signInBefore": "Please ",
-    "signInAfter": " to manage calendars."
+    "signInAfter": " to manage calendars.",
+    "editTitle": "Edit calendar settings"
   },
   "calendarView": {
     "title": "Calendar overview",
@@ -345,7 +348,11 @@
     "description": "Description",
     "noDescription": "No description.",
     "save": "Save changes",
-    "delete": "Delete calendar"
+    "delete": "Delete calendar",
+    "eventsTitle": "Calendar events",
+    "eventsError": "Unable to load shared events.",
+    "noEvents": "No events for this period.",
+    "endsAt": "Ends: {date}"
   },
   "calendarInvitation": {
     "invalid": "This calendar invitation is invalid, expired, or has been revoked.",
@@ -394,7 +401,8 @@
     "updateError": "Unable to update the integration.",
     "requestError": "Unable to process the connection request.",
     "signInBefore": "Please ",
-    "signInAfter": " to manage integrations."
+    "signInAfter": " to manage integrations.",
+    "manageKeys": "API keys and permissions"
   },
   "integrationApproval": {
     "title": "Approve integration access",

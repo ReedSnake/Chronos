@@ -23,7 +23,7 @@ export class CalendarService {
   listShareLinks(id) { return this.httpClient.get(`/calendars/${encodeURIComponent(id)}/share-links`); }
   revokeShareLink(id, linkId) { return this.httpClient.delete(`/calendars/${encodeURIComponent(id)}/share-links/${encodeURIComponent(linkId)}`); }
   createInvitation(id, values) { return this.httpClient.post(`/calendars/${encodeURIComponent(id)}/invitations`, values); }
-  createBulkInvitations(id, values) { return this.httpClient.post(`/calendars/${encodeURIComponent(id)}/invitations/bulk`, values); }
+  createBulkInvitations(id, values) { return this.httpClient.post(`/calendars/${encodeURIComponent(id)}/invitations/bulk`, values, { timeoutMs: 30000 }); }
   listInvitations(id) { return this.httpClient.get(`/calendars/${encodeURIComponent(id)}/invitations`); }
   revokeInvitation(id, invitationId) { return this.httpClient.delete(`/calendars/${encodeURIComponent(id)}/invitations/${encodeURIComponent(invitationId)}`); }
   listMembers(id) { return this.httpClient.get(`/calendars/${encodeURIComponent(id)}/members`); }
@@ -46,5 +46,4 @@ export class CalendarService {
     return this.httpClient.get(`/calendar-share/events${suffix}`, { headers: { Authorization: `CalendarLink ${token}` } });
   }
   updateShared(token, values) { return this.httpClient.patch('/calendar-share', values, { headers: { Authorization: `CalendarLink ${token}` } }); }
-  deleteShared(token) { return this.httpClient.delete('/calendar-share', { headers: { Authorization: `CalendarLink ${token}` } }); }
 }
