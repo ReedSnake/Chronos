@@ -54,7 +54,7 @@
 .ig-skeleton>span:last-child{width:40%}
 @keyframes ig-pulse{from{opacity:.4}to{opacity:1}}
 @media(prefers-reduced-motion:reduce){.ig-skeleton>i,.ig-skeleton>span{animation:none}}
-.event-dialog:has(.ig-dialog){width:min(460px,calc(100% - 28px));border-radius:18px;box-shadow:0 18px 60px #30303022}
+.event-dialog:has(.ig-dialog){width:min(460px,calc(100% - 28px));border-radius:var(--chronos-dialog-radius);box-shadow:var(--chronos-dialog-shadow)}
 .ig-dialog{background:#fff;padding:0;display:grid}
 .ig-dialog-header{display:flex;align-items:center;justify-content:space-between;padding:17px 22px 10px}
 .ig-dialog-header h2{font-size:14px;font-weight:600}
