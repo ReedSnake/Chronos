@@ -14,7 +14,7 @@ export function InteractiveAuth({ title, children, error, success, submitting })
     try { index = input.selectionStart ?? index; } catch { /* Email inputs do not expose selection. */ }
     setCaret(Math.min(1, index / Math.max(18, input.value.length)));
   }
-  const mood = submitting ? 'loading' : error ? 'error' : success ? 'success' : focus === 'password' ? (visible ? 'peek' : 'private') : focus ? 'reading' : 'idle';
+  const mood = focus === 'password' ? (visible ? 'peek' : 'private') : submitting ? 'loading' : error ? 'error' : success ? 'success' : focus ? 'reading' : 'idle';
   return (
     <section className="interactive-auth" onInput={readCaret} onSelect={readCaret} onKeyUp={readCaret} onFocusCapture={event => setFocus(event.target.closest('.auth-password') ? 'password' : event.target.tagName === 'INPUT' ? 'reading' : '')}
       onBlurCapture={event => { if (!event.currentTarget.contains(event.relatedTarget)) setFocus(''); }}>
