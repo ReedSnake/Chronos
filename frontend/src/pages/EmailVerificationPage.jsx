@@ -1,8 +1,8 @@
+import { FlowSurface } from '../components/layout/FlowSurface';
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { applicationContainer } from '../app/applicationContainer';
 import { ResendVerificationForm } from '../components/auth/ResendVerificationForm';
-import { AuthPageTemplate } from '../components/layout/PageTemplate';
 import { useAuth } from '../features/auth/AuthContext';
 import { useLocale } from '../i18n/LocaleProvider';
 import { getLocalizedApiError } from '../i18n/apiErrors';
@@ -38,11 +38,11 @@ export function EmailVerificationPage() {
   }, [localizedPath, navigate, setAuthenticated, t]);
 
   return (
-    <AuthPageTemplate title={t('verification.title')}>
+    <FlowSurface title={t('verification.title')} icon={error ? 'x' : 'check'} tone={error ? 'error' : ''}>
         {status && <p role="status">{t(status)}</p>}
         {error && <p role="alert">{error}</p>}
         {error && <ResendVerificationForm />}
-        <p><Link to={localizedPath('/login')}>{t('verification.goToLogin')}</Link></p>
-    </AuthPageTemplate>
+        <div className="flow-actions"><Link className="flow-button" to={localizedPath('/login')}>{t('verification.goToLogin')}</Link></div>
+    </FlowSurface>
   );
 }
