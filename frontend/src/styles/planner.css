@@ -28,3 +28,29 @@
 @media(max-width:1200px){.task-workspace{grid-template-columns:1fr}.task-summary{grid-template-columns:repeat(3,1fr);align-items:center}.task-summary h2{grid-column:1/-1}.task-ring{grid-column:1/-1;width:100px}}
 @media(max-width:650px){.task-board{grid-template-columns:1fr}.task-column{min-height:120px}.task-summary{grid-template-columns:1fr}.planner-filters label{max-width:100%}.planner-viewport{max-height:70dvh}}
 @media(max-width:540px){.workspace .workspace-nav{grid-template-columns:repeat(6,1fr)}}
+
+/* Override the older generic calendar control styles only inside the planner. */
+.workspace-main>.calendar-view-page { max-width:1600px; }
+.calendar-view-page .calendar-view-header h1 { font-size:clamp(27px,3vw,38px); font-weight:620; letter-spacing:-.045em; }
+.calendar-view-page .calendar-view-header p { color:var(--chronos-muted); font-size:13px; margin-top:5px; }
+.calendar-view-page .calendar-picker h2 { font-size:13px; font-weight:600; }
+.calendar-view-page .calendar-picker button,.calendar-view-page .calendar-tabs button { background:white; border-color:var(--chronos-border); border-radius:9px; font-size:13px; }
+.calendar-view-page .calendar-picker button.active-calendar-button,.calendar-view-page .calendar-tabs button.active-calendar-tab { background:var(--chronos-ink); color:white; border-color:var(--chronos-ink); }
+.calendar-view-page .calendar-toolbar>button { background:var(--chronos-accent); border-color:transparent; border-radius:9px; font-weight:600; font-size:13px; }
+.calendar-view-page .planner-view-controls { padding:4px; background:var(--chronos-background); border-radius:11px; }
+.calendar-view-page .planner-view-controls button { background:transparent; border:0; border-radius:8px; font-size:13px; }
+.calendar-view-page .planner-view-controls button[aria-pressed=true] { background:var(--chronos-ink); color:white; }
+.calendar-view-page .planner-date-nav input { width:auto; max-width:100%; background:white; font-size:12px; }
+.calendar-view-page .planner-date-nav button { background:white; border-color:var(--chronos-border); font-size:12px; padding:7px 10px; }
+.calendar-view-page .event-category-filters { border:0; padding:0; font-size:12px; color:var(--chronos-muted); gap:10px; }
+.calendar-view-page .event-category-filters legend { margin-bottom:7px; }
+.calendar-view-page .event-category-filters input { width:auto; accent-color:var(--chronos-ink); }
+.calendar-view-page .planner-block { position:absolute; padding:4px 7px; border:0; border-left:3px solid var(--event-color,var(--chronos-accent)); background:var(--chronos-background); border-radius:7px; font-size:11px!important; text-align:left; }
+.calendar-view-page .planner-block.point { background:var(--chronos-accent); border:0; border-radius:99px; }
+.calendar-view-page .planner-all-day button { width:100%; border:0; padding:4px; font-size:10px; text-align:left; }
+.calendar-view-page .calendar-grid { gap:0; border:1px solid var(--chronos-border); border-radius:12px; overflow:hidden; }
+.calendar-view-page .calendar-day { background:white; border:0; border-right:1px solid var(--chronos-border); border-bottom:1px solid var(--chronos-border); border-radius:0; padding:9px; }
+.calendar-view-page .calendar-day-empty { background:var(--chronos-background); opacity:.55; }
+.calendar-view-page .calendar-event { background:var(--chronos-background); border-radius:6px; }
+.calendar-view-page .calendar-events-panel { min-width:0; }
+@media(max-width:650px){.calendar-view-page .calendar-events-panel { padding:12px; }.calendar-view-page .calendar-day{padding:4px}.calendar-view-page .calendar-event{padding:3px}}
