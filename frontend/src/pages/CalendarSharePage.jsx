@@ -1,6 +1,6 @@
+import { FlowSurface } from '../components/layout/FlowSurface';
 import { useEffect, useRef, useState } from 'react';
 import { applicationContainer } from '../app/applicationContainer';
-import { PageTemplate } from '../components/layout/PageTemplate';
 import { useLocale } from '../i18n/LocaleProvider';
 import { getLocalizedApiError } from '../i18n/apiErrors';
 import { formatSharedEventDate, updateSharedEventFilters } from '../features/calendars/sharedEvents';
@@ -78,14 +78,14 @@ export function CalendarSharePage() {
     }
   }
 
-  if (loading) return <PageTemplate><p role="status">{t('common.loading')}</p></PageTemplate>;
-  if (error) return <PageTemplate><p role="alert">{error}</p></PageTemplate>;
+  const title = locale === 'uk' ? 'Спільний календар' : 'Shared calendar';
+  if (loading) return <FlowSurface title={title}><p role="status">{t('common.loading')}</p></FlowSurface>;
+  if (error) return <FlowSurface title={title} icon="x" tone="error"><p role="alert">{error}</p></FlowSurface>;
   const canEdit = calendar.role === 'editor' || calendar.role === 'admin';
 
   return (
-    <section className="account-section">
-      <h1>{calendar.name}</h1>
-      <p>{t('calendarShare.role', { role: calendarRoleLabel(t, calendar.role) })}</p>
+    <FlowSurface title={calendar.name} icon="calendar-week">
+      <p className="flow-muted">{t('calendarShare.role', { role: calendarRoleLabel(t, calendar.role) })}</p>
       {saveError && <p role="alert">{saveError}</p>}
       {canEdit ? (
         <form className="account-card account-form" onSubmit={save}>
@@ -112,7 +112,7 @@ export function CalendarSharePage() {
         {eventsError && <p role="alert">{eventsError}</p>}
         {!eventsLoading && !eventsError && !events.length && <p>{t('calendarShare.noEvents')}</p>}
         {!eventsLoading && !eventsError && events.map((item) => (
-          <article className="event-list-item" key={item.id} style={{ borderLeftColor: item.color }}>
+          <article className="event-list-item" key={item.occurrenceId || item.id} style={{ borderLeftColor: item.color }}>
             <div>
               <strong>{item.title}</strong>
               <span>{t(`calendarView.type.${item.type}`)} · {formatSharedEventDate(item.startsAt, locale, calendar.timeZone)}</span>
@@ -127,6 +127,6 @@ export function CalendarSharePage() {
           <button type="button" disabled={eventsLoading || pagination.page >= pagination.totalPages} onClick={() => setFilters((current) => updateSharedEventFilters(current, 'page', current.page + 1))}>{t('calendarView.nextPage')}</button>
         </div>}
       </section>
-    </section>
+    </FlowSurface>
   );
 }
