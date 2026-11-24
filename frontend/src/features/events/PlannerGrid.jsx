@@ -1,3 +1,4 @@
+import { CalendarEventButton } from './CalendarEventActions';
 import { useEffect, useRef, useState } from 'react';
 import { useLocale } from '../../i18n/LocaleProvider';
 import { eventDayKey, fromCalendarInput, toCalendarInput } from './eventForm';
@@ -52,7 +53,7 @@ export function PlannerGrid({view,days,events,calendars,zone,onSelect,selectedDa
  const isWeekend=d=>[0,6].includes(new Date(d+'T12:00:00Z').getUTCDay());
  useEffect(()=>{const el=viewport.current;if(el){el.scrollTop=0;el.scrollLeft=0;}},[view,dateKey,fullDay]);
  const label=b=>b.point?timeLabel(b.start):timeLabel(b.start)+' – '+timeLabel(b.end);
- function block(b,style){const e=b.event;return <button type="button" key={keyOf(e)} className={'planner-block'+(b.point?' point':'')+(e.status==='done'?' done':'')+(e.status==='canceled'?' canceled':'')} style={{...style,'--event-color':e.color||'var(--chronos-accent)'}} title={e.title+' · '+label(b)} onClick={()=>onSelect(e)}><strong>{e.title}</strong><small>{label(b)}</small></button>}
+ function block(b,style){const e=b.event;return <CalendarEventButton event={e} placement="positioned" key={keyOf(e)} className={'planner-block'+(b.point?' point':'')+(e.status==='done'?' done':'')+(e.status==='canceled'?' canceled':'')} style={{...style,'--event-color':e.color||'var(--chronos-accent)'}} title={e.title+' · '+label(b)} onClick={()=>onSelect(e)}><strong>{e.title}</strong><small>{label(b)}</small></CalendarEventButton>}
  if(view==='timeline'){
   const day=days[0];
   return <div className="planner-viewport timeline-viewport" ref={viewport}><div className="planner-timeline" style={{'--hour-count':hours.length,'--timeline-width':(140+hours.length*58)+'px'}}>
