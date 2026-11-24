@@ -3,14 +3,22 @@ import { BlobMascot } from './BlobMascot';
 import { useLocale } from '../../i18n/LocaleProvider';
 import '../../styles/interactive-auth.css';
 
-export function InteractiveAuth({ title, children, error, success }) {
+export function InteractiveAuth({ title, children, error, success, submitting }) {
   const [focus, setFocus] = useState('');
   const [visible, setVisible] = useState(false);
-  const mood = focus === 'password' ? (visible ? 'peek' : 'private') : error ? 'error' : success ? 'success' : focus ? 'reading' : 'idle';
+  const [caret, setCaret] = useState(null);
+  function readCaret(event) {
+    const input = event.target;
+    if (input.tagName !== 'INPUT' || input.dataset.password !== undefined) return;
+    let index = input.value.length;
+    try { index = input.selectionStart ?? index; } catch { /* Email inputs do not expose selection. */ }
+    setCaret(Math.min(1, index / Math.max(18, input.value.length)));
+  }
+  const mood = submitting ? 'loading' : error ? 'error' : success ? 'success' : focus === 'password' ? (visible ? 'peek' : 'private') : focus ? 'reading' : 'idle';
   return (
-    <section className="interactive-auth" onFocusCapture={event => setFocus(event.target.dataset.password !== undefined ? 'password' : event.target.tagName === 'INPUT' ? 'reading' : '')}
+    <section className="interactive-auth" onInput={readCaret} onSelect={readCaret} onKeyUp={readCaret} onFocusCapture={event => setFocus(event.target.closest('.auth-password') ? 'password' : event.target.tagName === 'INPUT' ? 'reading' : '')}
       onBlurCapture={event => { if (!event.currentTarget.contains(event.relatedTarget)) setFocus(''); }}>
-      <BlobMascot mood={mood} />
+      <BlobMascot mood={mood} caret={caret} />
       <h1>{title}</h1>
       {children({ visible, setVisible, setFocus })}
     </section>
