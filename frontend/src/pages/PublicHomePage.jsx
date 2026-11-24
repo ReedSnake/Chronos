@@ -6,22 +6,22 @@ import '../styles/public-home.css';
 
 const copy = {
   en: {
-    features: 'Features', preview: 'How it works', start: 'Get started', login: 'Log in',
+    start: 'Get started', login: 'Log in',
     eyebrow: 'A little more time for what matters',
     title: ['Time for everything.', 'Space for yourself.'],
     description: 'Bring your plans, tasks and meetings together in one calendar. Make room for the things that matter most.',
-    learn: 'Explore Chronos', demo: 'Illustrative calendar preview',
+    demo: 'Illustrative calendar preview',
     today: 'Today’s tasks', completed: '2 of 3 completed', tasks: ['Review weekly goals', 'Send project update', 'Plan tomorrow'],
     meeting: 'Team meeting', work: 'Work', meetingTime: '10:00 – 10:45', reminder: 'A little reminder', reminderText: 'Take a break', reminderTime: 'In 15 minutes',
     week: 'Your week', weekdays: ['M','T','W','T','F','S','S'], focus: 'Focus time', focusTime: '14:00 – 15:30',
     calendar: 'Calendars', task: 'Tasks', events: 'Meetings', reminders: 'Reminders',
   },
   uk: {
-    features: 'Можливості', preview: 'Як це працює', start: 'Почати', login: 'Увійти',
+    start: 'Почати', login: 'Увійти',
     eyebrow: 'Трохи більше часу на важливе',
     title: ['Час на все.', 'Простір для себе.'],
     description: 'Об’єднуй плани, завдання й зустрічі в одному календарі. Залишай більше часу на те, що справді важливе.',
-    learn: 'Дізнатися більше', demo: 'Приклад планування в календарі',
+    demo: 'Приклад планування в календарі',
     today: 'Завдання на сьогодні', completed: 'Виконано 2 з 3', tasks: ['Переглянути цілі тижня', 'Надіслати оновлення', 'Спланувати завтра'],
     meeting: 'Зустріч команди', work: 'Робота', meetingTime: '10:00 – 10:45', reminder: 'Маленьке нагадування', reminderText: 'Час на перерву', reminderTime: 'Через 15 хвилин',
     week: 'Твій тиждень', weekdays: ['П','В','С','Ч','П','С','Н'], focus: 'Час для фокусу', focusTime: '14:00 – 15:30',
@@ -30,7 +30,7 @@ const copy = {
 };
 
 function Wordmark({ to }) {
-  return <Link className="landing-wordmark" to={to} aria-label="Chronos"><svg width="34" height="34" viewBox="0 0 36 36" fill="none" aria-hidden="true"><path d="M18 3a15 15 0 1 0 15 15" stroke="currentColor" strokeWidth="5" strokeLinecap="round"/><path d="M18 10v8l8 5" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round"/><circle cx="30" cy="7" r="3" fill="#70b7ef"/></svg><span>chronos<span>.</span></span></Link>;
+  return <Link className="landing-wordmark" to={to} aria-label="Chronos"><svg width="34" height="34" viewBox="0 0 36 36" fill="none" aria-hidden="true"><path d="M18 3a15 15 0 1 0 15 15" stroke="currentColor" strokeWidth="5" strokeLinecap="round"/><path d="M18 10v8l8 5" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round"/><circle cx="30" cy="7" r="3" fill="var(--chronos-accent)"/></svg><span>chronos<span>.</span></span></Link>;
 }
 
 function PlanningCards({ c }) {
@@ -67,11 +67,6 @@ export function PublicHomePage() {
   return <div className="landing">
     <header className="landing-header">
       <Wordmark to={localizedPath('/')}/>
-      <nav className="landing-nav" aria-label={t('navigation.label')}>
-        <a href="#landing-top" className="landing-nav-active">{t('navigation.home')}</a>
-        <a href="#landing-features">{c.features}</a>
-        <a href="#landing-preview">{c.preview}</a>
-      </nav>
       <div className="landing-header-actions">
         <label className="landing-language"><span className="visually-hidden">{t('languageSwitcher.label')}</span><select value={locale} aria-label={t('languageSwitcher.label')} onChange={e=>navigate(locationForLocale(e.target.value),{replace:true})}>{SUPPORTED_LOCALES.map(lang=><option key={lang} value={lang}>{lang.toUpperCase()}</option>)}</select></label>
         <Link className="landing-button landing-button-dark" to={localizedPath('/login')}>{c.login}<Icon name="arrow-right" size={17}/></Link>
@@ -84,7 +79,7 @@ export function PublicHomePage() {
         <div className="landing-eyebrow"><span/>{c.eyebrow}</div>
         <h1 id="landing-title">{c.title[0]}<br/><span>{c.title[1]}</span></h1>
         <p>{c.description}</p>
-        <div className="landing-hero-actions"><a className="landing-button landing-button-light" href="#landing-features">{c.learn}</a><Link className="landing-button landing-button-dark" to={localizedPath('/register')}>{c.start}<Icon name="arrow-right" size={19}/></Link></div>
+        <div className="landing-hero-actions"><Link className="landing-button landing-button-dark" to={localizedPath('/register')}>{c.start}<Icon name="arrow-right" size={19}/></Link></div>
       </div>
       <PlanningCards c={c}/>
       <span className="landing-demo-note">{c.demo}</span>
