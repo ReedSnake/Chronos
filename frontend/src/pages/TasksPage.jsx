@@ -1,0 +1,44 @@
+import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { useAuth } from '../features/auth/AuthContext';
+import { useLocale } from '../i18n/LocaleProvider';
+import { applicationContainer } from '../app/applicationContainer';
+import { loadDashboard } from '../features/dashboard/dashboardData';
+import { EventDialog } from '../features/events/EventDialog';
+import { EventEditor } from '../features/events/EventEditor';
+import { EventDetails } from '../features/events/EventDetails';
+import { eventDateLabel, fromCalendarInput, toCalendarInput } from '../features/events/eventForm';
+import { getLocalizedApiError } from '../i18n/apiErrors';
+import { TablerIcon as Icon } from '../components/layout/TablerIcon';
+import '../styles/planner.css';
+
+const service=applicationContainer.calendarService;
+const states=['todo','in_progress','done'];
+const writable=cal=>cal&&!cal.isHolidayCalendar&&!cal.isArchived&&['owner','admin','editor'].includes(cal.role);
+const key=e=>e.calendarId+':'+(e.occurrenceId||e.id);
+export function TasksPage(){
+ const {status,user}=useAuth(); const {locale,t,localizedPath}=useLocale();
+ const uk=locale==='uk'; const zone=user?.settings?.timeZone||'UTC';
+ const [data,setData]=useState({calendars:[],events:[],failed:0}),[loading,setLoading]=useState(true),[error,setError]=useState(''),[reload,setReload]=useState(0);
+ const [search,setSearch]=useState(''),[filter,setFilter]=useState(''),[mode,setMode]=useState(null),[selected,setSelected]=useState(null),[edit,setEdit]=useState(null),[calId,setCalId]=useState(''),[busy,setBusy]=useState(false),[drag,setDrag]=useState(null);
+ const [range,setRange]=useState(()=>{const now=new Date();return {from:new Date(now.getTime()-30*86400000).toISOString().slice(0,10),to:new Date(now.getTime()+60*86400000).toISOString().slice(0,10)}});
+ useEffect(()=>{if(status!=='authenticated')return;let alive=true;setLoading(true);setError('');Promise.resolve().then(()=>{const next=new Date(range.to+'T00:00:00Z');next.setUTCDate(next.getUTCDate()+1);const from=fromCalendarInput(range.from+'T00:00',zone),to=new Date(Date.parse(fromCalendarInput(next.toISOString().slice(0,10)+'T00:00',zone))-1).toISOString();if(from>to)throw Error('Invalid date range');return loadDashboard(service,{from,to,types:['task']});}).then(d=>{if(alive)setData(d)}).catch(e=>{if(alive){setData({calendars:[],events:[],failed:0});setError(getLocalizedApiError(e,t,'calendarView.eventsError'))}}).finally(()=>{if(alive)setLoading(false)});return()=>{alive=false}},[status,zone,range.from,range.to,reload,t]);
+ const tasks=data.events.filter(e=>e.type==='task'&&(!filter||e.calendarId===filter)&&e.title.toLowerCase().includes(search.toLowerCase())).sort((a,b)=>String(a.deadline).localeCompare(String(b.deadline)));
+ const editable=data.calendars.filter(writable);
+ const calendar=data.calendars.find(c=>c.id===(mode==='create'?calId:selected?.calendarId));
+ const done=tasks.filter(e=>e.status==='done').length;
+ function close(){if(!busy){setMode(null);setSelected(null);setEdit(null)}}
+ function create(){const c=editable.find(c=>c.id===filter)||editable.find(c=>c.isMain)||editable[0];if(!c)return;setCalId(c.id);setEdit(null);setMode('create')}
+ function open(e){setSelected(e);setEdit(null);setMode('details')}
+ async function change(e,state){if(!e||busy||e.status===state||!writable(data.calendars.find(c=>c.id===e.calendarId)))return;if(e.isRecurring&&!window.confirm(t('calendarView.event.editSeriesOnly')))return;setBusy(true);setError('');try{await service.updateEvent(e.calendarId,e.id,{status:state});setReload(n=>n+1)}catch(err){setError(getLocalizedApiError(err,t,'calendarView.event.saveError'))}finally{setBusy(false)}}
+ async function startEdit(){setBusy(true);try{const {event}=await service.getEvent(selected.calendarId,selected.id);setEdit(event);setMode('edit')}catch(e){setError(getLocalizedApiError(e,t,'calendarView.event.loadError'))}finally{setBusy(false)}}
+ async function save(values){setBusy(true);try{if(mode==='edit')await service.updateEvent(calendar.id,selected.id,values);else await service.createEvent(calendar.id,values);setMode(null);setReload(n=>n+1)}catch(e){throw Error(getLocalizedApiError(e,t,'calendarView.event.saveError'))}finally{setBusy(false)}}
+ async function remove(){if(!window.confirm(t(selected.isRecurring?'calendarView.event.confirmDeleteSeries':'calendarView.event.confirmDelete')))return;setBusy(true);try{await service.deleteEvent(calendar.id,selected.id);setMode(null);setReload(n=>n+1)}catch(e){setError(getLocalizedApiError(e,t,'calendarView.event.deleteError'))}finally{setBusy(false)}}
+ async function invite(email){await service.sendEventInvitation(calendar.id,selected.id,email);setSelected(e=>({...e,attendees:e.attendees.map(a=>a.email===email?{...a,invitationSentAt:new Date().toISOString()}:a)}))}
+ if(status!=='authenticated')return <p>{status==='loading'?t('common.loading'):<Link to={localizedPath('/login')}>{t('common.signIn')}</Link>}</p>;
+ return <section className="planner-page"><header className="planner-heading"><h1>{uk?'Завдання':'Tasks'}</h1><button className="planner-primary" disabled={!editable.length||loading} onClick={create}><Icon name="plus" size={18}/>{uk?'Нове завдання':'New task'}</button></header>
+ <div className="planner-filters"><label>{uk?'Пошук':'Search'}<input value={search} onChange={e=>setSearch(e.target.value)} placeholder={uk?'Назва завдання':'Task name'}/></label><label>{uk?'Календар':'Calendar'}<select value={filter} onChange={e=>setFilter(e.target.value)}><option value="">{uk?'Усі календарі':'All calendars'}</option>{data.calendars.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}</select></label><label>{uk?'Від':'From'}<input type="date" value={range.from} onChange={e=>setRange(r=>({...r,from:e.target.value}))}/></label><label>{uk?'До':'To'}<input type="date" value={range.to} onChange={e=>setRange(r=>({...r,to:e.target.value}))}/></label></div>
+ {(error||data.failed>0)&&<p role="alert">{error||(uk?'Деякі календарі не завантажені':'Some calendars could not be loaded')} <button onClick={()=>setReload(n=>n+1)}>{t('common.retry')}</button></p>}
+ <div className="task-workspace" aria-busy={loading}><div className="task-board">{states.map(state=><section key={state} className="task-column" onDragOver={e=>{if(drag)e.preventDefault()}} onDrop={e=>{e.preventDefault();if(drag)void change(drag,state);setDrag(null)}}><header><h2>{t('statuses.'+state)}</h2><span>{loading?'—':tasks.filter(e=>e.status===state).length}</span></header>{loading?<p>{t('common.loading')}</p>:tasks.filter(e=>e.status===state).map(e=><article key={key(e)} className="task-tile" draggable={!busy&&writable(data.calendars.find(c=>c.id===e.calendarId))} onDragStart={ev=>{setDrag(e);ev.dataTransfer.setData('text/plain',key(e));ev.dataTransfer.effectAllowed='move'}} onDragEnd={()=>setDrag(null)} style={{borderLeftColor:e.color||'var(--chronos-accent)'}}><button className="task-tile-open" onClick={()=>open(e)}><small>{e.calendarName}</small><strong>{e.title}</strong>{e.description&&<p>{e.description}</p>}<span>{eventDateLabel(e,locale,zone)}</span></button><div className="task-tile-bottom"><select aria-label={t('calendarView.event.status')} value={e.status} disabled={busy||!writable(data.calendars.find(c=>c.id===e.calendarId))} onChange={ev=>void change(e,ev.target.value)}>{states.map(s=><option key={s} value={s}>{t('statuses.'+s)}</option>)}</select>{e.attendees?.length>0&&<small>{e.attendees.length} <Icon name="users" size={14}/></small>}</div></article>)}{!loading&&!tasks.some(e=>e.status===state)&&<p className="task-empty">{uk?'Немає завдань':'No tasks'}</p>}</section>)}</div><aside className="task-summary"><h2>{uk?'Прогрес':'Progress'}</h2><div className="task-ring" style={{'--progress':(tasks.length?done/tasks.length*100:0)+'%'}}><strong>{loading||error||data.failed?'—':tasks.length?Math.round(done/tasks.length*100)+'%':'0%'}</strong></div>{states.map(s=><div className="task-summary-row" key={s}><span>{t('statuses.'+s)}</span><strong>{loading||error||data.failed?'—':tasks.filter(e=>e.status===s).length}</strong></div>)}</aside></div>
+ {mode&&calendar&&<EventDialog label={t('calendarView.event.details')} onClose={close} busy={busy}>{mode==='details'?<EventDetails event={selected} calendar={calendar} onClose={close} onEdit={startEdit} onDelete={remove} canEdit={writable(calendar)} busy={busy} onInvite={invite}/>:<>{mode==='create'&&<label className="task-calendar-choice">{uk?'Календар':'Calendar'}<select value={calId} onChange={e=>setCalId(e.target.value)}>{editable.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}</select></label>}<EventEditor key={calendar.id+mode} initialType="task" event={edit} calendar={calendar} saving={busy} onSave={save} onCancel={close}/></>}</EventDialog>}</section>
+}
