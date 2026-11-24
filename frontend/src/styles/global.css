@@ -10,6 +10,13 @@
   --chronos-danger-soft: #f9e5e3;
   --chronos-danger: #a32e36;
   --chronos-success: #24634c;
+  --chronos-radius-field: 9px;
+  --chronos-radius-surface: 20px;
+  --chronos-dialog-radius: 18px;
+  --chronos-dialog-shadow: 0 18px 60px #30303022;
+  --chronos-dialog-backdrop: #30303040;
+  --chronos-focus: #956719;
+  --chronos-subtle: #f5f8fb;
   color-scheme: light;
   color: var(--chronos-ink);
   background: var(--chronos-background);
