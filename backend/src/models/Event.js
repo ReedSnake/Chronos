@@ -102,6 +102,12 @@ eventSchema.pre('validate', function validateTypeSpecificFields() {
   if (!this.isRecurring) {
     this.recurrenceInterval = null;
     this.recurrenceEndDate = null;
+  } else if (this.recurrenceEndDate && this.startsAt) {
+    const dateOnlyEnd = this.recurrenceEndDate.toISOString().endsWith('T23:59:59.999Z');
+    const earliest = this.startsAt.getTime() - (dateOnlyEnd ? 2 * 86400000 : 0);
+    if (this.recurrenceEndDate.getTime() < earliest) {
+      this.invalidate('recurrenceEndDate', 'Recurrence end must not precede the first event');
+    }
   }
 
   if (this.type === 'arrangement') {
@@ -117,7 +123,7 @@ eventSchema.pre('validate', function validateTypeSpecificFields() {
 
   if (this.type === 'task') {
     requireDate(this, 'deadline', 'A task requires a deadline');
-    if (!this.startsAt && this.deadline) this.startsAt = this.deadline;
+    if (this.deadline) this.startsAt = this.deadline;
     if (!EVENT_STATUSES_BY_TYPE.task.includes(this.status)) {
       this.invalidate('status', 'A task must have a task status');
     }
@@ -125,12 +131,12 @@ eventSchema.pre('validate', function validateTypeSpecificFields() {
 
   if (this.type === 'reminder') {
     requireDate(this, 'remindAt', 'A reminder requires a reminder time');
-    if (!this.startsAt && this.remindAt) this.startsAt = this.remindAt;
+    if (this.remindAt) this.startsAt = this.remindAt;
   }
 
   if (this.type === 'holiday') {
     requireDate(this, 'date', 'A holiday requires a date');
-    if (!this.startsAt && this.date) this.startsAt = this.date;
+    if (this.date) this.startsAt = this.date;
     if (!this.internationalName) this.invalidate('internationalName', 'A holiday requires an international name');
   }
 

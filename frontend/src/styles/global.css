@@ -186,3 +186,26 @@ body {
 .account-section details.account-form { display: block; }
 .account-section details.account-form[open] { display: grid; }
 .account-section details.account-card[open] > form { margin-top: 12px; }
+
+
+/* Event editor, details, and interactive calendar cells. */
+.calendar-toolbar, .event-details-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.calendar-toolbar button, .event-details button { font: inherit; padding: 8px 12px; border: 1px solid #51617c; border-radius: 7px; color: #e7edf8; background: #25334b; cursor: pointer; }
+.event-editor { width: 100%; }
+.event-editor label { display: grid; gap: 6px; }
+.event-editor .event-checkbox { display: flex; align-items: center; }
+.event-editor .event-checkbox input { width: auto; }
+.event-editor .field-note, .event-details .field-note { color: #9eacc4; font-size: .85rem; }
+.event-editor .field-note { margin: -4px 0 4px; }
+.calendar-view-page .event-editor input, .calendar-view-page .event-editor select, .calendar-view-page .event-editor textarea { font: inherit; width: 100%; padding: 9px; color: #e7edf8; background: #101827; border: 1px solid #51617c; border-radius: 6px; }
+.calendar-view-page .event-editor input[type="checkbox"] { width: auto; }
+.calendar-view-page .event-editor button:disabled { opacity: .5; cursor: not-allowed; }
+.calendar-view-page .calendar-event { display: grid; text-align: left; width: 100%; padding: 5px; margin-top: 5px; font-size: .75rem; background: #25334b; border: 0; border-left: 3px solid; overflow-wrap: anywhere; }
+.calendar-view-page .calendar-event:hover, .calendar-view-page .event-list-button:hover { background: #334761; }
+.event-list-button { display: grid; text-align: left; width: 100% !important; border: none; border-left: 4px solid; padding: 12px; overflow-wrap: anywhere; }
+.event-details dl { display: grid; grid-template-columns: minmax(110px, 1fr) 2fr; gap: 8px 16px; margin: 0; }
+.event-details dt { color: #9eacc4; }
+.event-details dd { margin: 0; overflow-wrap: anywhere; }
+.event-details a { color: #93c5fd; }
+.event-details ul { padding-left: 24px; }
+@media (max-width: 600px) { .event-details dl { grid-template-columns: 1fr; } .calendar-view-page .calendar-event { font-size: .65rem; padding: 3px; } }

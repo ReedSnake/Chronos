@@ -32,6 +32,7 @@ const options = {
       { name: 'Auth', description: 'Email registration, verification and cookie sessions.' },
       { name: 'Users', description: 'Profile and account management.' },
       { name: 'Calendars', description: 'Personal and shared calendar management.' },
+      { name: 'Events', description: 'Event CRUD, recurring occurrences and attendee email records.' },
       { name: 'Integrations', description: 'Session-managed integrations and revocable API keys.' },
     ],
     components: {
@@ -201,9 +202,15 @@ const options = {
         },
       },
       '/api/calendars/{id}/events': {
+        post: {
+          tags: ['Events'], summary: 'Create arrangement, task, reminder or holiday with editor access',
+          parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }, { name: 'targetUserId', in: 'query', schema: { type: 'string' } }],
+          requestBody: { required: true, content: { 'application/json': { schema: { type: 'object', required: ['type', 'title'], additionalProperties: true, description: 'Type-specific date required (startsAt+endsAt, deadline, remindAt, or date+internationalName); attendee emails are an array of strings.' } } } },
+          responses: { 201: { description: 'Created event.' }, 400: { description: 'Invalid payload.' }, 404: { description: 'Calendar inaccessible.' } },
+        },
         get: {
           tags: ['Calendars'],
-          summary: 'List event records for one calendar without returning calendar metadata',
+          summary: 'List events and virtual recurring occurrences in a date range; max range 370 days',
           parameters: [
             { name: 'id', in: 'path', required: true, schema: { type: 'string' } },
             { name: 'from', in: 'query', required: false, schema: { type: 'string', format: 'date-time' }, description: 'Inclusive event-range start. A date-only value is accepted.' },
@@ -214,7 +221,25 @@ const options = {
             { name: 'limit', in: 'query', required: false, schema: { type: 'integer', minimum: 1, maximum: 100, default: 50 } },
             { name: 'targetUserId', in: 'query', required: false, schema: { type: 'string' }, description: 'For API-key requests, omit to use the integration owner. A different user requires an active read grant.' },
           ],
-          responses: { 200: { description: 'Paginated event records and pagination metadata only; calendar metadata remains at GET /api/calendars/{id}.' }, 400: { description: 'Invalid filters.' }, 401: { description: 'Not signed in or API key invalid.' }, 404: { description: 'Calendar unavailable.' } },
+          responses: { 200: { description: 'Paginated events and generated occurrences. Each occurrence keeps the series id and a unique occurrenceId; no separate database record is created.' }, 400: { description: 'Invalid filters or too many occurrences.' }, 401: { description: 'Not signed in or API key invalid.' }, 404: { description: 'Calendar unavailable.' } },
+        },
+      },
+      '/api/calendars/{id}/events/{eventId}': {
+        get: {
+          tags: ['Events'], summary: 'Read one event series, with viewer access',
+          parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }, { name: 'eventId', in: 'path', required: true, schema: { type: 'string' } }, { name: 'targetUserId', in: 'query', schema: { type: 'string' } }],
+          responses: { 200: { description: 'Stored event series.' }, 404: { description: 'Event or calendar inaccessible.' } },
+        },
+        patch: {
+          tags: ['Events'], summary: 'Edit an event or the entire recurring series; editor access required',
+          parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }, { name: 'eventId', in: 'path', required: true, schema: { type: 'string' } }, { name: 'targetUserId', in: 'query', schema: { type: 'string' } }],
+          requestBody: { required: true, content: { 'application/json': { schema: { type: 'object', additionalProperties: true, description: 'Any editable event fields except type; validates against the original event type.' } } } },
+          responses: { 200: { description: 'Updated series.' }, 400: { description: 'Invalid payload.' }, 404: { description: 'Event or calendar inaccessible.' } },
+        },
+        delete: {
+          tags: ['Events'], summary: 'Delete the event or entire recurring series with editor access',
+          parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }, { name: 'eventId', in: 'path', required: true, schema: { type: 'string' } }, { name: 'targetUserId', in: 'query', schema: { type: 'string' } }],
+          responses: { 204: { description: 'Event deleted.' }, 404: { description: 'Event or calendar inaccessible.' } },
         },
       },
       '/api/calendars/{id}/share-links': {
@@ -351,7 +376,7 @@ const options = {
       },
       '/api/calendar-share/events': {
         get: {
-          tags: ['Calendars'], summary: 'List event records through a viewer, editor, or admin calendar share link',
+          tags: ['Calendars'], summary: 'Read calendar events including generated recurring occurrences through a public link; no public write actions',
           parameters: [
             { name: 'from', in: 'query', required: false, schema: { type: 'string', format: 'date-time' } },
             { name: 'to', in: 'query', required: false, schema: { type: 'string', format: 'date-time' } },

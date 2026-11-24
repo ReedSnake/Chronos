@@ -16,6 +16,10 @@ export class CalendarService {
     const suffix = query.size ? `?${query.toString()}` : '';
     return this.httpClient.get(`/calendars/${encodeURIComponent(id)}/events${suffix}`);
   }
+  getEvent(id, eventId) { return this.httpClient.get(`/calendars/${encodeURIComponent(id)}/events/${encodeURIComponent(eventId)}`); }
+  createEvent(id, values) { return this.httpClient.post(`/calendars/${encodeURIComponent(id)}/events`, values); }
+  updateEvent(id, eventId, values) { return this.httpClient.patch(`/calendars/${encodeURIComponent(id)}/events/${encodeURIComponent(eventId)}`, values); }
+  deleteEvent(id, eventId) { return this.httpClient.delete(`/calendars/${encodeURIComponent(id)}/events/${encodeURIComponent(eventId)}`); }
   create(values) { return this.httpClient.post('/calendars', values); }
   update(id, values) { return this.httpClient.patch(`/calendars/${encodeURIComponent(id)}`, values); }
   remove(id) { return this.httpClient.delete(`/calendars/${encodeURIComponent(id)}`); }

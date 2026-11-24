@@ -63,11 +63,11 @@ test('event listing checks calendar access and filters each event type by its da
     '../models/Event': {
       find: (query) => {
         eventQuery = query;
-        return { sort: () => ({ skip: () => ({ limit: async () => [{
+        return { limit: () => ({ lean: async () => [{
           _id: 'event-id', calendarId: 'calendar-id', type: 'task', title: 'Write release notes',
           description: '', color: '#3B82F6', isRecurring: false, startsAt: new Date('2026-12-02T10:00:00.000Z'),
           attendees: [{ email: 'person@example.test', inviteStatus: 'accepted' }], categories: ['work'],
-        }] }) }) };
+        }] }) };
       },
       countDocuments: async () => 1,
     },
@@ -81,7 +81,8 @@ test('event listing checks calendar access and filters each event type by its da
   assert.equal(eventQuery.calendarId, 'calendar-id');
   assert.deepEqual(eventQuery.type, { $in: ['task'] });
   assert.deepEqual(eventQuery.categories, { $in: ['work'] });
-  assert.equal(eventQuery.startsAt.$gte.toISOString(), '2026-12-01T00:00:00.000Z');
+  assert.equal(eventQuery.startsAt.$lte.toISOString(), '2026-12-03T00:00:00.000Z');
+  assert.equal(eventQuery.$or[1].$or[0].startsAt.$gte.toISOString(), '2026-12-01T00:00:00.000Z');
   assert.equal(data.events[0].attendees[0].inviteToken, undefined);
   assert.equal(data.events[0].startsAt.toISOString(), '2026-12-02T10:00:00.000Z');
   assert.deepEqual(data.pagination, { page: 1, limit: 50, total: 1, totalPages: 1 });

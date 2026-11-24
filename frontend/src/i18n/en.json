@@ -87,7 +87,9 @@
     "PAIRING_SCOPE_FORBIDDEN": "Requested permissions exceed the API key permissions.",
     "PAIRING_REQUEST_NOT_FOUND": "The integration request was not found.",
     "INVALID_PAIRING_TOKEN": "This integration approval link is invalid or expired.",
-    "INVALID_PAIRING_REQUEST": "This integration request is invalid or expired."
+    "INVALID_PAIRING_REQUEST": "This integration request is invalid or expired.",
+    "EVENT_NOT_FOUND": "Event unavailable or inaccessible.",
+    "EVENT_RANGE_TOO_LARGE": "Too many events or too long a range. Narrow the dates."
   },
   "common": {
     "email": "Email",
@@ -337,6 +339,57 @@
     "view": {
       "month": "Month",
       "agenda": "Agenda"
+    },
+    "event": {
+      "editorTitle": "Event form",
+      "create": "New event",
+      "edit": "Edit event",
+      "details": "Event details",
+      "type": "Event type",
+      "title": "Title",
+      "description": "Description",
+      "color": "Color",
+      "startsAt": "Start",
+      "endsAt": "End",
+      "deadline": "Deadline",
+      "remindAt": "Remind at",
+      "date": "Holiday date",
+      "internationalName": "International name",
+      "locationUrl": "Location / meeting URL",
+      "status": "Status",
+      "attendees": "Attendees (emails)",
+      "attendeesHint": "mail@example.com, friend@example.com",
+      "attendeesNote": "Emails are stored on the event only. Invitation messages are not sent yet.",
+      "noAttendees": "No attendees added.",
+      "isRecurring": "Repeat event",
+      "recurrenceInterval": "Repeat every",
+      "recurrenceEndDate": "Repeat until (optional)",
+      "repeatLabel": "Repeats",
+      "repeat": {
+        "daily": "Day",
+        "weekly": "Week",
+        "monthly": "Month",
+        "yearly": "Year"
+      },
+      "seriesNote": "Occurrences appear automatically on the calendar.",
+      "editSeriesOnly": "Editing or deleting affects the entire recurring series. Individual occurrences cannot be edited yet.",
+      "viewSwitch": "Calendar view",
+      "save": "Save event",
+      "cancel": "Cancel",
+      "close": "Close",
+      "delete": "Delete",
+      "confirmDelete": "Delete this event?",
+      "confirmDeleteSeries": "Delete the entire recurring series?",
+      "loadError": "Unable to open the event.",
+      "saveError": "Unable to save the event.",
+      "deleteError": "Unable to delete the event.",
+      "invalidDate": "Check the date and time (this wall time may not exist in the calendar time zone).",
+      "titleRequired": "Enter an event title.",
+      "invalidAttendees": "Enter valid email addresses (maximum 50).",
+      "invalidCategories": "Check categories (maximum 20).",
+      "endAfterStart": "End time must be later than start time.",
+      "internationalNameRequired": "Enter the international holiday name.",
+      "recurrenceEndTooEarly": "The recurrence end date is before the first event."
     }
   },
   "calendarShare": {
