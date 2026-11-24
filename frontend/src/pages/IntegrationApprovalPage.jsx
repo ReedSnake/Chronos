@@ -1,7 +1,8 @@
+import { TablerIcon } from '../components/layout/TablerIcon';
+import { FlowSurface } from '../components/layout/FlowSurface';
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { applicationContainer } from '../app/applicationContainer';
-import { PageTemplate } from '../components/layout/PageTemplate';
 import { useAuth } from '../features/auth/AuthContext';
 import { useLocale } from '../i18n/LocaleProvider';
 import { getLocalizedApiError } from '../i18n/apiErrors';
@@ -55,23 +56,19 @@ export function IntegrationApprovalPage() {
   }
 
   const returnTo = `${localizedPath('/integrations/approve')}#token=${encodeURIComponent(token || '')}`;
-  if (!token) return <PageTemplate><p role="alert">{t('integrationApproval.invalid')}</p></PageTemplate>;
-  if (status === 'loading') return <PageTemplate><p role="status">{t('common.loading')}</p></PageTemplate>;
-  if (status !== 'authenticated') return <PageTemplate><p>{t('integrationApproval.signInBefore')}<Link to={localizedPath('/login')} state={{ returnTo }}>{t('common.signIn')}</Link>{t('integrationApproval.signInAfter')}</p></PageTemplate>;
-  if (error) return <PageTemplate><p role="alert">{error}</p></PageTemplate>;
-  if (!request) return <PageTemplate><p role="status">{t('common.loading')}</p></PageTemplate>;
+  if (!token) return <FlowSurface title={t('integrationApproval.title')} icon="plug"><p role="alert">{t('integrationApproval.invalid')}</p></FlowSurface>;
+  if (status === 'loading') return <FlowSurface title={t('integrationApproval.title')} icon="plug"><p role="status">{t('common.loading')}</p></FlowSurface>;
+  if (status !== 'authenticated') return <FlowSurface title={t('integrationApproval.title')} icon="plug"><p>{t('integrationApproval.signInBefore')}<Link to={localizedPath('/login')} state={{ returnTo }}>{t('common.signIn')}</Link>{t('integrationApproval.signInAfter')}</p></FlowSurface>;
+  if (error) return <FlowSurface title={t('integrationApproval.title')} icon="plug"><p role="alert">{error}</p></FlowSurface>;
+  if (!request) return <FlowSurface title={t('integrationApproval.title')} icon="plug"><p role="status">{t('common.loading')}</p></FlowSurface>;
 
   return (
-    <section className="account-section">
-      <h1>{t('integrationApproval.title')}</h1>
-      <section className="account-card">
-        <h2>{request.integration.name}</h2>
-        <p>{request.scopes.map((scope) => scopeLabel(t, scope)).join(', ')}</p>
+    <FlowSurface title={t('integrationApproval.title')} icon="plug">
+      <div className="flow-summary"><h2>{request.integration.name}</h2><ul className="flow-permissions">{request.scopes.map(scope => <li key={scope}><TablerIcon name="lock" size={16}/>{scopeLabel(t, scope)}</li>)}</ul></div>
         <div className="button-row">
-          <button type="button" onClick={() => { void approve(); }}>{t('integrationApproval.approve')}</button>
-          <button type="button" className="danger-button" onClick={() => { void reject(); }}>{t('integrationApproval.reject')}</button>
+          <button type="button" className="flow-primary" onClick={() => { void approve(); }}>{t('integrationApproval.approve')}</button>
+          <button type="button" className="flow-danger" onClick={() => { void reject(); }}>{t('integrationApproval.reject')}</button>
         </div>
-      </section>
-    </section>
+    </FlowSurface>
   );
 }
