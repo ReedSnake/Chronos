@@ -11,6 +11,7 @@ export function EventEditor({ event = null, calendar, saving, onSave, onCancel, 
   const timeZone = calendar.timeZone || 'UTC';
   function makeDraft(type) {
     const value=defaultEventDraft(type,timeZone,calendar.defaultEventDurationMinutes);
+    value.color=/^#[0-9a-f]{6}$/i.test(calendar.color||'')?calendar.color.toUpperCase():'#F5BC5A';
     if(initialDay){
       const delta=Math.round((Date.parse(initialDay+'T00:00:00Z')-Date.parse(value.date+'T00:00:00Z'))/86400000);
       for(const field of ['startsAt','endsAt','deadline','remindAt']){
@@ -37,6 +38,7 @@ export function EventEditor({ event = null, calendar, saving, onSave, onCancel, 
 
   async function submit(action) {
     action.preventDefault();
+    if(saving)return;
     setFormError('');
     try {
       const payload = buildEventPayload(draft, timeZone);
@@ -72,8 +74,8 @@ export function EventEditor({ event = null, calendar, saving, onSave, onCancel, 
     </label>}
     <label>{t('calendarView.event.title')}<input className="event-title-input" value={draft.title} onChange={(e) => copy('title', e.target.value)} placeholder={task?(uk?'Назва завдання':'Task name'):(uk?'Назва події':'Event name')} maxLength={200} required /></label>
     {draft.type === 'arrangement' && <>
-      <div className="event-field-pair"><label>{t('calendarView.event.startsAt')}<input type="datetime-local" value={draft.startsAt} onChange={(e) => copy('startsAt', e.target.value)} required /></label>
-      <label>{t('calendarView.event.endsAt')}<input type="datetime-local" value={draft.endsAt} onChange={(e) => copy('endsAt', e.target.value)} required /></label></div>
+      {dateTimeField('startsAt',t('calendarView.event.startsAt'))}
+      {dateTimeField('endsAt',t('calendarView.event.endsAt'))}
       <label>{t('calendarView.event.locationUrl')}<input type="url" value={draft.locationUrl} onChange={(e) => copy('locationUrl', e.target.value)} maxLength={2000} placeholder="https://" /></label>
       <label>{t('calendarView.event.status')}<select value={draft.status} onChange={(e) => copy('status', e.target.value)}><option value="scheduled">{t('statuses.scheduled')}</option><option value="canceled">{t('statuses.canceled')}</option></select></label>
     </>}
@@ -81,7 +83,7 @@ export function EventEditor({ event = null, calendar, saving, onSave, onCancel, 
       {dateTimeField('deadline',t('calendarView.event.deadline'))}
       <label>{t('calendarView.event.status')}<select value={draft.status} onChange={(e) => copy('status', e.target.value)}><option value="todo">{t('statuses.todo')}</option><option value="in_progress">{t('statuses.in_progress')}</option><option value="done">{t('statuses.done')}</option></select></label>
     </>}
-    {draft.type === 'reminder' && <label>{t('calendarView.event.remindAt')}<input type="datetime-local" value={draft.remindAt} onChange={(e) => copy('remindAt', e.target.value)} required /></label>}
+    {draft.type === 'reminder' && dateTimeField('remindAt',t('calendarView.event.remindAt'))}
     {draft.type === 'holiday' && <>
       <label>{t('calendarView.event.date')}<input type="date" value={draft.date} onChange={(e) => copy('date', e.target.value)} required /></label>
       <label>{t('calendarView.event.internationalName')}<input value={draft.internationalName} onChange={(e) => copy('internationalName', e.target.value)} maxLength={200} required /></label>
