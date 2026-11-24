@@ -13,7 +13,7 @@ function tokenFromHash() {
 export function CalendarInvitationPage() {
   const navigate = useNavigate();
   const { status } = useAuth();
-  const { localizedPath, t } = useLocale();
+  const { locale, localizedPath, t } = useLocale();
   const token = useRef(tokenFromHash()).current;
   const remembered = useRef(false);
   const claimed = useRef(false);
@@ -43,7 +43,6 @@ export function CalendarInvitationPage() {
       .catch((requestError) => setError(getLocalizedApiError(requestError, t, 'calendarInvitation.claimError')));
   }, [navigate, ready, status, t, localizedPath]);
 
-  const { locale } = useLocale();
   const title = locale === 'uk' ? 'Запрошення до календаря' : 'Calendar invitation';
   const returnTo = `${localizedPath('/calendar-invite')}#token=${encodeURIComponent(token || '')}`;
   if (status === 'loading' || (!ready && !error)) return <FlowSurface title={title} icon="calendar-event"><p role="status">{t('common.loading')}</p></FlowSurface>;
