@@ -35,3 +35,6 @@
 .event-notes { white-space:pre-wrap; overflow-wrap:anywhere; min-height:100px; }
 .event-editor>p,.event-details>p { padding:0 24px; font-size:13px; }
 @media(max-width:480px){.event-field-pair{grid-template-columns:1fr}.event-surface-body,.event-surface-header,.event-surface-footer{padding:16px}.event-stage-track{flex-wrap:wrap}}
+
+.event-dialog-error { padding:12px 24px; color:var(--chronos-danger); background:var(--chronos-danger-soft); margin:0; }
+.dash-modal .event-surface-header { border-radius:16px 16px 0 0; }
