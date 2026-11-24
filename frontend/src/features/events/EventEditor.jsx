@@ -4,20 +4,32 @@ import './event-surface.css';
 import { useLocale } from '../../i18n/LocaleProvider';
 import { buildEventPayload, defaultEventDraft, draftFromEvent, EVENT_TYPES, RECURRENCE_INTERVALS } from './eventForm';
 
-export function EventEditor({ event = null, calendar, saving, onSave, onCancel, initialType = 'arrangement' }) {
+export function EventEditor({ event = null, calendar, saving, onSave, onCancel, initialType = 'arrangement', initialDay = null }) {
   const { t, locale } = useLocale();
   const uk = locale === 'uk';
   const [tab, setTab] = useState('info');
   const timeZone = calendar.timeZone || 'UTC';
-  const [draft, setDraft] = useState(() => event ? draftFromEvent(event, timeZone)
-    : defaultEventDraft(initialType, timeZone, calendar.defaultEventDurationMinutes));
+  function makeDraft(type) {
+    const value=defaultEventDraft(type,timeZone,calendar.defaultEventDurationMinutes);
+    if(initialDay){
+      const delta=Math.round((Date.parse(initialDay+'T00:00:00Z')-Date.parse(value.date+'T00:00:00Z'))/86400000);
+      for(const field of ['startsAt','endsAt','deadline','remindAt']){
+        const date=new Date(value[field].slice(0,10)+'T00:00:00Z');
+        date.setUTCDate(date.getUTCDate()+delta);
+        value[field]=date.toISOString().slice(0,10)+value[field].slice(10);
+      }
+      value.date=initialDay;
+    }
+    return value;
+  }
+  const [draft, setDraft] = useState(() => event ? draftFromEvent(event, timeZone) : makeDraft(initialType));
   const [formError, setFormError] = useState('');
   const isEditing = Boolean(event);
   const copy = (field, value) => setDraft((current) => ({ ...current, [field]: value }));
   const typeOptions = useMemo(() => EVENT_TYPES.map((type) => ({ type, label: t(`calendarView.type.${type}`) })), [t]);
 
   function changeType(type) {
-    setDraft((current) => ({ ...defaultEventDraft(type, timeZone, calendar.defaultEventDurationMinutes),
+    setDraft((current) => ({ ...makeDraft(type),
       title: current.title, description: current.description, color: current.color,
       attendeesText: current.attendeesText, categoriesText: current.categoriesText,
     }));
@@ -38,7 +50,7 @@ export function EventEditor({ event = null, calendar, saving, onSave, onCancel, 
   }
 
   return <form className="account-card account-form event-editor" onSubmit={submit} onInvalidCapture={()=>setTab('info')} aria-label={t('calendarView.event.editorTitle')}>
-    <header className="event-surface-header"><div className="event-surface-title"><span className="event-surface-symbol"><TablerIcon name={draft.type==='task'?'checkbox':draft.type==='reminder'?'bell':'calendar-event'} size={24}/></span><div><h2>{t(isEditing ? 'calendarView.event.edit' : 'calendarView.event.create')}</h2><p>{calendar.name} · {timeZone}</p></div></div><button type="button" className="event-close" onClick={onCancel} disabled={saving} aria-label={t('calendarView.event.close')}>×</button></header>
+    <header className="event-surface-header"><div className="event-surface-title"><span className="event-surface-symbol"><TablerIcon name={draft.type==='task'?'checkbox':draft.type==='reminder'?'bell':'calendar-event'} size={24}/></span><div><h2>{t(isEditing ? 'calendarView.event.edit' : 'calendarView.event.create')}</h2><p>{calendar.name} · {timeZone}</p></div></div><button type="button" className="event-close" onClick={onCancel} disabled={saving} aria-label={t('calendarView.event.close')}><TablerIcon name="x" size={20}/></button></header>
     <div className="event-surface-tabs" role="group" aria-label={uk?'Розділи події':'Event sections'}>{[['info',uk?'Інформація':'Info'],['notes',uk?'Нотатки':'Notes']].map(([key,label])=><button key={key} type="button" aria-pressed={tab===key} onClick={()=>setTab(key)}>{label}</button>)}</div>
     {isEditing && event.isRecurring && <p>{t('calendarView.event.editSeriesOnly')}</p>}
     {formError && <p role="alert">{formError}</p>}
