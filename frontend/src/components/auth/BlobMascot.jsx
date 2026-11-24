@@ -184,7 +184,12 @@ export function BlobMascot({ mood = 'idle', compact = false, caret = null, feedi
     }
     function leave() { pointer.onHead = false; }
     function reset() { pointer = { x:0,y:0,at:-Infinity,onHead:false,since:0 }; }
-    function click() { if (!isPrivate(current.current.mood)) clickAt = performance.now(); }
+    function click(event) {
+      if (event.button !== undefined && event.button !== 0) return;
+      if (compact || isPrivate(current.current.mood) || transition || current.current.feeding || current.current.dragging) return;
+      clickAt = performance.now();
+      pointer.onHead = false;
+    }
 
     function draw(now) {
       raf = requestAnimationFrame(draw);
@@ -213,18 +218,22 @@ export function BlobMascot({ mood = 'idle', compact = false, caret = null, feedi
       const turning = privacy || transition !== null;
       const eating = !turning && meal !== null && now-meal.startedAt < 3000;
       const mealAge = eating ? Math.max(0, now-meal.startedAt) : 0;
-      const petting = !turning && !eating && !carrotHeld && pointer.onHead && now-pointer.since>260;
+      const jumpAge = now-clickAt;
+      const jumping = !turning && !eating && !reduced && jumpAge>=0 && jumpAge<900;
+      const petting = !turning && !eating && !jumping && !carrotHeld && pointer.onHead && now-pointer.since>260;
       const reading = !turning && !eating && !petting && mode==='reading' && caretAt>pointer.at && now-caretAt<1800;
-      const following = !turning && !eating && !petting && !reading && now-pointer.at<3800 && mode!=='loading';
-      const targetX = privacy || eating ? 0 : petting ? p.x : following ? pointer.x*48 : reading ? ((cursor??.5)-.5)*23 : 0;
+      const following = !turning && !eating && !jumping && !petting && !reading && now-pointer.at<3800 && mode!=='loading';
+      const targetX = privacy || eating ? 0 : petting || jumping ? p.x : following ? pointer.x*48 : reading ? ((cursor??.5)-.5)*23 : 0;
       const distance = targetX-p.x;
-      const moving = !turning && !eating && !petting && !reduced && Math.abs(distance)>3;
+      const moving = !turning && !eating && !jumping && !petting && !reduced && Math.abs(distance)>3;
       if (moving) phase+=dt/840*Math.PI*2;
       else phase=0;
       const hop = moving ? Math.max(0,Math.sin(phase))*7 : 0;
       const age=now-modeAt;
       const celebrate = !turning && !eating && mode==='success' && age<1400 ? Math.abs(Math.sin(age/1400*Math.PI*2))*12 : 0;
-      const surprise = !turning && !eating && now-clickAt<650 ? Math.sin((now-clickAt)/650*Math.PI)*10 : 0;
+      const jumpProgress=jumping?clamp((jumpAge-100)/670,0,1):0;
+      const surprise=jumping?Math.pow(Math.sin(Math.PI*jumpProgress),1.15)*34:0;
+      const jumpSquash=jumping?(jumpAge<100?Math.sin(Math.PI*jumpAge/200)*.075:jumpAge>770?Math.sin(Math.PI*(jumpAge-770)/130)*.055:-Math.sin(Math.PI*jumpProgress)*.035):0;
       const k=(a,b,ms)=>reduced ? b : ease(a,b,dt,ms);
       let turningStep = 0, turnLift = 0, turnLean = 0;
       if (transition) {
@@ -242,14 +251,14 @@ export function BlobMascot({ mood = 'idle', compact = false, caret = null, feedi
       }
       p.step=k(p.step,reduced?0:turning?turningStep:moving?Math.sin(phase)*.75:0,85);
       p.x=k(p.x,targetX,turning?250:320);
-      p.lift=k(p.lift,reduced?0:turning?turnLift:-hop-celebrate-surprise,115);
+      p.lift=k(p.lift,reduced?0:turning?turnLift:-hop-celebrate-surprise,jumping?35:115);
       p.pet=k(p.pet,petting?1:eating?.22:0,380);
       p.food=privacy?0:k(p.food,eating?1:0,100);
       p.foodProgress=eating?clamp(mealAge/3000,0,1):p.food>0.01?p.foodProgress:0;
       const chewWave=eating&&!reduced ? (.5-.5*Math.cos(mealAge/370*Math.PI*2)) : 0;
       p.chew=k(p.chew,chewWave,45);
       p.lean=k(p.lean,reduced?0:turning?turnLean:moving?clamp(distance*.085,-5,5):petting?pointer.x*3:following?pointer.x*2.5:0,230);
-      p.squash=k(p.squash,p.pet*.06+p.chew*.012+(reduced?0:moving?Math.cos(phase)*.015:Math.sin(now/1050)*.006),170);
+      p.squash=k(p.squash,p.pet*.06+p.chew*.012+jumpSquash+(reduced?0:moving?Math.cos(phase)*.015:Math.sin(now/1050)*.006),170);
       p.ear=k(p.ear,reduced||turning?0:moving?Math.sin(phase)*.8:Math.sin(now/1300)*.12,200);
       if(now>=blinkAt){blinkStart=now;blinkAt=now+3500+Math.random()*3200;}
       const blinkAge=(now-blinkStart)/300;
@@ -257,7 +266,7 @@ export function BlobMascot({ mood = 'idle', compact = false, caret = null, feedi
       p.eye=k(p.eye,petting?.04:eating?.35+.25*(1-p.chew):blink,petting||eating?140:75);
       p.gx=k(p.gx,turning||eating?0:reading?((cursor??.5)-.5)*7:pointer.x*3.5,150);
       p.gy=k(p.gy,turning?0:eating?2:reading?3:pointer.y*2.4,150);
-      const nextActivity=privacy?(transition?'turning':'away'):transition?'returning':eating?'eating':petting?'petting':moving?'running':mode;
+      const nextActivity=privacy?(transition?'turning':'away'):transition?'returning':eating?'eating':jumping?'jumping':petting?'petting':moving?'running':mode;
       if(nextActivity!==lastActivity){lastActivity=nextActivity;setActivity(nextActivity);}
       setPose({...p});
     }
