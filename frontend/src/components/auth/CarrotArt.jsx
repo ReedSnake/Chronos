@@ -1,34 +1,30 @@
 import { useId } from 'react';
 
-// Shared vector artwork for the draggable carrots and the rabbit's snack.
+// Rounded cartoon carrot shared by draggable snacks and the chewing animation.
 export function CarrotArt({ progress = 0 }) {
   const id = useId();
   const remaining = Math.max(0, 1 - progress);
-  const rootLength = 54 * remaining;
   return (
-    <g>
+    <g opacity={Math.min(1, remaining * 8)}>
       <defs>
-        <linearGradient id={id+'-root'} x1="0%" y1="12%" x2="100%" y2="82%">
-          <stop offset="0" stopColor="#ffe6a2" />
-          <stop offset=".28" stopColor="#ffba55" />
-          <stop offset=".75" stopColor="#ff8a3c" />
-          <stop offset="1" stopColor="#ed6b32" />
+        <linearGradient id={id+'-root'} x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0" stopColor="#ffbf5a"/><stop offset=".45" stopColor="#ff9a36"/><stop offset="1" stopColor="#f5752c"/>
         </linearGradient>
-        <linearGradient id={id+'-leaf'} x1="15%" y1="0%" x2="90%" y2="100%">
-          <stop offset="0" stopColor="#a6ca83" />
-          <stop offset="1" stopColor="#558d61" />
+        <linearGradient id={id+'-leaf'} x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0" stopColor="#b7df72"/><stop offset="1" stopColor="#62ac59"/>
         </linearGradient>
       </defs>
-      <g opacity={Math.min(1, remaining * 8)}>
-        <path d="M 0 23 C -6 14 -15 9 -12 3 C -8 -3 -1 5 1 15 C 0 4 5 -3 10 1 C 16 6 8 15 4 23 C 13 10 23 11 22 17 C 20 23 10 25 1 28Z" fill={`url(#${id}-leaf)`} />
-        <g transform={`translate(0 24) scale(1 ${Math.max(.02,remaining)})`}>
-          <path d="M -14 0 C -19 -8 -12 -12 0 -12 C 12 -12 19 -6 15 3 C 12 15 6 34 1 51 Q 0 56 -3 51 C -9 34 -15 16 -14 0Z" fill={`url(#${id}-root)`} />
-          <path d="M -13 6 Q -7 9 -3 8 M 13 16 Q 7 19 4 18 M -7 27 Q -3 29 1 28" fill="none" stroke="#d66c37" strokeOpacity=".45" strokeWidth="1.5" strokeLinecap="round" />
-          <path d="M -9 -5 Q -12 4 -8 12" fill="none" stroke="#fff0ce" strokeWidth="2.8" strokeOpacity=".7" strokeLinecap="round" />
-        </g>
-        <g opacity={progress > 0 ? .85 : 0}>
-          <circle cx="1" cy={24+rootLength} r="2.2" fill="#ffe1a0" />
-        </g>
+      <g fill={`url(#${id}-leaf)`} stroke="#508d49" strokeWidth="1.65" strokeLinejoin="round" strokeLinecap="round">
+        <path d="M0 23 C-5 12 -17 13 -17 5 C-17 -2 -8 -1 -4 5 Q1 12 0 23Z"/>
+        <path d="M0 23 C-4 12 -7 2 -1 -2 C6 -6 12 2 8 10 Q5 19 0 23Z"/>
+        <path d="M0 23 C5 11 15 4 20 10 C25 17 13 23 0 23Z"/>
+        <path d="M0 22 L-8 7 M0 22 L3 4 M0 22 L14 13" fill="none" opacity=".55"/>
+      </g>
+      <g transform={`translate(0 24) scale(1 ${Math.max(.02, remaining)})`}>
+        <path d="M-17 -1 C-19 -11 -7 -15 0 -14 C10 -15 20 -10 17 1 C15 15 7 37 2 51 Q0 57 -4 50 C-11 35 -16 14 -17 -1Z" fill={`url(#${id}-root)`} stroke="#d8662d" strokeWidth="1.8" strokeLinejoin="round"/>
+        <path d="M-11 -3 Q-13 4 -10 13" fill="none" stroke="#ffe6a7" strokeWidth="4" strokeLinecap="round"/>
+        <path d="M-15 7 Q-10 10 -6 9 M13 17 Q8 20 5 19 M-8 29 Q-4 32 0 30" fill="none" stroke="#d8662d" strokeWidth="2.3" strokeLinecap="round"/>
+        <circle cx="6" cy="-6" r="2.3" fill="#ffda88" opacity=".85"/>
       </g>
     </g>
   );
