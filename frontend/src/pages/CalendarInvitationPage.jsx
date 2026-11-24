@@ -1,7 +1,7 @@
+import { FlowSurface } from '../components/layout/FlowSurface';
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { applicationContainer } from '../app/applicationContainer';
-import { PageTemplate } from '../components/layout/PageTemplate';
 import { useAuth } from '../features/auth/AuthContext';
 import { useLocale } from '../i18n/LocaleProvider';
 import { getLocalizedApiError } from '../i18n/apiErrors';
@@ -43,11 +43,13 @@ export function CalendarInvitationPage() {
       .catch((requestError) => setError(getLocalizedApiError(requestError, t, 'calendarInvitation.claimError')));
   }, [navigate, ready, status, t, localizedPath]);
 
+  const { locale } = useLocale();
+  const title = locale === 'uk' ? 'Запрошення до календаря' : 'Calendar invitation';
   const returnTo = `${localizedPath('/calendar-invite')}#token=${encodeURIComponent(token || '')}`;
-  if (status === 'loading' || (!ready && !error)) return <PageTemplate><p role="status">{t('common.loading')}</p></PageTemplate>;
-  if (error) return <PageTemplate><p role="alert">{error}</p></PageTemplate>;
+  if (status === 'loading' || (!ready && !error)) return <FlowSurface title={title} icon="calendar-event"><p role="status">{t('common.loading')}</p></FlowSurface>;
+  if (error) return <FlowSurface title={title} icon="x" tone="error"><p role="alert">{error}</p></FlowSurface>;
   if (status !== 'authenticated') {
-    return <PageTemplate><p>{t('calendarInvitation.signInBefore')}<Link to={localizedPath('/login')} state={{ returnTo }}>{t('common.signIn')}</Link>{t('calendarInvitation.signInAfter')} <Link to={localizedPath('/register')} state={{ returnTo }}>{t('calendarInvitation.register')}</Link>.</p></PageTemplate>;
+    return <FlowSurface title={title} icon="calendar-event"><p className="flow-muted">{locale === 'uk' ? 'Увійдіть або створіть обліковий запис, щоб приєднатися до календаря' : 'Sign in or create an account to join the calendar'}</p><div className="flow-actions"><Link className="flow-button flow-primary" to={localizedPath('/login')} state={{ returnTo }}>{t('common.signIn')}</Link><Link className="flow-button" to={localizedPath('/register')} state={{ returnTo }}>{t('calendarInvitation.register')}</Link></div></FlowSurface>;
   }
-  return <PageTemplate><p role="status">{t('calendarInvitation.claiming')}</p></PageTemplate>;
+  return <FlowSurface title={title} icon="calendar-event"><p role="status">{t('calendarInvitation.claiming')}</p></FlowSurface>;
 }
