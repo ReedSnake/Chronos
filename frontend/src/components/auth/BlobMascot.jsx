@@ -1,193 +1,191 @@
 import { useEffect, useRef } from 'react';
 
-const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
-const lerp = (a, b, k) => a + (b - a) * k;
-const field = (x, y, cx, cy, rx, ry) => 1 - ((x - cx) / rx) ** 2 - ((y - cy) / ry) ** 2;
-const smooth = v => { const n = clamp(v, 0, 1); return n * n * (3 - 2 * n); };
-const grid = [];
-for (let y = 2; y < 220; y += 3.8) for (let x = 2; x < 260; x += 3.8) grid.push([x, y]);
+const W = 260;
+const H = 220;
+const STEP = 4.5;
+const BLUE = '#75b6de';
+const DARK = '#25282d';
+const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+const mix = (a, b, t) => a + (b - a) * t;
+const smooth = v => { const u = clamp(v, 0, 1); return u * u * (3 - 2 * u); };
+const ellipse = (x, y, cx, cy, rx, ry) => 1 - ((x - cx) / rx) ** 2 - ((y - cy) / ry) ** 2;
 
-// A shared halftone lattice keeps the body, eyes and hands visually coherent.
+// The reference uses one regular halftone lattice, including the face and arms.
+const lattice = [];
+for (let y = 2.5; y < H; y += STEP) {
+  for (let x = 2.5; x < W; x += STEP) {
+    const v = (y - 111) / 99;
+    const dome = 1 - ((x - 130) / (96 + 19 * v)) ** 2 - v ** 2;
+    const lower = Math.max(
+      ellipse(x, y, 101, 159, 63, 48),
+      ellipse(x, y, 159, 159, 63, 48),
+    );
+    lattice.push({ x, y, body: Math.max(dome, lower) });
+  }
+}
+
+function drawMascot(ctx, pose) {
+  const { gazeX, gazeY, blink, handL, handR, breath, mode } = pose;
+  ctx.save();
+  ctx.translate(130, 207);
+  ctx.scale(1 - breath * .45, 1 + breath);
+  ctx.translate(-130, -207);
+
+  for (const { x, y, body } of lattice) {
+    const l = ellipse(x, y, handL.x, handL.y, 24, 21);
+    const r = ellipse(x, y, handR.x, handR.y, 24, 21);
+    const silhouette = Math.max(body, l, r);
+    if (silhouette <= -.025) continue;
+    const edge = smooth((silhouette + .025) / .23);
+    // Large central dots leave small cream gaps; the outer dots taper gently.
+    const radius = edge * mix(1.45, 2.78, smooth((silhouette - .10) / .72));
+    const e1 = ellipse(x, y, 94 + gazeX, 92 + gazeY, 10.5, Math.max(1.9, 15.5 * blink));
+    const e2 = ellipse(x, y, 166 + gazeX, 92 + gazeY, 10.5, Math.max(1.9, 15.5 * blink));
+    const eye = Math.max(e1, e2);
+    const handInk = Math.max(l * handL.cover, r * handR.cover);
+    const cover = smooth((handInk + .015) / .19);
+    const eyeInk = smooth((eye + .12) / .32) * (1 - cover);
+    const halo = smooth((eye + .5) / .36) * (1 - cover);
+    const base = handInk > .04 ? '#559bc8' : BLUE;
+    const dotRadius = mix(radius * (1 - halo * .55), 2.13, eyeInk);
+    if (dotRadius < .12) continue;
+    ctx.globalAlpha = eyeInk > .5 ? 1 : .72 + .28 * edge;
+    ctx.fillStyle = eyeInk > .6 ? DARK : eyeInk > .15 ? '#506e83' : base;
+    ctx.beginPath();
+    ctx.arc(x, y, dotRadius, 0, 2 * Math.PI);
+    ctx.fill();
+  }
+
+  if (mode === 'meeting') {
+    ctx.globalAlpha = .9;
+    ctx.strokeStyle = '#559bc8';
+    ctx.lineWidth = 1.8;
+    ctx.beginPath(); ctx.arc(230, 50, 10, 0, 2 * Math.PI);
+    ctx.moveTo(230, 43); ctx.lineTo(230, 50); ctx.lineTo(235, 53); ctx.stroke();
+  }
+  if (mode === 'birthday') {
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = '#e5ad72';
+    ctx.beginPath(); ctx.moveTo(116, 23); ctx.lineTo(133, 2); ctx.lineTo(146, 23); ctx.closePath(); ctx.fill();
+  }
+  ctx.restore();
+  ctx.globalAlpha = 1;
+}
+
 export function BlobMascot({ mood = 'idle', compact = false, caret = null }) {
   const canvas = useRef(null);
-  const current = useRef({ mood, caret });
-  current.current = { mood, caret };
+  const inputs = useRef({ mood, caret });
+  inputs.current = { mood, caret };
 
   useEffect(() => {
     const el = canvas.current;
     const ctx = el.getContext('2d');
-    if (!ctx) return;
-    const media = window.matchMedia('(prefers-reduced-motion: reduce)');
-    const pointer = { x: 130, y: 100, inside: false, at: 0, speed: 0 };
-    let frame, last = performance.now(), activity = last, hoverAt = 0;
-    let blinkAt = last + 2800, blinkUntil = 0, doubleBlink = false;
-    let clickAt = -10000, clicks = 0, stroke = 0, gestureAt = -10000;
-    let gx = 0, gy = 0, tilt = 0, sx = 1, sy = 1, lift = 0, eyeOpen = 1;
-    let lx = 48, ly = 139, rx = 212, ry = 139, lastMood = '', moodAt = last;
-    let dpr = 1, visible = true;
-    let previousCaret = null, caretAt = -10000, lookAt = last + 4200, idleLook = 0, idleLookY = 0;
-    let lastInputAt = -10000, idleGestureAt = last + 6500, idleGesture = 0;
+    if (!ctx) return undefined;
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
+    let pixelRatio = 1;
+    let visible = true;
+    let frame = 0;
+    let last = performance.now();
+    let lastPointer = -Infinity;
+    let lastTyping = -Infinity;
+    let previousCaret = null;
+    let previousMood = '';
+    let blinkAt = last + 4200;
+    let blinkStart = -Infinity;
+    let pointerX = 0, pointerY = 0;
+    let gazeX = 0, gazeY = 0;
+    const handL = { x: 28, y: 126, cover: 0 };
+    const handR = { x: 232, y: 126, cover: 0 };
+
     function resize() {
-      dpr = Math.min(window.devicePixelRatio || 1, 2) * Math.max(1, el.getBoundingClientRect().width / 260);
-      el.width = Math.round(260 * dpr);
-      el.height = Math.round(220 * dpr);
+      const width = el.getBoundingClientRect().width || W;
+      pixelRatio = Math.max(1, Math.min(window.devicePixelRatio || 1, 2) * width / W);
+      el.width = Math.round(W * pixelRatio);
+      el.height = Math.round(H * pixelRatio);
     }
-    function move(e) {
+
+    function move(event) {
+      if (event.pointerType === 'touch') return;
       const box = el.getBoundingClientRect();
       if (!box.width || !box.height) return;
-      const now = performance.now();
-      // Ignore duplicate mouse events emitted alongside Pointer Events.
-      if (e.type === 'mousemove' && now - pointer.at < 8) return;
-      const x = (e.clientX - box.left) * 260 / box.width;
-      const y = (e.clientY - box.top) * 220 / box.height;
-      const inside = x >= 0 && x <= 260 && y >= 0 && y <= 220;
-      if (inside && !pointer.inside) hoverAt = now;
-      const distance = Math.hypot(x - pointer.x, y - pointer.y);
-      pointer.speed = lerp(pointer.speed, distance / Math.max(12, now - pointer.at), .35);
-      if (inside && pointer.inside && distance > 2 && distance < 38) {
-        stroke += distance;
-        if (stroke > 120) { gestureAt = now; stroke = 0; }
-      } else if (!inside) stroke = 0;
-      Object.assign(pointer, { x, y, inside, at: now });
-      activity = now;
+      const dx = (event.clientX - box.left) / box.width * W - 130;
+      const dy = (event.clientY - box.top) / box.height * H - 92;
+      const distance = Math.hypot(dx, dy);
+      const amount = Math.tanh(distance / 100);
+      pointerX = distance ? dx / distance * amount : 0;
+      pointerY = distance ? dy / distance * amount : 0;
+      lastPointer = performance.now();
     }
-    function key(event) { activity = performance.now(); if (event.target?.tagName === 'INPUT' && event.target.dataset.password === undefined) lastInputAt = activity; }
-    function leave() { pointer.inside = false; pointer.x = 130; pointer.y = 100; }
-    function tap() {
-      const now = performance.now();
-      clicks = now - clickAt < 1100 ? clicks + 1 : 1;
-      clickAt = activity = now;
+
+    function type(event) {
+      if (event.target?.tagName === 'INPUT' && event.target.dataset.password === undefined) {
+        lastTyping = performance.now();
+      }
     }
-    const observer = typeof IntersectionObserver === 'function' ? new IntersectionObserver(([entry]) => { visible = entry.isIntersecting; }) : null;
-    observer?.observe(el);
-    function dot(x, y, r, color, alpha = 1) {
-      if (r < .15) return;
-      ctx.globalAlpha = alpha;
-      ctx.fillStyle = color;
-      ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
+
+    function reset() { pointerX = 0; pointerY = 0; }
+
+    function updateHand(hand, x, y, cover, k) {
+      hand.x = mix(hand.x, x, k);
+      hand.y = mix(hand.y, y, k);
+      hand.cover = mix(hand.cover, cover, k);
     }
+
     function draw(now) {
       frame = requestAnimationFrame(draw);
-      const dt = Math.min(50, now - last); last = now;
+      const dt = Math.min(50, now - last);
+      last = now;
       if (!visible || document.hidden) return;
-      const reduced = media.matches;
-      const k = reduced ? 1 : 1 - Math.exp(-dt / 260);
-      const gazeK = reduced ? 1 : 1 - Math.exp(-dt / 115);
-      const blinkK = reduced ? 1 : 1 - Math.exp(-dt / 65);
-      const { mood: mode, caret: cursor } = current.current;
-      if (mode !== lastMood) { lastMood = mode; moodAt = now; }
-      if (cursor !== previousCaret) { previousCaret = cursor; caretAt = now; }
-      const age = (now - moodAt) / 1000, t = now / 1000;
-      if (now >= lookAt) { idleLook = (Math.random() - .5) * 1.4; idleLookY = (Math.random() - .5) * .7; lookAt = now + 2200 + Math.random() * 2600; }
-      const privateMode = mode === 'private', peek = mode === 'peek';
-      const sleeping = (mode === 'idle' || mode === 'empty') && now - activity > 45000;
-      const bored = mode === 'empty' || (mode === 'idle' && now - activity > 5500);
-      if (now >= idleGestureAt + 2600) { idleGestureAt = now + 3500 + Math.random() * 4000; idleGesture = (idleGesture + 1) % 3; }
-      const gestureAge = (now - idleGestureAt) / 1000;
-      const idleMotion = !reduced && bored && !sleeping && !pointer.inside && gestureAge > 0 && gestureAge < 2.6 ? Math.sin(Math.PI * gestureAge / 2.6) ** 2 : 0;
-      const stretch = idleMotion * (idleGesture === 2 ? 1 : 0);
-      const surprised = now - clickAt < 1700, annoyed = surprised && clicks >= 3;
-      const pet = now - gestureAt < 2200;
-      const reach = pointer.inside && now - hoverAt > 1200 && !privateMode && !peek;
-      const dizzy = pointer.inside && pointer.speed > 1.8 && now - pointer.at < 120;
-      const happy = mode === 'success' || mode === 'birthday';
-      const sad = mode === 'error' || mode === 'offline';
-      const waiting = mode === 'loading';
-      const confused = mode === 'lost';
-      const typingAt = Math.max(caretAt, lastInputAt);
-      const reading = mode === 'reading' && cursor != null && typingAt > pointer.at && now - typingAt < 1800;
-      const dx = pointer.x - 130, dy = pointer.y - 98;
-      const distance = Math.hypot(dx, dy);
-      const range = Math.tanh(distance / 120);
-      const mouseX = distance ? dx / distance * range : 0;
-      const mouseY = distance ? dy / distance * range : 0;
-      const freeLook = bored && now - pointer.at > 5500 && !pointer.inside;
-      const gazeX = reading ? cursor * 1.6 - .8 : freeLook ? idleLook : mouseX;
-      const gazeY = reading ? .85 : freeLook ? idleLookY : mouseY;
-      const gazeOff = privateMode || sleeping;
-      gx = lerp(gx, gazeOff ? 0 : gazeX * 23, gazeK);
-      gy = lerp(gy, gazeOff ? 0 : sad && now - pointer.at > 1600 ? 10 : gazeY * 19, gazeK);
-      const breath = reduced ? 0 : Math.sin(t * 1.25) * .018;
-      const jump = happy && !reduced && age < 1.7 ? Math.max(0, Math.sin(age / 1.7 * Math.PI)) * 16 : 0;
-      const lean = reduced ? 0 : (dizzy ? Math.sin(t * 3.2) * .09 : gazeX * .10 + (waiting || confused ? Math.sin(t * 1.8) * .05 : 0) + idleMotion * (idleGesture === 0 ? -.075 : .06));
-      tilt = lerp(tilt, privateMode ? 0 : lean, k);
-      sx = lerp(sx, 1 + breath - stretch * .045 + (sad || annoyed ? .055 : 0) - (jump ? .06 : 0) + (pet ? .025 : 0), k);
-      sy = lerp(sy, 1 - breath + stretch * .07 - (sad || sleeping || privateMode || annoyed ? .09 : 0) + jump * .004 + (surprised && !annoyed ? .035 : 0), k);
-      lift = lerp(lift, jump + (pointer.inside && !privateMode && !reduced ? 4 : 0), k);
-      if (now > blinkAt) {
-        blinkUntil = now + 210;
-        blinkAt = doubleBlink ? now + 390 : now + 3200 + Math.random() * 4800;
-        doubleBlink = !doubleBlink && Math.random() < .2;
-      }
-      eyeOpen = lerp(eyeOpen, sleeping || (!reduced && now < blinkUntil) ? .08 : 1, blinkK);
-      const leftRaised = privateMode || peek, rightRaised = privateMode;
-      lx = lerp(lx, leftRaised ? 98 : happy ? 40 : reach && pointer.x < 130 ? clamp(pointer.x, 40, 72) : 48, k);
-      ly = lerp(ly, leftRaised ? 98 : happy ? 84 : reach && pointer.x < 130 ? clamp(pointer.y, 70, 150) : 137 - idleMotion * (idleGesture === 0 ? 30 : idleGesture === 2 ? 20 : 0), k);
-      rx = lerp(rx, rightRaised ? 162 : peek ? 186 : happy ? 220 : reach && pointer.x >= 130 ? clamp(pointer.x, 188, 220) : 212, k);
-      ry = lerp(ry, rightRaised ? 98 : peek ? 124 : happy ? 84 : reach && pointer.x >= 130 ? clamp(pointer.y, 70, 150) : 137 - idleMotion * (idleGesture === 1 ? 30 : idleGesture === 2 ? 20 : 0), k);
+      const { mood: mode, caret: cursor } = inputs.current;
+      const quiet = reduced.matches;
+      if (cursor !== previousCaret) { previousCaret = cursor; lastTyping = now; }
+      const privateMode = mode === 'private';
+      const peek = mode === 'peek';
+      const reading = mode === 'reading' && lastTyping > lastPointer && now - lastTyping < 1400;
+      const eyeEase = quiet ? 1 : 1 - Math.exp(-dt / 145);
+      const handEase = quiet ? 1 : 1 - Math.exp(-dt / 220);
+      const lookX = privateMode ? 0 : reading ? ((cursor ?? .5) - .5) * 10 : pointerX * 6.5;
+      const lookY = privateMode ? 0 : reading ? 5 : pointerY * 5.5;
+      gazeX = mix(gazeX, lookX, eyeEase);
+      gazeY = mix(gazeY, lookY, eyeEase);
 
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      ctx.clearRect(0, 0, 260, 220);
-      ctx.save();
-      ctx.translate(130, 115 - lift); ctx.rotate(tilt); ctx.scale(sx, sy); ctx.translate(-130, -115);
-      // Keep the face independent from the halftone grid: the dark eye dots
-      // move together, rather than changing colour as they cross body dots.
-      const eyeCenters = [98 + gx, 162 + gx];
-      const eyeY = 98 + gy;
-      const eyeHeight = Math.max(1.6, 15 * eyeOpen);
-      for (const [x, y] of grid) {
-        const v = (y - 110) / 94;
-        const width = 83 + 15 * v;
-        const body = 1 - ((x - 130) / width) ** 2 - v ** 2;
-        const l = field(x, y, lx, ly, 25, 22), r = field(x, y, rx, ry, 25, 22);
-        const d = Math.max(body, l, r);
-        if (d <= -.05) continue;
-        const radius = 2.35 * smooth((d + .05) / .58);
-        const wave = reduced ? 0 : Math.sin(y * .055 + t * 1.25) * .45 * smooth(body + .1);
-        const covered = (leftRaised && l > .02) || ((rightRaised || peek) && r > .02);
-        const inEye = eyeCenters.some((cx, index) => !(peek && index === 0) && field(x, y, cx, eyeY, 11.5, eyeHeight + 2) > 0);
-        if (!privateMode && !covered && inEye) continue;
-        dot(x + wave, y, radius, covered ? '#529ac9' : '#70b5df', .76 + .24 * smooth(d / .4));
+      if (mode !== previousMood) {
+        if (mode === 'error' || mode === 'success') blinkAt = Math.min(blinkAt, now + 280);
+        previousMood = mode;
       }
-      if (!privateMode) {
-        for (const [index, cx] of eyeCenters.entries()) {
-          if (peek && index === 0) continue;
-          for (let row = -3; row <= 3; row++) {
-            for (let col = -2; col <= 2; col++) {
-              const ex = col * 3.8, ey = row * 4.2;
-              if (field(ex, ey, 0, 0, 10, 15) <= 0) continue;
-              if (eyeOpen < .22 && row !== 0) continue;
-              dot(cx + ex, eyeY + ey * eyeOpen, 1.7 + .25 * (1 - Math.abs(col) / 2), '#202b37');
-            }
-          }
-        }
+      if (now >= blinkAt) {
+        blinkStart = now;
+        blinkAt = now + 4000 + Math.random() * 3000;
       }
-      if (mode === 'birthday') {
-        for (const [x,y] of grid) if (y < 40 && y > 1 && Math.abs(x - 130) < y * .55) dot(x,y,1.8,y % 11 < 4 ? '#f3aa55' : '#e881a1');
-      }
-      if (mode === 'meeting') {
-        ctx.globalAlpha = 1; ctx.strokeStyle = '#397fae'; ctx.lineWidth = 2;
-        ctx.beginPath(); ctx.arc(220, 65, 13, 0, Math.PI * 2); ctx.moveTo(220,55); ctx.lineTo(220,65); ctx.lineTo(227,69); ctx.stroke();
-      }
-      if (sleeping) { ctx.globalAlpha = .8; ctx.fillStyle = '#70b5df'; ctx.font = 'bold 15px sans-serif'; ctx.fillText('z Z', 209, 40); }
-      ctx.restore(); ctx.globalAlpha = 1;
+      const blinkAge = (now - blinkStart) / 240;
+      const blink = !quiet && blinkAge >= 0 && blinkAge <= 1 ? 1 - .93 * Math.sin(Math.PI * blinkAge) : 1;
+
+      updateHand(handL, privateMode || peek ? 94 : 28, privateMode || peek ? 92 : 126, privateMode || peek ? 1 : 0, handEase);
+      updateHand(handR, privateMode ? 166 : peek ? 186 : 232, privateMode ? 92 : peek ? 116 : 126, privateMode || peek ? 1 : 0, handEase);
+
+      ctx.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
+      ctx.clearRect(0, 0, W, H);
+      drawMascot(ctx, { gazeX, gazeY, blink, handL, handR, breath: quiet ? 0 : Math.sin(now / 900) * .006, mode });
     }
+
     resize();
+    const observer = typeof IntersectionObserver === 'function' ? new IntersectionObserver(([entry]) => { visible = entry.isIntersecting; }) : null;
+    observer?.observe(el);
+    const resizeObserver = typeof ResizeObserver === 'function' ? new ResizeObserver(resize) : null;
+    resizeObserver?.observe(el);
     window.addEventListener('resize', resize);
     window.addEventListener('pointermove', move, { passive: true, capture: true });
-    window.addEventListener('mousemove', move, { passive: true, capture: true });
-    window.addEventListener('keydown', key);
-    window.addEventListener('blur', leave);
-    el.addEventListener('pointerdown', tap);
+    window.addEventListener('input', type, true);
+    window.addEventListener('blur', reset);
     frame = requestAnimationFrame(draw);
     return () => {
-      cancelAnimationFrame(frame); observer?.disconnect();
+      cancelAnimationFrame(frame);
+      observer?.disconnect();
+      resizeObserver?.disconnect();
       window.removeEventListener('resize', resize);
       window.removeEventListener('pointermove', move, true);
-      window.removeEventListener('mousemove', move, true);
-      window.removeEventListener('keydown', key);
-      window.removeEventListener('blur', leave);
-      el.removeEventListener('pointerdown', tap);
+      window.removeEventListener('input', type, true);
+      window.removeEventListener('blur', reset);
     };
   }, []);
 
