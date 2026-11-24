@@ -2,6 +2,7 @@ import { Link, NavLink, Outlet, useNavigate, useLocation } from 'react-router-do
 import { TablerIcon } from '../components/layout/TablerIcon';
 import { applicationContainer } from '../app/applicationContainer';
 import '../styles/workspace.css';
+import '../styles/secondary-surfaces.css';
 import { useAuth } from '../features/auth/AuthContext';
 import { SUPPORTED_LOCALES } from '../i18n/locales';
 import { useLocale } from '../i18n/LocaleProvider';
@@ -21,6 +22,8 @@ export function ApplicationPage() {
   const authResolved = status !== 'loading';
   const workspaceRoute = pathname.replace(/^\/[^/]+/, '').replace(/\/$/, '');
   const inWorkspace = signedIn && (workspaceRoute === '' || /^\/(account|calendars|integrations|users|tasks)(\/|$)/.test(workspaceRoute)) && workspaceRoute !== '/integrations/approve';
+  const isSharedScreen = workspaceRoute === '/calendar-share';
+  const isSupportScreen = isSharedScreen || ['/verify-email','/calendar-invite','/event-invite','/integrations/approve'].includes(workspaceRoute) || (!inWorkspace && !isAuthScreen && !isPublicHome && workspaceRoute !== '');
   if (inWorkspace) {
     const items = [
       ['/', 'layout-dashboard', locale === 'uk' ? 'Огляд' : 'Dashboard'],
@@ -42,15 +45,15 @@ export function ApplicationPage() {
           <Link className="workspace-user" aria-label={t('navigation.account')} to={localizedPath('/account')}><span className="workspace-avatar">{avatar?<img src={avatar} alt=""/>:String(user?.name||'?').trim().slice(0,1).toUpperCase()}</span><span className="workspace-user-name"><strong>{user?.name}</strong><small>{t('navigation.account')}</small></span><TablerIcon name="chevron-right" size={16}/></Link>
         </div>
       </aside>
-      <div className="workspace-main"><Outlet/></div>
+      <div className="workspace-main"><label className="workspace-language workspace-mobile-language"><span className="visually-hidden">{t('languageSwitcher.label')}</span><select value={locale} aria-label={t('languageSwitcher.label')} onChange={event=>navigate(locationForLocale(event.target.value),{replace:true})}>{SUPPORTED_LOCALES.map(lang=><option key={lang} value={lang}>{t(`languageSwitcher.${lang}`)}</option>)}</select></label><Outlet/></div>
     </main>;
   }
   return (
-    <main className={isPublicHome ? "page public-home" : isAuthScreen ? "page auth-screen" : "page"}>
+    <main className={isPublicHome ? "page public-home" : isAuthScreen ? "page auth-screen" : isSupportScreen ? (isSharedScreen ? "page support-screen shared-screen" : "page support-screen") : "page"}>
       <section className="application-shell">
         {!isPublicHome && <header className="application-header">
-          <Link className="brand" to={localizedPath('/')}>Chronos</Link>
-          {!isAuthScreen && <nav aria-label={t('navigation.label')} className="navigation">
+          <Link className="brand" to={localizedPath('/')}>{isSupportScreen ? <><span className="brand-mark"><TablerIcon name="clock" size={21}/></span>chronos.</> : "Chronos"}</Link>
+          {!isAuthScreen && !isSupportScreen && <nav aria-label={t('navigation.label')} className="navigation">
             <NavLink className={getNavigationClass} to={localizedPath('/')} end>{t('navigation.home')}</NavLink>
             {signedIn && <NavLink className={getNavigationClass} to={localizedPath('/calendars')}>{t('navigation.calendars')}</NavLink>}
             {signedIn && <NavLink className={getNavigationClass} to={localizedPath('/integrations')}>{t('navigation.integrations')}</NavLink>}
