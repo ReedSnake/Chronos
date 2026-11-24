@@ -34,11 +34,11 @@ export function ApplicationPage() {
       <aside className="workspace-sidebar">
         <Link className="workspace-logo" to={localizedPath('/')}><span className="workspace-logo-icon"><TablerIcon name="clock" size={25}/></span><span>chronos<span>.</span></span></Link>
         <nav className="workspace-nav" aria-label={t('navigation.label')}>
-          {items.map(([path, icon, label]) => <NavLink key={path} end={path==='/'||path==='/calendars'} to={localizedPath(path)} className={({isActive})=>'workspace-nav-link'+(isActive?' active':'')}><TablerIcon name={icon} size={21}/><span>{label}</span></NavLink>)}
+          {items.map(([path, icon, label]) => <NavLink key={path} aria-label={label} title={label} end={path==='/'||path==='/calendars'} to={localizedPath(path)} className={({isActive})=>'workspace-nav-link'+(isActive?' active':'')}><TablerIcon name={icon} size={21}/><span>{label}</span></NavLink>)}
         </nav>
         <div className="workspace-side-bottom">
           <label className="workspace-language"><span className="visually-hidden">{t('languageSwitcher.label')}</span><select value={locale} aria-label={t('languageSwitcher.label')} onChange={event=>navigate(locationForLocale(event.target.value),{replace:true})}>{SUPPORTED_LOCALES.map(lang=><option key={lang} value={lang}>{t(`languageSwitcher.${lang}`)}</option>)}</select></label>
-          <Link className="workspace-user" to={localizedPath('/account')}><span className="workspace-avatar">{avatar?<img src={avatar} alt=""/>:String(user?.name||'?').trim().slice(0,1).toUpperCase()}</span><span className="workspace-user-name"><strong>{user?.name}</strong><small>{t('navigation.account')}</small></span><TablerIcon name="chevron-right" size={16}/></Link>
+          <Link className="workspace-user" aria-label={t('navigation.account')} to={localizedPath('/account')}><span className="workspace-avatar">{avatar?<img src={avatar} alt=""/>:String(user?.name||'?').trim().slice(0,1).toUpperCase()}</span><span className="workspace-user-name"><strong>{user?.name}</strong><small>{t('navigation.account')}</small></span><TablerIcon name="chevron-right" size={16}/></Link>
         </div>
       </aside>
       <div className="workspace-main"><Outlet/></div>
