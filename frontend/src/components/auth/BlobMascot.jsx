@@ -45,16 +45,16 @@ export function BlobMascot({ mood = 'idle' }) {
       const box = svg.current?.getBoundingClientRect();
       if (!box) return;
       target.current = {
-        x: clamp((event.clientX - box.left - box.width / 2) / 17, -11, 11),
-        y: clamp((event.clientY - box.top - box.height * .44) / 18, -8, 10),
+        x: 24 * Math.tanh((event.clientX - box.left - box.width / 2) / (box.width * .65)),
+        y: 19 * Math.tanh((event.clientY - box.top - box.height * .44) / (box.height * .65)),
       };
     }
     function reset() { target.current = { x: 0, y: 0 }; }
     function tick() {
-      const desired = media.matches || hidden ? { x: 0, y: 0 } : mood === 'reading' ? { x: target.current.x * .65, y: 7 } : target.current;
-      x += (desired.x - x) * .13;
-      y += (desired.y - y) * .13;
-      eyes.current?.setAttribute('transform', `translate(${x.toFixed(2)} ${y.toFixed(2)})`);
+      const desired = hidden ? { x: 0, y: 0 } : target.current;
+      x += (desired.x - x) * (media.matches ? 1 : .20);
+      y += (desired.y - y) * (media.matches ? 1 : .20);
+      if (eyes.current) eyes.current.style.transform = `translate(${x.toFixed(2)}px, ${y.toFixed(2)}px)`;
       frame = requestAnimationFrame(tick);
     }
     function scheduleBlink() {
@@ -63,12 +63,12 @@ export function BlobMascot({ mood = 'idle' }) {
         reopen = window.setTimeout(() => { setBlink(false); scheduleBlink(); }, 150);
       }, 2600 + Math.random() * 2600);
     }
-    window.addEventListener('pointermove', track, { passive: true });
+    window.addEventListener('mousemove', track, { passive: true, capture: true });
     document.addEventListener('pointerleave', reset);
     frame = requestAnimationFrame(tick);
     scheduleBlink();
     return () => {
-      window.removeEventListener('pointermove', track);
+      window.removeEventListener('mousemove', track, true);
       document.removeEventListener('pointerleave', reset);
       cancelAnimationFrame(frame);
       clearTimeout(timer);
@@ -83,7 +83,7 @@ export function BlobMascot({ mood = 'idle' }) {
         <g fill="#70b5df">
           {bodyDots.map((dot, i) => <circle key={i} cx={dot.x} cy={dot.y} r={dot.radius} opacity={dot.opacity} />)}
         </g>
-        <g ref={eyes}>
+        <g ref={eyes} style={{ willChange: "transform" }}>
           {[99, 161].map(cx => (
             <g key={cx} transform={`translate(${cx} 98)`}>
               <g style={{ transform: `scaleY(${eyeHeight / 15})`, transition: 'transform 130ms ease' }} className="mascot-blinking-eye">
