@@ -19,7 +19,7 @@ export async function loadDashboard(service, range) {
   async function read(calendar) {
     const events = [];
     for (let page = 1; page <= 100; page++) {
-      const result = await service.listEvents(calendar.id, { from: range.from, to: range.to, page, limit: 100 });
+      const result = await service.listEvents(calendar.id, { from: range.from, to: range.to, types: range.types || [], page, limit: 100 });
       events.push(...(result.events || []).map(event => ({ ...event, calendarId: calendar.id, calendarName: calendar.name })));
       if (page >= (result.pagination?.totalPages || 1)) return events;
     }
