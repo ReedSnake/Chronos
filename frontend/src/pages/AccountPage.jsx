@@ -1,4 +1,6 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { TablerIcon as Icon } from '../components/layout/TablerIcon';
+import '../styles/account-settings.css';
 import { Link, useNavigate } from 'react-router-dom';
 import { applicationContainer } from '../app/applicationContainer';
 import { useAuth } from '../features/auth/AuthContext';
@@ -42,6 +44,9 @@ export function AccountPage() {
   const navigate = useNavigate();
   const { setAuthenticated, setAnonymous } = useAuth();
   const { locale, localizedPath, t } = useLocale();
+  const uk = locale === 'uk';
+  const fileRef = useRef(null);
+  const lock = useRef(false);
   const [user, setUser] = useState(null);
   const [profile, setProfile] = useState({ name: '', bio: '' });
   const [country, setCountry] = useState('');
@@ -59,9 +64,10 @@ export function AccountPage() {
   const [error, setError] = useState('');
   const [status, setStatus] = useState('');
 
-  function updateState(nextUser) {
+  function updateState(nextUser, preserveDraft = false) {
     setUser(nextUser);
     setAuthenticated(nextUser);
+    if (preserveDraft) return;
     setProfile({ name: nextUser.name, bio: nextUser.bio || '' });
     setCountry(nextUser.country || '');
     setSettings(normalizeSettings(nextUser.settings));
@@ -102,68 +108,91 @@ export function AccountPage() {
     return () => { alive = false; };
   }, [timeZoneReload]);
 
-  async function submit(action, statusKey) {
-    setBusy(true);
-    setError('');
-    setStatus('');
-    try {
-      const { user: result } = await action();
-      updateState(result);
-      setStatus(statusKey);
-    } catch (requestError) {
-      setError(getLocalizedApiError(requestError, t, 'account.saveError'));
-    } finally {
-      setBusy(false);
-    }
+  async function run(action) {
+    if (lock.current) return;
+    lock.current = true;
+    setBusy(true); setError(''); setStatus('');
+    try { await action(); }
+    catch (requestError) { setError(getLocalizedApiError(requestError, t, 'account.saveError')); }
+    finally { lock.current = false; setBusy(false); }
   }
 
-  async function signOut() {
-    setBusy(true);
-    setError('');
-    try {
-      await applicationContainer.authService.logout();
-      setAnonymous();
-      navigate(localizedPath('/login'), { replace: true });
-    } catch (requestError) {
-      setError(getLocalizedApiError(requestError, t, 'account.signOutError'));
-      setBusy(false);
-    }
+  const profileChanged = !!user && (profile.name !== user.name || profile.bio !== (user.bio || ''));
+  const countryChanged = !!user && country !== (user.country || '');
+  const preferencesChanged = !!user && JSON.stringify(settings) !== JSON.stringify(normalizeSettings(user.settings));
+  const dirty = profileChanged || countryChanged || preferencesChanged;
+
+  function discard() {
+    if (user && !lock.current) { updateState(user); setError(''); setStatus(''); }
   }
 
-  async function deleteAccount() {
-    if (!window.confirm(t('account.actions.confirmDelete'))) return;
-    setBusy(true);
-    setError('');
-    try {
-      await users.deleteAccount();
-      setAnonymous();
-      navigate(localizedPath('/register'), { replace: true });
-    } catch (requestError) {
-      setError(getLocalizedApiError(requestError, t, 'account.deleteError'));
-      setBusy(false);
-    }
+  function saveAll(event) {
+    event.preventDefault();
+    if (!dirty || !profile.name.trim() || lock.current) return;
+    void run(async () => {
+      // Each endpoint is independent. Preserve unsaved fields if a later request fails.
+      if (profileChanged) {
+        const { user: result } = await users.updateProfile(profile);
+        updateState(result, true);
+        setProfile({ name: result.name, bio: result.bio || '' });
+      }
+      if (countryChanged) {
+        const { user: result } = await users.updateCountry(country || null);
+        updateState(result, true);
+        setCountry(result.country || '');
+      }
+      if (preferencesChanged) {
+        const { user: result } = await users.updateSettings(settings);
+        updateState(result, true);
+        setSettings(normalizeSettings(result.settings));
+      }
+      setStatus('saved');
+    });
+  }
+
+  function signOut() {
+    if (dirty && !window.confirm(uk ? 'Вийти без збереження змін?' : 'Sign out without saving changes?')) return;
+    void run(async () => {
+      try {
+        await applicationContainer.authService.logout();
+        setAnonymous();
+        navigate(localizedPath('/login'), { replace: true });
+      } catch (requestError) { setError(getLocalizedApiError(requestError, t, 'account.signOutError')); }
+    });
+  }
+
+  function deleteAccount() {
+    if (lock.current || !window.confirm(t('account.actions.confirmDelete'))) return;
+    void run(async () => {
+      try {
+        await users.deleteAccount();
+        setAnonymous();
+        navigate(localizedPath('/register'), { replace: true });
+      } catch (requestError) { setError(getLocalizedApiError(requestError, t, 'account.deleteError')); }
+    });
   }
 
   function upload(event) {
     const file = event.target.files?.[0];
-    if (!file) return;
+    event.target.value = '';
+    if (!file || lock.current) return;
     if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type) || file.size > 2 * 1024 * 1024) {
       setError(t('account.avatar.invalid'));
-      event.target.value = '';
       return;
     }
-    void submit(() => users.uploadAvatar(file), 'account.avatar.updated');
-    event.target.value = '';
+    void run(async () => {
+      const { user: result } = await users.uploadAvatar(file);
+      updateState(result, true);
+      setStatus('account.avatar.updated');
+    });
   }
 
-  function updateCountry(event) {
-    event.preventDefault();
-    if (!country || country === user.country) return;
-    void submit(() => users.updateCountry(country), 'account.country.updated');
-  }
-
-  function removeCountry() {
-    void submit(() => users.updateCountry(null), 'account.country.removed');
+  function removeAvatar() {
+    void run(async () => {
+      const { user: result } = await users.removeAvatar();
+      updateState(result, true);
+      setStatus('account.avatar.removed');
+    });
   }
 
   const timeZoneGroups = groupTimeZones(timeZones, locale);
@@ -173,99 +202,58 @@ export function AccountPage() {
     .sort((first, second) => first.displayName.localeCompare(second.displayName, locale)), [availableCountries, locale]);
 
   return (
-    <section className="account-section">
-      <h1>{t('account.title')}</h1>
-      {loading && <p role="status">{t('account.loading')}</p>}
-      {error && <p role="alert">{error}</p>}
-      {status && <p role="status">{t(status)}</p>}
-      {!loading && !user && <p><Link to={localizedPath('/login')}>{t('account.signIn')}</Link></p>}
-      {user && <>
-        <p>{t('common.email')}: <strong>{user.email}</strong> ({t(user.emailVerified ? 'account.emailStatus.verified' : 'account.emailStatus.notVerified')})</p>
-        <p>{t('account.id')}: <code>{user.id}</code></p>
-        <div className="account-card">
-          <h2>{t('account.avatar.title')}</h2>
-          {user.avatarUrl && <img alt={t('account.avatar.alt')} className="profile-avatar"
-            src={users.imageUrl(user.avatarUrl)} />}
-          <label htmlFor="avatar-file">{t('account.avatar.upload')}</label>
-          <input id="avatar-file" type="file" accept="image/jpeg,image/png,image/webp"
-            disabled={busy} onChange={upload} />
-          {user.avatarUrl && <button type="button" disabled={busy}
-            onClick={() => submit(() => users.removeAvatar(), 'account.avatar.removed')}>{t('account.avatar.remove')}</button>}
+    <section className="as-page" aria-busy={loading || busy}>
+      <header className="as-header"><h1>{uk ? 'Налаштування' : 'Settings'}</h1>
+        <nav aria-label={uk ? 'Розділи налаштувань' : 'Settings sections'}><span aria-current="page">{t('account.title')}</span><Link to={localizedPath('/calendars')}>{uk ? 'Календарі' : 'Calendars'}</Link><Link to={localizedPath('/integrations')}>{uk ? 'Інтеграції' : 'Integrations'}</Link></nav>
+      </header>
+      <form className="as-content" onSubmit={saveAll}>
+        <div className="as-toolbar">
+          <div className="as-crumb"><Link to={localizedPath('/')} aria-label={uk ? 'Головна' : 'Dashboard'}><Icon name="layout-dashboard" size={15}/></Link><Icon name="chevron-right" size={12}/><Icon name="settings" size={15}/><Icon name="chevron-right" size={12}/><span>{t('account.title')}</span></div>
+          {user && <div className="as-actions"><button type="button" disabled={busy || !dirty} onClick={discard}>{uk ? 'Скасувати' : 'Discard'}</button><button type="submit" className="as-save" disabled={busy || !dirty || !profile.name.trim()}>{busy ? t('common.loading') : uk ? 'Зберегти зміни' : 'Save changes'}</button></div>}
         </div>
-        <form className="account-card account-form" onSubmit={(event) => {
-          event.preventDefault();
-          void submit(() => users.updateProfile(profile), 'account.profile.updated');
-        }}>
-          <h2>{t('account.profile.title')}</h2>
-          <label htmlFor="profile-name">{t('account.profile.name')}</label>
-          <input id="profile-name" value={profile.name} maxLength={120} required
-            onChange={(event) => setProfile({ ...profile, name: event.target.value })} />
-          <label htmlFor="profile-bio">{t('account.profile.bio')}</label>
-          <textarea id="profile-bio" value={profile.bio} maxLength={500} rows={4}
-            onChange={(event) => setProfile({ ...profile, bio: event.target.value })} />
-          <button type="submit" disabled={busy}>{t('account.profile.save')}</button>
-        </form>
-        <form className="account-card account-form" onSubmit={updateCountry}>
-          <h2>{t('account.country.title')}</h2>
-          {countriesLoading && <p role="status">{t('account.country.loading')}</p>}
-          {countriesError && <>
-            <p role="alert">{t('account.country.unavailable')}</p>
-            <button type="button" disabled={busy} onClick={() => setCountryReload((value) => value + 1)}>{t('common.retry')}</button>
-          </>}
-          {!countriesLoading && !countriesError && <>
-            <label htmlFor="profile-country">{t('account.country.title')}</label>
-            <select id="profile-country" value={country} disabled={busy}
-              onChange={(event) => setCountry(event.target.value)}>
-              <option value="">{t('account.country.select')}</option>
-              {localizedCountries.map((availableCountry) => (
-                <option key={availableCountry.countryCode} value={availableCountry.countryCode}>
-                  {availableCountry.displayName}
-                </option>
-              ))}
-            </select>
-            {country && country !== user.country && <button type="submit" disabled={busy}>{t('account.country.save')}</button>}
-          </>}
-          {user.country && <button type="button" disabled={busy} onClick={removeCountry}>{t('account.country.remove')}</button>}
-        </form>
-        <form className="account-card account-form" onSubmit={(event) => {
-          event.preventDefault();
-          void submit(() => users.updateSettings(settings), 'account.preferences.updated');
-        }}>
-          <h2>{t('account.preferences.title')}</h2>
-          <label htmlFor="profile-timezone">{t('account.preferences.timeZone')}</label>
-          {timeZonesLoading && <p role="status">{t('account.preferences.timeZonesLoading')}</p>}
-          {timeZonesError && <>
-            <p role="alert">{t('account.preferences.timeZonesUnavailable')}</p>
-            <button type="button" disabled={busy} onClick={() => setTimeZoneReload((value) => value + 1)}>{t('common.retry')}</button>
-          </>}
-          {!timeZonesLoading && !timeZonesError && <select id="profile-timezone" value={settings.timeZone}
-            disabled={busy} onChange={(event) => setSettings({ ...settings, timeZone: event.target.value })}>
-            {!selectedTimeZoneIsAvailable && <option value={settings.timeZone}>{t('account.preferences.savedTimeZone', { timeZone: settings.timeZone })}</option>}
-            <option value="UTC">UTC</option>
-            {timeZoneGroups.map(({ region, zones }) => (
-              <optgroup key={region} label={region}>
-                {zones.map((timeZone) => <option key={timeZone} value={timeZone}>{timeZone}</option>)}
-              </optgroup>
-            ))}
-          </select>}
-          <label htmlFor="profile-week">{t('account.preferences.weekStartsOn')}</label>
-          <select id="profile-week" value={settings.weekStartsOn}
-            onChange={(event) => setSettings({ ...settings, weekStartsOn: event.target.value })}>
-            <option value="monday">{t('account.preferences.monday')}</option><option value="sunday">{t('account.preferences.sunday')}</option>
-          </select>
-          <label htmlFor="profile-format">{t('account.preferences.timeFormat')}</label>
-          <select id="profile-format" value={settings.timeFormat}
-            onChange={(event) => setSettings({ ...settings, timeFormat: event.target.value })}>
-            <option value="24h">{t('account.preferences.format24')}</option><option value="12h">{t('account.preferences.format12')}</option>
-          </select>
-          <button type="submit" disabled={busy}>{t('account.preferences.save')}</button>
-        </form>
-        <div className="account-card">
-          <h2>{t('account.actions.title')}</h2>
-          <button type="button" onClick={signOut} disabled={busy}>{t('account.actions.signOut')}</button>
-          <button type="button" className="danger-button" onClick={deleteAccount} disabled={busy}>{t('account.actions.delete')}</button>
-        </div>
-      </>}
+        {error && <p className="as-message as-error" role="alert">{error}</p>}
+        {status && <p className="as-message" role="status">{status === 'saved' ? (uk ? 'Зміни збережено' : 'Changes saved') : t(status)}</p>}
+        <div className="as-cover" aria-hidden="true"/>
+        {loading && <div className="as-loading" role="status">{t('account.loading')}</div>}
+        {!loading && !user && <p className="as-loading"><Link to={localizedPath('/login')}>{t('account.signIn')}</Link></p>}
+        {user && <div className="as-column">
+          <div className="as-identity">
+            <div className="as-avatar-wrap">
+              <button className="as-avatar" type="button" disabled={busy} onClick={() => fileRef.current?.click()} aria-label={t('account.avatar.upload')} title={t('account.avatar.upload')}>{user.avatarUrl ? <img alt={t('account.avatar.alt')} src={users.imageUrl(user.avatarUrl)}/> : <span>{(user.name || user.email || '?').slice(0, 1).toUpperCase()}</span>}<span className="as-avatar-edit"><Icon name="user" size={14}/></span></button>
+              <input ref={fileRef} type="file" hidden accept="image/jpeg,image/png,image/webp" disabled={busy} onChange={upload}/>
+            </div>
+            <h2>{user.name}</h2><p className="as-email">{user.email}</p>
+            <p className="as-subtitle">{uk ? 'Керуйте профілем та налаштуваннями' : 'Manage your profile and preferences'}</p>
+          </div>
+          <fieldset disabled={busy} className="as-group">
+            <legend><Icon name="user" size={17}/>{uk ? 'Профіль' : 'Profile'}</legend>
+            <label className="as-row"><span>{t('account.profile.name')}</span><input value={profile.name} maxLength={120} required onChange={event => setProfile(old => ({ ...old, name: event.target.value }))}/></label>
+            <label className="as-row"><span>{t('account.profile.bio')}</span><textarea value={profile.bio} maxLength={500} rows={2} placeholder={uk ? 'Додати опис…' : 'Add a bio…'} onChange={event => setProfile(old => ({ ...old, bio: event.target.value }))}/></label>
+            <div className="as-row"><span>{t('account.avatar.title')}</span><div className="as-row-actions"><button type="button" onClick={() => fileRef.current?.click()}>{uk ? 'Змінити' : 'Change'}</button>{user.avatarUrl && <button type="button" onClick={removeAvatar}>{t('account.avatar.remove')}</button>}</div></div>
+          </fieldset>
+          <fieldset disabled={busy} className="as-group">
+            <legend><Icon name="lock" size={17}/>{t('account.title')}</legend>
+            <div className="as-row"><span>{t('common.email')}</span><span className="as-value">{user.email}</span></div>
+            <div className="as-row"><span>{uk ? 'Підтвердження пошти' : 'Email verification'}</span><span className={'as-verification'+(user.emailVerified?' verified':'')}>{user.emailVerified && <Icon name="check" size={13}/>} {t(user.emailVerified ? 'account.emailStatus.verified' : 'account.emailStatus.notVerified')}</span></div>
+            <label className="as-row"><span>{t('account.country.title')}</span>
+              {countriesLoading ? <small role="status">{t('account.country.loading')}</small> : countriesError ? <span className="as-retry"><small role="alert">{t('account.country.unavailable')}</small><button type="button" onClick={() => setCountryReload(v => v + 1)}>{t('common.retry')}</button></span> : <select value={country} onChange={event => setCountry(event.target.value)}><option value="">{t('account.country.select')}</option>{country && !localizedCountries.some(c => c.countryCode === country) && <option value={country}>{country}</option>}{localizedCountries.map(c => <option key={c.countryCode} value={c.countryCode}>{c.displayName}</option>)}</select>}
+            </label>
+            <label className="as-row"><span>{t('account.preferences.timeZone')}</span>
+              {timeZonesLoading ? <small role="status">{t('account.preferences.timeZonesLoading')}</small> : timeZonesError ? <span className="as-retry"><small role="alert">{t('account.preferences.timeZonesUnavailable')}</small><button type="button" onClick={() => setTimeZoneReload(v => v + 1)}>{t('common.retry')}</button></span> : <select value={settings.timeZone} onChange={event => setSettings(old => ({ ...old, timeZone: event.target.value }))}>{!selectedTimeZoneIsAvailable && settings.timeZone !== 'UTC' && <option value={settings.timeZone}>{settings.timeZone}</option>}<option value="UTC">UTC</option>{timeZoneGroups.map(({ region, zones }) => <optgroup key={region} label={region}>{zones.map(zone => <option key={zone} value={zone}>{zone}</option>)}</optgroup>)}</select>}
+            </label>
+          </fieldset>
+          <fieldset disabled={busy} className="as-group">
+            <legend><Icon name="settings" size={17}/>{t('account.preferences.title')}</legend>
+            <label className="as-row"><span>{t('account.preferences.weekStartsOn')}</span><select value={settings.weekStartsOn} onChange={event => setSettings(old => ({ ...old, weekStartsOn: event.target.value }))}><option value="monday">{t('account.preferences.monday')}</option><option value="sunday">{t('account.preferences.sunday')}</option></select></label>
+            <label className="as-row"><span>{t('account.preferences.timeFormat')}</span><select value={settings.timeFormat} onChange={event => setSettings(old => ({ ...old, timeFormat: event.target.value }))}><option value="24h">{t('account.preferences.format24')}</option><option value="12h">{t('account.preferences.format12')}</option></select></label>
+          </fieldset>
+          <details className="as-security">
+            <summary>{t('account.actions.title')}<Icon name="chevron-down" size={15}/></summary>
+            <div className="as-row"><span>{t('account.id')}</span><code>{user.id}</code></div>
+            <div className="as-row as-row-actions"><button type="button" disabled={busy} onClick={signOut}>{t('account.actions.signOut')}</button><button type="button" className="as-danger" disabled={busy} onClick={deleteAccount}>{t('account.actions.delete')}</button></div>
+          </details>
+        </div>}
+      </form>
     </section>
   );
 }
