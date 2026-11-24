@@ -40,7 +40,7 @@ export function RegisterPage() {
   }
 
   return (
-    <InteractiveAuth title={t('register.title')} error={error} success={status}>
+    <InteractiveAuth title={t('register.title')} error={error} submitting={submitting} success={status}>
       {({ visible, setVisible, setFocus }) => <>
 
         <form className="auth-form" onSubmit={handleSubmit}>
