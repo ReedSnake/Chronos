@@ -56,3 +56,6 @@
   .rabbit-carrot:nth-of-type(2), .rabbit-carrot:nth-of-type(6) { width: 42px; height: 56px; }
 }
 @media (prefers-reduced-motion: reduce) { .rabbit-carrot { transition: none; } }
+
+/* Keep ears visible at the top of a click-triggered jump. */
+.rabbit-art { overflow:visible; }
