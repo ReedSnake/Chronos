@@ -23,12 +23,12 @@ export function BlobMascot({ mood = 'idle', compact = false, caret = null }) {
     let blinkAt = last + 2800, blinkUntil = 0, doubleBlink = false;
     let clickAt = -10000, clicks = 0, stroke = 0, gestureAt = -10000;
     let gx = 0, gy = 0, tilt = 0, sx = 1, sy = 1, lift = 0, eyeOpen = 1;
-    let lx = 35, ly = 137, rx = 225, ry = 137, lastMood = '', moodAt = last;
+    let lx = 48, ly = 139, rx = 212, ry = 139, lastMood = '', moodAt = last;
     let dpr = 1, visible = true;
     let previousCaret = null, caretAt = -10000, lookAt = last + 4200, idleLook = 0, idleLookY = 0;
     let lastInputAt = -10000, idleGestureAt = last + 6500, idleGesture = 0;
     function resize() {
-      dpr = Math.min(window.devicePixelRatio || 1, 2);
+      dpr = Math.min(window.devicePixelRatio || 1, 2) * Math.max(1, el.getBoundingClientRect().width / 260);
       el.width = Math.round(260 * dpr);
       el.height = Math.round(220 * dpr);
     }
@@ -105,9 +105,9 @@ export function BlobMascot({ mood = 'idle', compact = false, caret = null }) {
       const gazeX = reading ? cursor * 1.6 - .8 : freeLook ? idleLook : mouseX;
       const gazeY = reading ? .85 : freeLook ? idleLookY : mouseY;
       const gazeOff = privateMode || sleeping;
-      gx = lerp(gx, gazeOff ? 0 : gazeX * 31, gazeK);
-      gy = lerp(gy, gazeOff ? 0 : sad && now - pointer.at > 1600 ? 10 : gazeY * 25, gazeK);
-      const breath = reduced ? 0 : Math.sin(t * 1.25) * .028;
+      gx = lerp(gx, gazeOff ? 0 : gazeX * 23, gazeK);
+      gy = lerp(gy, gazeOff ? 0 : sad && now - pointer.at > 1600 ? 10 : gazeY * 19, gazeK);
+      const breath = reduced ? 0 : Math.sin(t * 1.25) * .018;
       const jump = happy && !reduced && age < 1.7 ? Math.max(0, Math.sin(age / 1.7 * Math.PI)) * 16 : 0;
       const lean = reduced ? 0 : (dizzy ? Math.sin(t * 3.2) * .09 : gazeX * .10 + (waiting || confused ? Math.sin(t * 1.8) * .05 : 0) + idleMotion * (idleGesture === 0 ? -.075 : .06));
       tilt = lerp(tilt, privateMode ? 0 : lean, k);
@@ -119,32 +119,48 @@ export function BlobMascot({ mood = 'idle', compact = false, caret = null }) {
         blinkAt = doubleBlink ? now + 390 : now + 3200 + Math.random() * 4800;
         doubleBlink = !doubleBlink && Math.random() < .2;
       }
-      eyeOpen = lerp(eyeOpen, sleeping || pet || (happy && age < 1.2) || (!reduced && now < blinkUntil) ? .12 : annoyed ? .52 : surprised ? 1.25 : sad ? .65 : 1, blinkK);
+      eyeOpen = lerp(eyeOpen, sleeping || (!reduced && now < blinkUntil) ? .08 : 1, blinkK);
       const leftRaised = privateMode || peek, rightRaised = privateMode;
-      lx = lerp(lx, leftRaised ? 98 : happy ? 40 : reach && pointer.x < 130 ? clamp(pointer.x, 16, 70) : 35, k);
+      lx = lerp(lx, leftRaised ? 98 : happy ? 40 : reach && pointer.x < 130 ? clamp(pointer.x, 40, 72) : 48, k);
       ly = lerp(ly, leftRaised ? 98 : happy ? 84 : reach && pointer.x < 130 ? clamp(pointer.y, 70, 150) : 137 - idleMotion * (idleGesture === 0 ? 30 : idleGesture === 2 ? 20 : 0), k);
-      rx = lerp(rx, rightRaised ? 162 : peek ? 186 : happy ? 220 : reach && pointer.x >= 130 ? clamp(pointer.x, 190, 244) : 225, k);
+      rx = lerp(rx, rightRaised ? 162 : peek ? 186 : happy ? 220 : reach && pointer.x >= 130 ? clamp(pointer.x, 188, 220) : 212, k);
       ry = lerp(ry, rightRaised ? 98 : peek ? 124 : happy ? 84 : reach && pointer.x >= 130 ? clamp(pointer.y, 70, 150) : 137 - idleMotion * (idleGesture === 1 ? 30 : idleGesture === 2 ? 20 : 0), k);
 
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx.clearRect(0, 0, 260, 220);
       ctx.save();
       ctx.translate(130, 115 - lift); ctx.rotate(tilt); ctx.scale(sx, sy); ctx.translate(-130, -115);
+      // Keep the face independent from the halftone grid: the dark eye dots
+      // move together, rather than changing colour as they cross body dots.
+      const eyeCenters = [98 + gx, 162 + gx];
+      const eyeY = 98 + gy;
+      const eyeHeight = Math.max(1.6, 15 * eyeOpen);
       for (const [x, y] of grid) {
-        const body = Math.max(field(x, y, 130, 106, 77, 91), field(x, y, 130, 143, 88, 64));
-        const l = field(x, y, lx, ly, 25, 21), r = field(x, y, rx, ry, 25, 21);
+        const v = (y - 110) / 94;
+        const width = 83 + 15 * v;
+        const body = 1 - ((x - 130) / width) ** 2 - v ** 2;
+        const l = field(x, y, lx, ly, 25, 22), r = field(x, y, rx, ry, 25, 22);
         const d = Math.max(body, l, r);
         if (d <= -.05) continue;
         const radius = 2.35 * smooth((d + .05) / .58);
-        const wave = reduced ? 0 : Math.sin(y * .055 + t * 1.25) * .85 * smooth(body + .1);
-        const ex = x - gx, ey = y - gy;
-        const eye = Math.max(field(ex, ey, 98, 98, 9.5, 15 * eyeOpen), field(ex, ey, 162, 98, 9.5, 15 * eyeOpen));
+        const wave = reduced ? 0 : Math.sin(y * .055 + t * 1.25) * .45 * smooth(body + .1);
         const covered = (leftRaised && l > .02) || ((rightRaised || peek) && r > .02);
-        const ink = covered || privateMode ? 0 : smooth((eye + .12) / .38);
-        const color = covered ? '#4088b8' : ink > .001
-          ? `rgb(${Math.round(lerp(112, 32, ink))},${Math.round(lerp(181, 43, ink))},${Math.round(lerp(223, 55, ink))})`
-          : '#70b5df';
-        dot(x + wave, y, lerp(radius, 2.15, ink), color, .66 + .34 * smooth(d / .4));
+        const inEye = eyeCenters.some((cx, index) => !(peek && index === 0) && field(x, y, cx, eyeY, 11.5, eyeHeight + 2) > 0);
+        if (!privateMode && !covered && inEye) continue;
+        dot(x + wave, y, radius, covered ? '#529ac9' : '#70b5df', .76 + .24 * smooth(d / .4));
+      }
+      if (!privateMode) {
+        for (const [index, cx] of eyeCenters.entries()) {
+          if (peek && index === 0) continue;
+          for (let row = -3; row <= 3; row++) {
+            for (let col = -2; col <= 2; col++) {
+              const ex = col * 3.8, ey = row * 4.2;
+              if (field(ex, ey, 0, 0, 10, 15) <= 0) continue;
+              if (eyeOpen < .22 && row !== 0) continue;
+              dot(cx + ex, eyeY + ey * eyeOpen, 1.7 + .25 * (1 - Math.abs(col) / 2), '#202b37');
+            }
+          }
+        }
       }
       if (mode === 'birthday') {
         for (const [x,y] of grid) if (y < 40 && y > 1 && Math.abs(x - 130) < y * .55) dot(x,y,1.8,y % 11 < 4 ? '#f3aa55' : '#e881a1');
