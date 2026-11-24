@@ -1,3 +1,4 @@
+import { BlobMascot } from '../components/auth/BlobMascot';
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { PageTemplate } from '../components/layout/PageTemplate';
@@ -10,10 +11,11 @@ export function HomePage() {
   const { status, user, error, refresh } = useAuth();
   const { localizedPath, t } = useLocale();
 
-  if (status === 'loading') return <PageTemplate><p role="status">{t('common.loading')}</p></PageTemplate>;
+  if (status === 'loading') return <PageTemplate><BlobMascot mood="loading" compact /><p role="status">{t('common.loading')}</p></PageTemplate>;
   if (status === 'anonymous') return <PageTemplate><p>{t('home.signInBefore')}<Link to={localizedPath('/login')}>{t('common.signIn')}</Link>{t('home.signInAfter')}</p></PageTemplate>;
   if (status === 'error') return (
     <PageTemplate>
+      <BlobMascot mood={navigator.onLine ? "error" : "offline"} compact />
       <p role="alert">{error || t('home.loadError')}</p>
       <button type="button" onClick={() => { void refresh(); }}>{t('common.retry')}</button>
     </PageTemplate>
