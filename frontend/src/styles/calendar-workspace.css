@@ -1,0 +1,65 @@
+/* Dedicated calendar workspace: no legacy form-card layout. */
+.workspace-main>.chrono-calendar { max-width:none; width:100%; min-width:0; margin:0; }
+.chrono-calendar { display:flex; flex-direction:column; gap:18px; min-width:0; height:calc(100dvh - 60px); min-height:440px; }
+.chrono-calendar h1,.chrono-calendar h2,.chrono-calendar h3,.chrono-calendar p { margin:0; }
+.chrono-calendar button { font:inherit; font-size:12px; color:var(--chronos-ink); background:none; border:0; padding:0; cursor:pointer; border-radius:7px; }
+.chrono-calendar button:disabled { cursor:not-allowed; opacity:.5; }
+.chrono-heading { display:flex; align-items:center; justify-content:space-between; gap:18px; flex:none; }
+.chrono-heading h1 { font-size:clamp(26px,2.6vw,35px); font-weight:620; letter-spacing:-.045em; line-height:1.15; }
+.chrono-heading p { font-size:11px; color:var(--chronos-muted); margin-top:5px; }
+.chrono-heading-actions { display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+.chrono-segments { display:flex; gap:3px; padding:4px; border-radius:999px; background:white; }
+.chrono-calendar .chrono-segments button { padding:8px 13px; border-radius:999px; font-size:12px; white-space:nowrap; }
+.chrono-calendar .chrono-segments button[aria-pressed=true] { background:var(--chronos-ink); color:white; }
+.chrono-calendar .chrono-primary { display:flex; align-items:center; gap:7px; background:var(--chronos-accent); padding:11px 15px; border-radius:10px; font-weight:600; white-space:nowrap; }
+.chrono-layout { display:grid; grid-template-columns:208px minmax(0,1fr); gap:14px; flex:1; min-height:0; }
+.chrono-rail { display:flex; flex-direction:column; gap:19px; background:#ffffffc9; padding:17px 13px; border-radius:16px; overflow:auto; min-width:0; }
+.chrono-mini-head,.chrono-rail-head { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:13px; }
+.chrono-mini-head strong,.chrono-rail-head h2 { font-size:13px; font-weight:650; text-transform:capitalize; }
+.chrono-mini-head>div { display:flex; gap:1px; }
+.chrono-mini-head button { display:grid; place-items:center; width:23px; height:25px; }
+.chrono-mini-head button:hover,.chrono-period button:hover { background:var(--chronos-background); }
+.chrono-mini-grid { display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:3px; text-align:center; }
+.chrono-mini-grid>span { display:grid; place-items:center; min-height:23px; font-size:10px; color:var(--chronos-muted); }
+.chrono-calendar .chrono-mini-grid button { min-height:27px; width:100%; font-size:11px; border-radius:50%; }
+.chrono-mini-grid button.today { box-shadow:inset 0 0 0 1px var(--chronos-accent); }
+.chrono-mini-grid button.selected { background:var(--chronos-ink); color:white; }
+.chrono-mini-grid button:not(.selected):hover { background:var(--chronos-background); }
+.chrono-sources,.chrono-day-preview { border-top:1px solid var(--chronos-border); padding-top:15px; }
+.chrono-rail-head>a { display:grid; place-items:center; color:var(--chronos-muted); width:23px; height:23px; }
+.chrono-rail-head>span { font-size:11px; color:var(--chronos-muted); }
+.chrono-source { display:flex; align-items:center; gap:7px; margin:4px 0; min-width:0; }
+.chrono-calendar .chrono-source input { width:14px; height:14px; padding:0; margin:0; flex:none; cursor:pointer; accent-color:var(--chronos-ink); }
+.chrono-source i,.chrono-preview-event i,.chrono-agenda-event i { width:8px; height:8px; border-radius:50%; flex:none; }
+.chrono-calendar .chrono-source button { flex:1; min-width:0; text-align:left; padding:7px 5px; overflow-wrap:anywhere; }
+.chrono-calendar .chrono-source button[aria-pressed=true] { font-weight:650; background:var(--chronos-background); }
+.chrono-info { margin-top:12px; color:var(--chronos-muted); font-size:11px; line-height:1.5; overflow-wrap:anywhere; }
+.chrono-info summary { cursor:pointer; padding:5px 0; }.chrono-info p { margin:7px 0; }
+.chrono-day-preview p { color:var(--chronos-muted); font-size:12px; line-height:1.5; }
+.chrono-calendar .chrono-preview-event { display:flex; align-items:flex-start; gap:8px; text-align:left; width:100%; padding:9px 2px; border-bottom:1px solid var(--chronos-border); border-radius:0; }
+.chrono-preview-event i { margin-top:4px; }.chrono-preview-event>span { min-width:0; display:grid; gap:4px; overflow-wrap:anywhere; }.chrono-preview-event strong { font-size:12px; font-weight:550; }.chrono-preview-event small { font-size:10px; color:var(--chronos-muted); }
+.chrono-board { display:flex; flex-direction:column; background:white; border:1px solid #3030300b; border-radius:16px; min-width:0; min-height:0; }
+.chrono-toolbar { display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap; padding:17px 18px; flex:none; }
+.chrono-period { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }.chrono-period h2 { font-size:18px; font-weight:600; letter-spacing:-.03em; white-space:nowrap; text-transform:capitalize; }
+.chrono-calendar .chrono-period button { display:grid; place-items:center; width:28px; height:30px; }.chrono-calendar .chrono-period .chrono-today { width:auto; padding:6px 10px; margin-left:4px; border:1px solid var(--chronos-border); }
+.chrono-filter { position:relative; font-size:12px; z-index:8; }.chrono-filter summary { display:flex; align-items:center; gap:7px; list-style:none; cursor:pointer; border:1px solid var(--chronos-border); border-radius:8px; padding:7px 10px; }.chrono-filter summary::-webkit-details-marker { display:none; }.chrono-filter summary>span { background:var(--chronos-accent); border-radius:50%; min-width:17px; text-align:center; font-size:10px; padding:2px; }
+.chrono-filter-pop { position:absolute; top:calc(100% + 8px); right:0; width:235px; max-width:80vw; border:1px solid var(--chronos-border); border-radius:12px; background:white; padding:15px; display:grid; gap:12px; box-shadow:0 10px 30px #30303014; }
+.chrono-filter-pop label { display:flex; align-items:center; gap:8px; font-size:12px; }.chrono-calendar .chrono-filter-pop input[type=checkbox] { width:14px; height:14px; padding:0; margin:0; }.chrono-filter-pop .chrono-filter-categories { display:grid; gap:6px; }.chrono-calendar .chrono-filter-categories input { padding:8px; background:white; border:1px solid var(--chronos-border); font-size:12px; }.chrono-calendar .chrono-filter-pop button { padding:8px; background:var(--chronos-background); }
+.chrono-range { display:flex; gap:12px; padding:0 18px 12px; }.chrono-range label { display:grid; gap:5px; font-size:12px; }.chrono-calendar .chrono-range input { background:white; border-color:var(--chronos-border); font-size:12px; }
+.chrono-view { position:relative; flex:1; min-height:0; min-width:0; display:flex; flex-direction:column; overflow:hidden; border-top:1px solid var(--chronos-border); }
+.chrono-view>.planner-viewport { flex:1; min-height:0; max-height:none; border:0; border-radius:0; }
+.chrono-footer { display:flex; align-items:center; justify-content:space-between; padding:11px 18px; font-size:11px; color:var(--chronos-muted); border-top:1px solid var(--chronos-border); flex:none; gap:8px; }.chrono-footer strong { color:var(--chronos-ink); font-weight:600; }
+.chrono-loading { position:absolute; top:8px; left:50%; transform:translateX(-50%); background:white; padding:8px 14px; border:1px solid var(--chronos-border); border-radius:99px; font-size:12px; z-index:7; }
+.chrono-notice { padding:10px 15px; font-size:12px; color:var(--chronos-danger); background:var(--chronos-danger-soft); }.chrono-notice button { margin-left:12px; text-decoration:underline; }
+.chrono-empty { color:var(--chronos-muted); font-size:13px; padding:24px; }
+.chrono-month { display:flex; flex-direction:column; flex:1; min-height:0; overflow:auto; }.chrono-weekdays { display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); flex:none; border-bottom:1px solid var(--chronos-border); }.chrono-weekdays span { font-size:11px; color:var(--chronos-muted); padding:12px 5px; text-align:center; }
+.chrono-month-grid { display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); grid-template-rows:repeat(var(--weeks,6),minmax(74px,1fr)); flex:1; }
+.chrono-month-cell { min-width:0; min-height:0; display:flex; flex-direction:column; gap:4px; padding:7px; border-right:1px solid var(--chronos-border); border-bottom:1px solid var(--chronos-border); }.chrono-month-cell:nth-child(7n) { border-right:0; }.chrono-month-cell.blank { background:#e8eff647; }.chrono-month-cell.selected { background:#f5bc5a0c; }
+.chrono-cell-head { display:flex; justify-content:space-between; align-items:center; gap:3px; }.chrono-calendar .chrono-cell-head button { display:grid; place-items:center; width:24px; height:24px; font-weight:550; font-size:12px; border-radius:50%; }.chrono-month-cell.today .chrono-cell-head button:first-child { background:var(--chronos-accent); }.chrono-month-cell.selected:not(.today) .chrono-cell-head button:first-child { background:var(--chronos-ink); color:white; }.chrono-cell-add { opacity:.45; }.chrono-cell-add:hover,.chrono-cell-add:focus-visible { opacity:1; }
+.chrono-cell-events { overflow:auto; min-height:0; display:grid; gap:3px; }.chrono-calendar .chrono-month-event { width:100%; min-width:0; background:var(--chronos-background); border-left:3px solid var(--event-color); border-radius:4px; text-align:left; padding:5px; font-size:10px; }.chrono-month-event span { display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.chrono-agenda { overflow:auto; padding:0 18px 18px; }.chrono-agenda h3 { padding:16px 0 9px; font-size:13px; font-weight:650; }.chrono-calendar .chrono-agenda-event { display:grid; grid-template-columns:8px minmax(0,1fr) auto 16px; align-items:center; gap:12px; width:100%; padding:13px 0; border-bottom:1px solid var(--chronos-border); text-align:left; border-radius:0; }.chrono-agenda-event>span { display:grid; gap:5px; overflow-wrap:anywhere; }.chrono-agenda-event strong { font-size:13px; font-weight:550; }.chrono-agenda-event small { color:var(--chronos-muted); font-size:11px; }
+.chrono-calendar .planner-week { min-width:670px; }.chrono-calendar .planner-week-head { font-size:12px; padding:13px 4px; }.chrono-calendar .planner-week-head.today { background:#f5bc5a36; font-weight:650; }.chrono-calendar .planner-lane-label { background:#fbfcfd; }.chrono-calendar .planner-block { color:var(--chronos-ink); background:color-mix(in srgb,var(--event-color) 17%,white); border-left:3px solid var(--event-color); border-radius:7px; font-size:11px!important; }.chrono-calendar .planner-block.point { background:var(--chronos-accent); border:0; border-radius:99px; }.chrono-calendar .planner-now { background:#c38e35; }.chrono-calendar .planner-timeline { min-width:1350px; }.chrono-calendar .planner-axis { height:44px; }.chrono-calendar .planner-axis span { top:15px; }.chrono-calendar .planner-lane-label { min-height:44px; }
+.chrono-calendar .event-dialog .event-close { padding:4px 8px!important; }.chrono-calendar .event-dialog input[type=checkbox] { width:auto; }
+@media(max-width:1200px){.chrono-layout{grid-template-columns:180px minmax(0,1fr);gap:10px}.chrono-rail{padding:14px 10px}.chrono-heading{gap:10px}.chrono-heading-actions{gap:6px}.chrono-calendar .chrono-segments button{padding:8px 9px}}
+@media(max-width:850px){.chrono-calendar{height:calc(100dvh - 40px)}.chrono-layout{grid-template-columns:1fr;grid-template-rows:auto minmax(0,1fr)}.chrono-rail{display:flex;flex-direction:row;align-items:flex-start;gap:12px;max-height:125px;overflow:auto;padding:10px}.chrono-mini{min-width:155px;flex:1}.chrono-mini-grid{display:none}.chrono-sources{border:0;padding:0;flex:1;min-width:140px}.chrono-day-preview,.chrono-info{display:none}.chrono-heading h1{font-size:26px}.chrono-heading{flex-wrap:wrap}.chrono-toolbar{padding:10px}.chrono-period h2{font-size:15px}.chrono-month-cell{padding:3px}.chrono-month-grid{grid-template-rows:repeat(var(--weeks,6),minmax(56px,1fr))}.chrono-weekdays span{padding:9px 3px}}
+@media(max-width:540px){.chrono-calendar{height:calc(100dvh - 110px);min-height:450px;gap:9px}.chrono-heading-actions{width:100%;justify-content:space-between}.chrono-calendar .chrono-primary{padding:9px}.chrono-rail{max-height:95px}.chrono-footer{padding:8px;font-size:10px}.chrono-period{gap:3px}.chrono-calendar .chrono-period button{width:24px}.chrono-board{border-radius:12px}.chrono-cell-add{display:none!important}.chrono-agenda-event>small{max-width:90px}}
