@@ -1,11 +1,11 @@
-.page.auth-screen { background: #ffc8df; color: #25303a; display: block; min-height: 100vh; padding: 28px clamp(20px, 5vw, 64px); }
+.page.auth-screen { background: #f2f1e9; color: #25303a; display: block; min-height: 100vh; padding: 28px clamp(20px, 5vw, 64px); }
 .auth-screen .application-shell { width: 100%; min-height: calc(100vh - 56px); display: flex; flex-direction: column; }
 .auth-screen .application-header { margin: 0; align-items: center; flex-direction: row; }
 .auth-screen .brand { font-size: 22px; letter-spacing: -.06em; }
 .auth-screen .locale-switcher select { background: transparent; color: #25303a; border-color: #d4d6d0; }
 .interactive-auth { width: min(100%, 370px); margin: auto; padding: 24px 0 36px; display: grid; gap: 16px; }
 .interactive-auth h1 { margin: 0 0 6px; text-align: center; font-size: 27px; font-weight: 650; letter-spacing: -.045em; }
-.chronos-mascot { width: 210px; height: 178px; display: block; margin: 0 auto; overflow: visible; }
+.chronos-mascot { width: 290px; height: auto; aspect-ratio: 260 / 220; display: block; margin: 0 auto; overflow: visible; }
 .mascot-body { transform-origin: center; animation: chronos-breathe 4s ease-in-out infinite; }
 .mascot-hand { transition: cx .28s ease, cy .28s ease; }
 .mascot-eyes { transition: transform .25s ease; }
@@ -28,7 +28,7 @@
 .interactive-auth details { font-size: 13px; color: #52606b; }
 .interactive-auth details summary { cursor: pointer; text-align: center; padding: 5px; }
 .interactive-auth details[open] .auth-form { margin-top: 12px; }
-@media (max-width: 480px) { .page.auth-screen { padding: 18px 20px; } .auth-screen .application-shell { min-height: calc(100dvh - 36px); } .chronos-mascot { width: 160px; height: 136px; } }
+@media (max-width: 480px) { .page.auth-screen { padding: 18px 20px; } .auth-screen .application-shell { min-height: calc(100dvh - 36px); } .chronos-mascot { width: 220px; height: auto; } }
 @media (prefers-reduced-motion: reduce) { .mascot-body { animation: none; } .mascot-hand, .mascot-eyes { transition: none; } }
 
 .chronos-canvas { cursor: pointer; touch-action: pan-y; max-width: 100%; object-fit: contain; }
