@@ -1,0 +1,79 @@
+.chrono-calendar.chrono-mode-month .chrono-layout { display:block; min-height:0; overflow:visible; }
+.chrono-mode-month .chrono-rail,.chrono-mode-month .chrono-footer { display:none; }
+.chrono-mode-month .chrono-board { height:100%; border:0; background:transparent; }
+.chrono-mode-month .chrono-toolbar { padding:0 0 13px; position:relative; z-index:9; }
+.chrono-mode-month .chrono-view { border:0; overflow:auto; }
+.month-planner { display:grid; grid-template-columns:minmax(0,1fr) minmax(235px,29%); gap:14px; flex:1; min-height:0; align-items:stretch; }
+.month-main { display:flex; flex-direction:column; min-width:0; min-height:0; padding:18px; background:#ffffffb8; border-radius:24px; }
+.month-summary { display:grid; gap:14px; padding:0 4px 17px; }
+.month-total { display:flex; align-items:baseline; gap:9px; }
+.month-total strong { font-size:32px; line-height:1; font-weight:450; letter-spacing:-.06em; }
+.month-total span { font-size:12px; color:var(--chronos-muted); }
+.month-distribution { display:grid; gap:7px; }
+.month-distribution-labels { display:flex; flex-wrap:wrap; gap:8px 15px; }
+.month-distribution-labels>span { display:flex; align-items:center; gap:5px; font-size:11px; color:var(--chronos-muted); }
+.month-distribution-labels strong { font-weight:550; color:#303030; }
+.month-distribution-labels i { width:7px; height:7px; border-radius:50%; }
+.month-distribution-track { display:flex; gap:4px; height:23px; border-radius:99px; background:repeating-linear-gradient(135deg,#3030300a 0 1px,transparent 1px 5px); overflow:hidden; }
+.month-distribution-track i { border-radius:99px; min-width:3px; }
+.month-distribution i.arrangement,.month-stat-track i.arrangement { background:#303030; }
+.month-distribution i.task,.month-stat-track i.task { background:#F5BC5A; }
+.month-distribution i.reminder,.month-stat-track i.reminder { background:#aebdcb; }
+.month-distribution i.holiday,.month-stat-track i.holiday { background:#c8c9c9; }
+.month-grid-scroll { min-height:0; flex:1; overflow:auto; }
+.month-grid { display:flex; flex-direction:column; gap:5px; min-width:490px; min-height:100%; }
+.month-weekdays,.month-week-row { display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:4px; }
+.month-weekdays { flex:none; }
+.month-weekdays span { padding:7px 0 9px; text-align:center; font-size:11px; color:var(--chronos-muted); text-transform:capitalize; }
+.month-weekdays span.weekend { color:#8a6b43; }
+.month-week-row { position:relative; flex:1; min-height:91px; grid-template-rows:25px 21px 21px minmax(17px,1fr); gap:3px 4px; }
+.month-tile { position:relative; min-width:0; border-radius:12px; background:#E8EFF6; overflow:hidden; grid-row:1/5; }
+.month-tile.weekend { background:linear-gradient(180deg,#E8EFF6 0 47%,transparent 47%),repeating-linear-gradient(135deg,#30303014 0 1px,transparent 1px 5px),#f5f7f9; }
+.month-tile.outside { background:repeating-linear-gradient(135deg,#30303015 0 1px,transparent 1px 5px),#f5f7f9; }
+.month-tile.selected { background:#f5bc5a9e; }
+.month-tile.today:not(.selected) { box-shadow:inset 0 0 0 1px #F5BC5A; }
+.chrono-calendar .month-tile-hit { position:absolute; inset:0; width:100%; height:100%; display:flex; align-items:flex-start; justify-content:flex-start; padding:7px 8px; border-radius:12px; font-size:12px; text-align:left; }
+.month-tile-hit span { font-variant-numeric:tabular-nums; }
+.month-tile.selected .month-tile-hit span,.month-tile.today .month-tile-hit span { font-weight:650; }
+.month-tile.outside .month-tile-hit { color:#30303070; }
+.month-tile-hit:hover { box-shadow:inset 0 0 0 1px #30303025; }
+.chrono-calendar .month-tile-add { position:absolute; right:5px; top:5px; width:20px; height:20px; display:grid; place-items:center; background:#ffffffb8; border-radius:50%; opacity:0; }
+.month-tile:hover .month-tile-add,.month-tile:focus-within .month-tile-add,.month-tile.selected .month-tile-add { opacity:1; }
+.chrono-calendar .month-event { position:relative; z-index:1; min-width:0; height:21px; display:flex; align-items:center; gap:5px; margin:0 4px; padding:3px 6px; background:#fff; border:0; border-radius:99px; text-align:left; font-size:10px; box-shadow:0 1px 3px #3030300b; overflow:hidden; }
+.month-event>i { width:6px; height:6px; border-radius:50%; background:#303030; flex:none; }
+.month-event.task>i { background:#F5BC5A; }
+.month-event.reminder>i { background:#aebdcb; }
+.month-event.holiday>i { background:#c8c9c9; }
+.month-event>span { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; flex:1; min-width:0; font-weight:550; }
+.month-event>small { font-size:9px; white-space:nowrap; color:var(--chronos-muted); }
+.chrono-calendar .month-event.done { opacity:.65; }
+.chrono-calendar .month-event.canceled { opacity:.6; text-decoration:line-through; }
+.chrono-calendar .month-more { z-index:1; justify-self:start; align-self:start; margin-left:7px; padding:2px 4px; font-size:10px; color:var(--chronos-muted); }
+.month-side { min-width:0; min-height:0; display:flex; flex-direction:column; gap:13px; overflow:auto; }
+.month-day-card,.month-stat-card { background:#ffffffdf; border-radius:24px; overflow:hidden; flex:none; }
+.month-day-card { flex:1 0 auto; max-height:65%; display:flex; flex-direction:column; }
+.month-day-cover { padding:19px 20px; color:#303030; background:radial-gradient(ellipse at 85% 0,#F5BC5A88,transparent 70%),#E8EFF6; display:grid; gap:5px; justify-items:center; flex:none; }
+.month-day-cover span { font-size:12px; text-transform:capitalize; }
+.month-day-cover strong { font-size:43px; line-height:1; letter-spacing:-.06em; font-weight:450; }
+.month-day-content { display:flex; flex-direction:column; min-height:0; gap:12px; padding:17px; }
+.month-day-heading { display:flex; align-items:center; justify-content:space-between; gap:8px; }
+.month-side h3 { font-size:15px; font-weight:550; }
+.month-day-heading>span,.month-day-content>p { color:var(--chronos-muted); font-size:12px; }
+.month-day-list { overflow:auto; min-height:0; }
+.chrono-calendar .month-day-list button { display:flex; align-items:center; gap:9px; width:100%; text-align:left; padding:10px 0; border-bottom:1px solid #30303010; border-radius:0; }
+.month-list-icon { width:31px; height:31px; border-radius:10px; background:#E8EFF6; display:grid; place-items:center; flex:none; }
+.month-list-icon.task { background:#f5bc5a50; }
+.month-day-list button>span:last-child { display:grid; gap:4px; min-width:0; overflow-wrap:anywhere; }
+.month-day-list strong { font-weight:550; font-size:12px; }
+.month-day-list small { font-size:10px; color:var(--chronos-muted); }
+.chrono-calendar .month-create { display:flex; align-items:center; justify-content:center; gap:6px; background:#F5BC5A; padding:10px 12px; border-radius:99px; margin-top:auto; flex:none; }
+.month-stat-card { display:grid; gap:13px; padding:17px; }
+.month-stat { display:grid; gap:6px; }
+.month-stat>div:first-child { display:flex; justify-content:space-between; font-size:11px; color:var(--chronos-muted); }
+.month-stat strong { color:#303030; font-weight:550; }
+.month-stat-track { height:6px; background:repeating-linear-gradient(135deg,#30303013 0 1px,transparent 1px 4px); border-radius:99px; overflow:hidden; }
+.month-stat-track i { height:100%; display:block; border-radius:99px; }
+.month-stat-card>small { font-size:10px; color:var(--chronos-muted); overflow-wrap:anywhere; }
+@media(min-width:1000px) and (max-height:800px){.month-main{padding:13px}.month-summary{gap:9px;padding-bottom:8px}.month-week-row{min-height:83px;grid-template-rows:23px 19px 19px minmax(13px,1fr)}.chrono-calendar .month-event{height:19px}.month-day-cover{padding:12px}.month-day-cover strong{font-size:34px}}
+@media(max-width:1000px){.month-planner{grid-template-columns:1fr;min-height:max-content}.month-grid-scroll{overflow-x:auto}.month-side{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));overflow:visible}.month-day-card{max-height:none}.month-day-list{max-height:230px}.month-week-row{min-height:90px}}
+@media(max-width:600px){.month-main{padding:10px;border-radius:18px}.month-side{grid-template-columns:1fr}.month-day-card,.month-stat-card{border-radius:18px}.month-grid{min-width:450px}.month-event>small{display:none}}
