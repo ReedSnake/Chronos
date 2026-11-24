@@ -23,7 +23,7 @@ function statusLabel(t, status) {
   return translated === key ? status : translated;
 }
 
-export function CalendarCollaborationPanel({ calendar }) {
+export function CalendarCollaborationPanel({ calendar, section = null }) {
   const { t } = useLocale();
   const [shareSettings, setShareSettings] = useState({});
   const [inviteSettings, setInviteSettings] = useState({});
@@ -223,10 +223,10 @@ export function CalendarCollaborationPanel({ calendar }) {
   return (
     <>
       {error && <p role="alert">{error}</p>}
-      {shareUrl && <section className="account-card"><h3>{t('calendars.shareReady')}</h3><input aria-label={t('calendars.shareReady')} readOnly value={shareUrl} /></section>}
-      {invitationUrl && <section className="account-card"><h3>{t('calendars.inviteReady')}</h3><input aria-label={t('calendars.inviteReady')} readOnly value={invitationUrl} /></section>}
-            <details className="account-form">
-              <summary>{t('calendars.shareTitle')}</summary>
+      {shareUrl && (!section || section === 'share') && <section className="account-card"><h3>{t('calendars.shareReady')}</h3><input aria-label={t('calendars.shareReady')} readOnly value={shareUrl} /></section>}
+      {invitationUrl && (!section || section === 'invite') && <section className="account-card"><h3>{t('calendars.inviteReady')}</h3><input aria-label={t('calendars.inviteReady')} readOnly value={invitationUrl} /></section>}
+            <details className="account-form" hidden={section !== null && section !== 'share'} open={section !== null ? section === 'share' : undefined}>
+              <summary hidden={section !== null}>{t('calendars.shareTitle')}</summary>
               <label htmlFor={`share-role-${calendar.id}`}>{t('calendars.shareRole')}</label>
               <select id={`share-role-${calendar.id}`} value={share.role} onChange={(event) => setShareSettings((current) => ({ ...current, [calendar.id]: { ...share, role: event.target.value } }))}>
                 <option value="viewer">{t('calendars.viewer')}</option><option value="editor">{t('calendars.editor')}</option><option value="admin">{t('calendars.admin')}</option>
@@ -257,8 +257,8 @@ export function CalendarCollaborationPanel({ calendar }) {
                 </p>
               ))}
             </details>
-            <details className="account-form">
-              <summary>{t('calendars.inviteTitle')}</summary>
+            <details className="account-form" hidden={section !== null && section !== 'invite'} open={section !== null ? section === 'invite' : undefined}>
+              <summary hidden={section !== null}>{t('calendars.inviteTitle')}</summary>
               <label htmlFor={`invite-emails-${calendar.id}`}>{t('calendars.inviteEmails')}</label>
               <textarea id={`invite-emails-${calendar.id}`} value={invite.emails} onChange={(event) => setInviteSettings((current) => ({ ...current, [calendar.id]: { ...invite, emails: event.target.value } }))} />
               <label htmlFor={`invite-role-${calendar.id}`}>{t('calendars.shareRole')}</label>
@@ -274,8 +274,8 @@ export function CalendarCollaborationPanel({ calendar }) {
               {(invitations[calendar.id] || []).map((item) => <p key={item.id}>{item.email} · {calendarRoleLabel(t, item.role)} · {statusLabel(t, item.status)}{item.status === 'pending' && item.deliveryStatus === 'queued' ? ` · ${t('calendars.invitationStatus.queued')}` : item.deliveryStatus === 'failed' ? ` · ${t('calendars.invitationStatus.failed')}` : ''} {item.status === 'pending' && <button type="button" onClick={() => { void revokeInvitation(calendar.id, item.id); }}>{t('calendars.revoke')}</button>}</p>)}
               {(invitationResults[calendar.id] || []).map((item, index) => <p key={`${item.email}-${index}`}>{item.email} · {t(`calendars.invitationStatus.${item.status}`)}</p>)}
             </details>
-            <details className="account-form">
-              <summary>{t('calendars.membersTitle')}</summary>
+            <details className="account-form" hidden={section !== null && section !== 'members'} open={section !== null ? section === 'members' : undefined}>
+              <summary hidden={section !== null}>{t('calendars.membersTitle')}</summary>
               <label htmlFor={`member-email-${calendar.id}`}>{t('common.email')}</label>
               <input id={`member-email-${calendar.id}`} type="email" value={memberSettingsForCalendar.email} onChange={(event) => setMemberSettings((current) => ({ ...current, [calendar.id]: { ...memberSettingsForCalendar, email: event.target.value } }))} />
               <label htmlFor={`member-role-${calendar.id}`}>{t('calendars.memberRole')}</label>
