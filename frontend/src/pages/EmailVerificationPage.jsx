@@ -38,7 +38,7 @@ export function EmailVerificationPage() {
   }, [localizedPath, navigate, setAuthenticated, t]);
 
   return (
-    <FlowSurface title={t('verification.title')} icon={error ? 'x' : 'check'} tone={error ? 'error' : ''}>
+    <FlowSurface title={t('verification.title')} icon={error ? 'x' : 'clock'} tone={error ? 'error' : ''}>
         {status && <p role="status">{t(status)}</p>}
         {error && <p role="alert">{error}</p>}
         {error && <ResendVerificationForm />}
