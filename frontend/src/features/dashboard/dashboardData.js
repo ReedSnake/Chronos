@@ -1,11 +1,11 @@
 import { eventDayKey, fromCalendarInput } from '../events/eventForm.js';
 
 const keyOf = date => date.toISOString().slice(0, 10);
-export function weekWindow(now, timeZone, startsOn = 'monday') {
+export function weekWindow(now, timeZone, startsOn = 'monday', weekOffset = 0) {
   const key = eventDayKey({ startsAt: now.toISOString() }, timeZone);
   const start = new Date(key + 'T00:00:00Z');
   const offset = (start.getUTCDay() + (startsOn === 'sunday' ? 0 : 6)) % 7;
-  start.setUTCDate(start.getUTCDate() - offset);
+  start.setUTCDate(start.getUTCDate() - offset + weekOffset * 7);
   const days = Array.from({ length: 7 }, (_, index) => {
     const date = new Date(start); date.setUTCDate(date.getUTCDate() + index); return keyOf(date);
   });
