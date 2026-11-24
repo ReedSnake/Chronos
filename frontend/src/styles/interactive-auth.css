@@ -32,3 +32,27 @@
 @media (prefers-reduced-motion: reduce) { .mascot-body { animation: none; } .mascot-hand, .mascot-eyes { transition: none; } }
 
 .chronos-canvas { cursor: pointer; touch-action: pan-y; max-width: 100%; object-fit: contain; }
+
+/* Carrots live outside the form's hit areas and keep their own drag target. */
+.rabbit-playground { position: relative; width: 100%; min-width: 0; }
+.rabbit-carrot {
+  position: fixed; left: var(--carrot-x); top: var(--carrot-y);
+  width: var(--carrot-size); height: calc(var(--carrot-size) * 1.35);
+  padding: 0; background: transparent; border: 0; border-radius: 16px; box-shadow: none;
+  transform: translate(-50%, -50%) rotate(var(--carrot-angle));
+  cursor: grab; touch-action: none; user-select: none; z-index: 2;
+  transition: opacity .25s ease, filter .25s ease;
+  filter: drop-shadow(0 4px 5px #9f75401c);
+}
+.rabbit-carrot:hover:not(:disabled) { background: transparent; filter: drop-shadow(0 5px 7px #ad783d3b); }
+.rabbit-carrot:focus-visible { outline: 2px solid #699bc7; outline-offset: 3px; }
+.rabbit-carrot:disabled { opacity: .46; cursor: default; background: transparent; }
+.rabbit-carrot.is-held { cursor: grabbing; transition: none; pointer-events: auto; }
+.rabbit-carrot svg { display: block; pointer-events: none; }
+.rabbit-feed-status { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+@media (max-width: 900px) {
+  .rabbit-carrot { position: absolute; left: var(--carrot-mx); top: var(--carrot-my); width: clamp(25px, 8vw, 43px); height: clamp(34px, 11vw, 58px); }
+  .rabbit-carrot:nth-of-type(1), .rabbit-carrot:nth-of-type(4) { width: 32px; height: 43px; }
+  .rabbit-carrot:nth-of-type(2), .rabbit-carrot:nth-of-type(6) { width: 42px; height: 56px; }
+}
+@media (prefers-reduced-motion: reduce) { .rabbit-carrot { transition: none; } }
