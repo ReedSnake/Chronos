@@ -120,7 +120,9 @@ export function eventDayKey(event, timeZone = 'UTC') {
 
 export function eventDateLabel(event, locale, timeZone) {
   if (event.type === 'holiday') return eventDayKey(event, timeZone);
-  const date = new Date(event.startsAt);
+  const value = event.type === 'task' ? event.deadline : event.type === 'reminder' ? event.remindAt : event.startsAt;
+  if (!value) return '';
+  const date = new Date(value);
   if (Number.isNaN(date.getTime())) return '';
   return date.toLocaleString(locale, { dateStyle: 'medium', timeStyle: 'short', timeZone });
 }
