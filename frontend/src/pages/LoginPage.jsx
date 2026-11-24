@@ -36,7 +36,7 @@ export function LoginPage() {
   }
 
   return (
-    <InteractiveAuth title={t('login.title')} error={error}>
+    <InteractiveAuth title={t('login.title')} error={error} submitting={submitting}>
       {({ visible, setVisible, setFocus }) => <>
 
         <form className="auth-form" onSubmit={handleSubmit}>
