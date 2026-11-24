@@ -1,24 +1,102 @@
-import { useId } from 'react';
+import { useEffect, useRef, useState } from 'react';
+
+const clamp = (n, lo, hi) => Math.max(lo, Math.min(hi, n));
+const smooth = (n) => { const x = clamp(n, 0, 1); return x * x * (3 - 2 * x); };
+const grid = [];
+for (let y = 3; y < 220; y += 4.3) {
+  for (let x = 3; x < 260; x += 4.3) grid.push({ x, y });
+}
+function field(x, y, cx, cy, rx, ry) {
+  return 1 - ((x - cx) / rx) ** 2 - ((y - cy) / ry) ** 2;
+}
+const bodyDots = grid.flatMap(({ x, y }) => {
+  const d = Math.max(field(x, y, 130, 107, 77, 91), field(x, y, 130, 143, 88, 64));
+  if (d <= -.045) return [];
+  const radius = 2.65 * smooth((d + .045) / .58);
+  return radius > .12 ? [{ x, y, radius, opacity: .65 + .35 * smooth(d / .4) }] : [];
+});
+const handDots = grid.flatMap(({ x, y }) => {
+  const dx = x - 130, dy = y - 107;
+  const d = field(dx, dy, 0, 0, 24, 21);
+  return d > 0 ? [{ x: dx, y: dy, radius: 2.45 * smooth(d / .6) }] : [];
+});
+
+function Hand({ x, y, raised }) {
+  return (
+    <g style={{ transform: `translate(${x}px, ${y}px)`, transition: 'transform 380ms cubic-bezier(.2,.8,.3,1.15)' }} className="mascot-moving-hand">
+      {handDots.map((dot, i) => <circle key={i} cx={dot.x} cy={dot.y} r={dot.radius} fill={raised ? '#397fae' : '#70b5df'} />)}
+    </g>
+  );
+}
 
 export function BlobMascot({ mood = 'idle' }) {
-  const dots = useId();
+  const svg = useRef(null);
+  const eyes = useRef(null);
+  const target = useRef({ x: 0, y: 0 });
+  const [blink, setBlink] = useState(false);
   const hidden = mood === 'private';
   const peeking = mood === 'peek';
+
+  useEffect(() => {
+    const media = window.matchMedia('(prefers-reduced-motion: reduce)');
+    let frame, timer, reopen;
+    let x = 0, y = 0;
+    function track(event) {
+      const box = svg.current?.getBoundingClientRect();
+      if (!box) return;
+      target.current = {
+        x: clamp((event.clientX - box.left - box.width / 2) / 17, -11, 11),
+        y: clamp((event.clientY - box.top - box.height * .44) / 18, -8, 10),
+      };
+    }
+    function reset() { target.current = { x: 0, y: 0 }; }
+    function tick() {
+      const desired = media.matches || hidden ? { x: 0, y: 0 } : mood === 'reading' ? { x: target.current.x * .65, y: 7 } : target.current;
+      x += (desired.x - x) * .13;
+      y += (desired.y - y) * .13;
+      eyes.current?.setAttribute('transform', `translate(${x.toFixed(2)} ${y.toFixed(2)})`);
+      frame = requestAnimationFrame(tick);
+    }
+    function scheduleBlink() {
+      timer = window.setTimeout(() => {
+        if (!media.matches) setBlink(true);
+        reopen = window.setTimeout(() => { setBlink(false); scheduleBlink(); }, 150);
+      }, 2600 + Math.random() * 2600);
+    }
+    window.addEventListener('pointermove', track, { passive: true });
+    document.addEventListener('pointerleave', reset);
+    frame = requestAnimationFrame(tick);
+    scheduleBlink();
+    return () => {
+      window.removeEventListener('pointermove', track);
+      document.removeEventListener('pointerleave', reset);
+      cancelAnimationFrame(frame);
+      clearTimeout(timer);
+      clearTimeout(reopen);
+    };
+  }, [mood, hidden]);
+
+  const eyeHeight = blink || mood === 'success' ? 3 : mood === 'error' ? 10 : 15;
   return (
-    <svg className="chronos-mascot" data-mood={mood} viewBox="0 0 260 220" aria-hidden="true">
-      <defs>
-        <pattern id={dots} width="5" height="5" patternUnits="userSpaceOnUse">
-          <circle cx="2.5" cy="2.5" r="1.85" fill="#64a9d8" />
-        </pattern>
-      </defs>
+    <svg ref={svg} className="chronos-mascot" data-mood={mood} viewBox="0 0 260 220" aria-hidden="true">
       <g className="mascot-body">
-        <path d="M130 15 C78 15 45 59 39 115 C24 156 45 201 93 204 Q130 216 167 204 C215 201 236 156 221 115 C215 59 182 15 130 15Z" fill={`url(#${dots})`} />
-        <g className="mascot-eyes">
-          <ellipse cx="102" cy="94" rx="9" ry={mood === 'success' ? 4 : 15} fill="#253648" />
-          <ellipse cx="158" cy="94" rx="9" ry={mood === 'success' ? 4 : 15} fill="#253648" />
+        <g fill="#70b5df">
+          {bodyDots.map((dot, i) => <circle key={i} cx={dot.x} cy={dot.y} r={dot.radius} opacity={dot.opacity} />)}
         </g>
-        <ellipse className="mascot-hand" cx={hidden || peeking ? 102 : 38} cy={hidden || peeking ? 94 : 139} rx="23" ry="24" fill="#6ba9d0" />
-        <ellipse className="mascot-hand" cx={hidden ? 158 : peeking ? 186 : 222} cy={hidden ? 94 : peeking ? 125 : 139} rx="23" ry="24" fill="#6ba9d0" />
+        <g ref={eyes}>
+          {[99, 161].map(cx => (
+            <g key={cx} transform={`translate(${cx} 98)`}>
+              <g style={{ transform: `scaleY(${eyeHeight / 15})`, transition: 'transform 130ms ease' }} className="mascot-blinking-eye">
+                {[-12,-8,-4,0,4,8,12].flatMap(y => [-8,-4,0,4,8].map(x => {
+                  const d = field(x, y, 0, 0, 10, 16);
+                  return d > 0 ? <circle key={`${x}:${y}`} cx={x} cy={y} r={1.85 + .35 * d} fill="#202b37" /> : null;
+                }))}
+              </g>
+            </g>
+          ))}
+        </g>
+        <Hand x={hidden || peeking ? 99 : 38} y={hidden || peeking ? 98 : 139} raised={hidden || peeking} />
+        <Hand x={hidden ? 161 : peeking ? 181 : 222} y={hidden ? 98 : peeking ? 125 : 139} raised={hidden || peeking} />
       </g>
     </svg>
   );
