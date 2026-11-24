@@ -1,3 +1,4 @@
+import { TaskCompletion, EventSymbol } from './CalendarEventActions';
 import { useState } from 'react';
 import { TablerIcon } from '../../components/layout/TablerIcon';
 import './event-surface.css';
@@ -21,7 +22,7 @@ export function EventDetails({ event, calendar, onClose, onEdit, onDelete, canEd
     finally { setSending(null); }
   }
   return <section className="account-card event-details" aria-label={t('calendarView.event.details')}>
-    <header className="event-surface-header"><div className="event-surface-title"><span className="event-surface-symbol"><TablerIcon name={event.type==='task'?'checkbox':event.type==='reminder'?'bell':'calendar-event'} size={24}/></span><div><h2>{event.title}</h2><p>{calendar.name} · {t('calendarView.type.'+event.type)}</p></div></div><button type="button" className="event-close" onClick={onClose} disabled={busy||Boolean(sending)} aria-label={t('calendarView.event.close')}><TablerIcon name="x" size={20}/></button></header>
+    <header className="event-surface-header"><div className="event-surface-title"><EventSymbol event={event} size={20}/><div><h2>{event.title}</h2><p>{calendar.name} · {t('calendarView.type.'+event.type)}</p></div></div><button type="button" className="event-close" onClick={onClose} disabled={busy||Boolean(sending)} aria-label={t('calendarView.event.close')}><TablerIcon name="x" size={20}/></button></header>
     <div className="event-surface-tabs" role="group" aria-label={uk?'Розділи події':'Event sections'}>{[['info',uk?'Інформація':'Info'],['notes',uk?'Нотатки':'Notes']].map(([key,label])=><button key={key} type="button" aria-pressed={tab===key} onClick={()=>setTab(key)}>{label}</button>)}</div>
     <div className="event-surface-body" hidden={tab!=='info'}>
     {stages.length>0&&<div className="event-stage-track">{stages.map((status,i)=><span key={status} className={i<=stages.indexOf(event.status)?'reached':''} aria-current={event.status===status?'step':undefined}><i>{i<stages.indexOf(event.status)?<TablerIcon name="check" size={12}/>:i+1}</i>{t('statuses.'+status)}</span>)}</div>}
@@ -40,6 +41,6 @@ export function EventDetails({ event, calendar, onClose, onEdit, onDelete, canEd
       {canEdit && onInvite && attendee.inviteStatus !== 'accepted' && attendee.inviteStatus !== 'declined' && <button type="button" disabled={busy || Boolean(sending)} onClick={() => void invite(attendee.email)}>{t(sending === attendee.email ? 'eventInvitations.sending' : attendee.invitationSentAt ? 'eventInvitations.resend' : 'eventInvitations.send')}</button>}</li>)}</ul> : <p>{t('calendarView.event.noAttendees')}</p>}</div>
     {message && <p role="status">{message}</p>}{error && <p role="alert">{error}</p>}
     </div><div className="event-surface-body" hidden={tab!=='notes'}><p className="event-notes">{event.description||(uk?'Нотаток поки немає':'No notes yet')}</p></div>
-    {canEdit && <><div className="button-row event-surface-footer"><button type="button" onClick={onEdit} disabled={busy}>{t('calendarView.event.edit')}</button><button type="button" className="danger-button" onClick={onDelete} disabled={busy}>{t('calendarView.event.delete')}</button></div>{event.isRecurring && <p className="field-note">{t('calendarView.event.editSeriesOnly')}</p>}</>}
+    {canEdit && <><div className="button-row event-surface-footer"><TaskCompletion event={event} large/><button type="button" onClick={onEdit} disabled={busy}>{t('calendarView.event.edit')}</button><button type="button" className="danger-button" onClick={onDelete} disabled={busy}>{t('calendarView.event.delete')}</button></div>{event.isRecurring && <p className="field-note">{t('calendarView.event.editSeriesOnly')}</p>}</>}
   </section>;
 }
