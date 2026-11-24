@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { TablerIcon } from '../layout/TablerIcon';
 import { RabbitPlayground } from './RabbitPlayground';
 import { useLocale } from '../../i18n/LocaleProvider';
 import '../../styles/interactive-auth.css';
@@ -39,11 +40,7 @@ export function PasswordField({ visible, setVisible, setFocus, ...props }) {
       <input {...props} data-password="" type={visible ? 'text' : 'password'} />
       <button type="button" className="password-toggle" aria-label={label} aria-pressed={visible}
         onClick={() => { setVisible(!visible); setFocus('password'); }}>
-        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true">
-          <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z" />
-          <circle cx="12" cy="12" r="3" />
-          {visible && <path d="M3 3l18 18" />}
-        </svg>
+        <TablerIcon name={visible ? "eye-off" : "eye"} size={20} />
       </button>
     </div>
   );
