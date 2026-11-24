@@ -26,7 +26,7 @@ export function BlobMascot({ mood = 'idle', compact = false, caret = null }) {
     let lx = 35, ly = 137, rx = 225, ry = 137, lastMood = '', moodAt = last;
     let dpr = 1, visible = true;
     let previousCaret = null, caretAt = -10000, lookAt = last + 4200, idleLook = 0, idleLookY = 0;
-    let lastInputAt = -10000;
+    let lastInputAt = -10000, idleGestureAt = last + 6500, idleGesture = 0;
     function resize() {
       dpr = Math.min(window.devicePixelRatio || 1, 2);
       el.width = Math.round(260 * dpr);
@@ -82,6 +82,10 @@ export function BlobMascot({ mood = 'idle', compact = false, caret = null }) {
       const privateMode = mode === 'private', peek = mode === 'peek';
       const sleeping = (mode === 'idle' || mode === 'empty') && now - activity > 45000;
       const bored = mode === 'empty' || (mode === 'idle' && now - activity > 5500);
+      if (now >= idleGestureAt + 2600) { idleGestureAt = now + 3500 + Math.random() * 4000; idleGesture = (idleGesture + 1) % 3; }
+      const gestureAge = (now - idleGestureAt) / 1000;
+      const idleMotion = !reduced && bored && !sleeping && !pointer.inside && gestureAge > 0 && gestureAge < 2.6 ? Math.sin(Math.PI * gestureAge / 2.6) ** 2 : 0;
+      const stretch = idleMotion * (idleGesture === 2 ? 1 : 0);
       const surprised = now - clickAt < 1700, annoyed = surprised && clicks >= 3;
       const pet = now - gestureAt < 2200;
       const reach = pointer.inside && now - hoverAt > 1200 && !privateMode && !peek;
@@ -105,10 +109,10 @@ export function BlobMascot({ mood = 'idle', compact = false, caret = null }) {
       gy = lerp(gy, gazeOff ? 0 : sad && now - pointer.at > 1600 ? 10 : gazeY * 25, gazeK);
       const breath = reduced ? 0 : Math.sin(t * 1.25) * .028;
       const jump = happy && !reduced && age < 1.7 ? Math.max(0, Math.sin(age / 1.7 * Math.PI)) * 16 : 0;
-      const lean = reduced ? 0 : (dizzy ? Math.sin(t * 3.2) * .09 : gazeX * .10 + (waiting || confused ? Math.sin(t * 1.8) * .05 : 0));
+      const lean = reduced ? 0 : (dizzy ? Math.sin(t * 3.2) * .09 : gazeX * .10 + (waiting || confused ? Math.sin(t * 1.8) * .05 : 0) + idleMotion * (idleGesture === 0 ? -.075 : .06));
       tilt = lerp(tilt, privateMode ? 0 : lean, k);
-      sx = lerp(sx, 1 + breath + (sad || annoyed ? .055 : 0) - (jump ? .06 : 0) + (pet ? .025 : 0), k);
-      sy = lerp(sy, 1 - breath - (sad || sleeping || privateMode || annoyed ? .09 : 0) + jump * .004 + (surprised && !annoyed ? .035 : 0), k);
+      sx = lerp(sx, 1 + breath - stretch * .045 + (sad || annoyed ? .055 : 0) - (jump ? .06 : 0) + (pet ? .025 : 0), k);
+      sy = lerp(sy, 1 - breath + stretch * .07 - (sad || sleeping || privateMode || annoyed ? .09 : 0) + jump * .004 + (surprised && !annoyed ? .035 : 0), k);
       lift = lerp(lift, jump + (pointer.inside && !privateMode && !reduced ? 4 : 0), k);
       if (now > blinkAt) {
         blinkUntil = now + 210;
@@ -118,9 +122,9 @@ export function BlobMascot({ mood = 'idle', compact = false, caret = null }) {
       eyeOpen = lerp(eyeOpen, sleeping || pet || (happy && age < 1.2) || (!reduced && now < blinkUntil) ? .12 : annoyed ? .52 : surprised ? 1.25 : sad ? .65 : 1, blinkK);
       const leftRaised = privateMode || peek, rightRaised = privateMode;
       lx = lerp(lx, leftRaised ? 98 : happy ? 40 : reach && pointer.x < 130 ? clamp(pointer.x, 16, 70) : 35, k);
-      ly = lerp(ly, leftRaised ? 98 : happy ? 84 : reach && pointer.x < 130 ? clamp(pointer.y, 70, 150) : 137, k);
+      ly = lerp(ly, leftRaised ? 98 : happy ? 84 : reach && pointer.x < 130 ? clamp(pointer.y, 70, 150) : 137 - idleMotion * (idleGesture === 0 ? 30 : idleGesture === 2 ? 20 : 0), k);
       rx = lerp(rx, rightRaised ? 162 : peek ? 186 : happy ? 220 : reach && pointer.x >= 130 ? clamp(pointer.x, 190, 244) : 225, k);
-      ry = lerp(ry, rightRaised ? 98 : peek ? 124 : happy ? 84 : reach && pointer.x >= 130 ? clamp(pointer.y, 70, 150) : 137, k);
+      ry = lerp(ry, rightRaised ? 98 : peek ? 124 : happy ? 84 : reach && pointer.x >= 130 ? clamp(pointer.y, 70, 150) : 137 - idleMotion * (idleGesture === 1 ? 30 : idleGesture === 2 ? 20 : 0), k);
 
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx.clearRect(0, 0, 260, 220);
