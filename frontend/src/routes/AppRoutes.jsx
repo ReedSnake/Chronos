@@ -8,6 +8,7 @@ import { RegisterPage } from '../pages/RegisterPage';
 import { LoginPage } from '../pages/LoginPage';
 import { EmailVerificationPage } from '../pages/EmailVerificationPage';
 import { AccountPage } from '../pages/AccountPage';
+import { TasksPage } from '../pages/TasksPage';
 import { HomePage } from '../pages/HomePage';
 import { PublicProfilePage } from '../pages/PublicProfilePage';
 import { CalendarsPage } from '../pages/CalendarsPage';
@@ -27,6 +28,7 @@ export function AppRoutes() {
         <Route path="login" element={<LegacyRouteRedirect />} />
         <Route path="verify-email" element={<LegacyRouteRedirect />} />
         <Route path="account" element={<LegacyRouteRedirect />} />
+        <Route path="tasks" element={<LegacyRouteRedirect />} />
         <Route path="calendars" element={<LegacyRouteRedirect />} />
         <Route path="calendars/view/*" element={<LegacyRouteRedirect />} />
         <Route path="calendar-share" element={<LegacyRouteRedirect />} />
@@ -41,6 +43,7 @@ export function AppRoutes() {
             <Route path="login" element={<LoginPage />} />
             <Route path="verify-email" element={<EmailVerificationPage />} />
             <Route path="account" element={<AccountPage />} />
+            <Route path="tasks" element={<TasksPage />} />
             <Route path="calendars" element={<CalendarsPage />} />
             <Route path="calendars/view" element={<CalendarViewPage />} />
             <Route path="calendars/view/:calendarId" element={<CalendarViewPage />} />
