@@ -1,3 +1,4 @@
+const { listHolidays, getHoliday } = require('./holidayService');
 const Event = require('../models/Event');
 const AppError = require('../utils/AppError');
 const { getUserCalendarAccess } = require('./calendarService');
@@ -8,6 +9,7 @@ function attendeeResponse(attendee) {
     email: attendee.email,
     expiresAt: attendee.expiresAt || null,
     inviteStatus: attendee.inviteStatus,
+    invitationSentAt: attendee.invitationSentAt || null,
   };
 }
 
@@ -60,10 +62,16 @@ function baseEventQuery(calendarId, filters, from, to) {
   };
 }
 
-async function listEvents(calendarId, filters, timeZone = 'UTC') {
+async function listEvents(calendarId, filters, timeZone = 'UTC', holidayCalendar = null) {
   const { from, to } = windowForFilters(filters);
   if (to - from > 370 * 86400000) {
     throw new AppError('The event range cannot exceed 370 days', 400, 'EVENT_RANGE_TOO_LARGE');
+  }
+  if (holidayCalendar) {
+    const records = await listHolidays(holidayCalendar, filters, from, to);
+    records.sort((a, b) => a.startsAt - b.startsAt || String(a._id).localeCompare(String(b._id)));
+    const total = records.length;
+    return { events: records.slice((filters.page - 1) * filters.limit, filters.page * filters.limit).map(eventResponse), pagination: { page: filters.page, limit: filters.limit, total, totalPages: Math.max(1, Math.ceil(total / filters.limit)) } };
   }
   const records = await Event.find(baseEventQuery(calendarId, filters, from, to)).limit(10001).lean();
   if (records.length > 10000) throw new AppError('Too many events in the selected range', 400, 'EVENT_RANGE_TOO_LARGE');
@@ -84,7 +92,7 @@ async function listEvents(calendarId, filters, timeZone = 'UTC') {
 
 async function listCalendarEvents(userId, calendarId, filters) {
   const { calendar } = await getUserCalendarAccess(userId, calendarId, 'viewer');
-  return listEvents(calendarId, filters, calendar?.timeZone || 'UTC');
+  return listEvents(calendarId, filters, calendar?.timeZone || 'UTC', calendar?.isHolidayCalendar ? calendar : null);
 }
 
 async function listSharedCalendarEvents(link, filters) {
@@ -93,11 +101,14 @@ async function listSharedCalendarEvents(link, filters) {
   const Calendar = require('../models/Calendar');
   const calendar = await Calendar.findById(link.calendarId);
   if (!calendar) throw new AppError('Calendar not found', 404, 'CALENDAR_NOT_FOUND');
-  return listEvents(link.calendarId, filters, calendar.timeZone || 'UTC');
+  if (calendar.isHolidayCalendar) throw missing();
+  const result = await listEvents(link.calendarId, filters, calendar.timeZone || 'UTC');
+  return { ...result, events: result.events.map((event) => ({ ...event, attendees: [] })) };
 }
 
 function missing() { return new AppError('Event not found', 404, 'EVENT_NOT_FOUND'); }
 function handleEventValidationError(error) {
+  if (error?.name === 'VersionError') throw new AppError('Event changed; reload and try again', 409, 'EVENT_CHANGED');
   if (['ValidationError', 'CastError'].includes(error?.name)) {
     throw new AppError('Invalid event fields', 400, 'VALIDATION_ERROR');
   }
@@ -105,8 +116,9 @@ function handleEventValidationError(error) {
 }
 
 async function getCalendarEvent(userId, calendarId, eventId) {
-  await getUserCalendarAccess(userId, calendarId, 'viewer');
-  const event = await Event.findOne({ _id: eventId, calendarId });
+  const { calendar } = await getUserCalendarAccess(userId, calendarId, 'viewer');
+  const event = calendar?.isHolidayCalendar
+    ? await getHoliday(calendar, eventId) : await Event.findOne({ _id: eventId, calendarId });
   if (!event) throw missing();
   return eventResponse(event);
 }
@@ -138,7 +150,7 @@ async function createCalendarEvent(userId, calendarId, values) {
 
 async function updateCalendarEvent(userId, calendarId, eventId, validateValues) {
   const { calendar } = await getUserCalendarAccess(userId, calendarId, 'editor');
-  const event = await Event.findOne({ _id: eventId, calendarId });
+  const event = await Event.findOne({ _id: eventId, calendarId }).select('+attendees.inviteToken +attendees.lastInviteAttemptAt');
   if (!event) throw missing();
   const values = validateValues(event.type);
   if (values.attendees) {

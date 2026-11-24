@@ -3,14 +3,15 @@ function errorHandler(error, req, res, next) { // eslint-disable-line no-unused-
   const statusCode = isMalformedJson ? 400 : error.statusCode || error.status || 500;
   const errorCode = isMalformedJson
     ? 'VALIDATION_ERROR'
-    : statusCode >= 500
+    : statusCode >= 500 && !error.isOperational
       ? 'INTERNAL_ERROR'
       : error.code || 'REQUEST_FAILED';
 
   if (statusCode >= 500) {
     req.log.error({ err: error, requestId: req.id }, 'Request failed with an unexpected error');
   } else {
-    req.log.warn({ err: error, requestId: req.id }, 'Request failed with a client error');
+    // JSON parsing errors may contain the raw body, including a secret token.
+    req.log.warn({ ...(isMalformedJson ? { errorCode } : { err: error }), requestId: req.id }, 'Request failed with a client error');
   }
 
   res.status(statusCode).json({

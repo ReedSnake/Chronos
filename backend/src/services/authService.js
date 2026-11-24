@@ -4,6 +4,7 @@ const User = require('../models/User');
 const AppError = require('../utils/AppError');
 const logger = require('../config/logger');
 const { ensureMailConfigured, sendVerificationEmail } = require('../config/mail');
+const { ensureMainCalendar } = require('./personalCalendarService');
 const sessionService = require('./sessionService');
 const { claimPendingCalendarInvitation } = require('./calendarInvitationService');
 
@@ -47,8 +48,9 @@ async function register({ name, email, password }, locale = 'en') {
 
   const verification = createVerification();
   const passwordHash = await bcrypt.hash(password, 12);
+  let user;
   try {
-    await User.create({
+    user = await User.create({
       name,
       email,
       passwordHash,
@@ -63,6 +65,9 @@ async function register({ name, email, password }, locale = 'en') {
     if (error.code === 11000) throw new AppError('An account with this email already exists', 409, 'EMAIL_EXISTS');
     throw error;
   }
+  // Provision before reporting successful registration. A later login/list
+  // also repairs legacy or interrupted provisioning.
+  await ensureMainCalendar(user);
   await deliverEmail(email, verification.token, locale);
   return { messageCode: 'REGISTRATION_SUCCESS' };
 }
@@ -121,6 +126,7 @@ async function verifyEmail({ token }, req, res) {
   }, { new: true });
 
   if (!user) throw new AppError('Verification link is invalid or has expired', 400, 'INVALID_VERIFICATION_TOKEN');
+  await ensureMainCalendar(user);
   await sessionService.createSession(user._id, req, res);
   await claimPendingCalendarInvitationSafely(req, res, user);
   return { messageCode: 'EMAIL_VERIFIED', user: publicUser(user) };
@@ -131,6 +137,7 @@ async function login({ email, password }, req, res) {
   const valid = user && await bcrypt.compare(password, user.passwordHash);
   if (!valid) throw new AppError('Invalid email or password', 401, 'INVALID_CREDENTIALS');
   if (!user.emailVerifiedAt) throw new AppError('Please verify your email before signing in', 403, 'EMAIL_NOT_VERIFIED');
+  await ensureMainCalendar(user);
   await sessionService.createSession(user._id, req, res);
   await claimPendingCalendarInvitationSafely(req, res, user);
   return { messageCode: 'SIGNED_IN', user: publicUser(user) };

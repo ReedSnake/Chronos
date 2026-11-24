@@ -106,4 +106,19 @@ async function sendCalendarInvitationEmail(email, { token, calendarName, role },
   });
 }
 
-module.exports = { ensureMailConfigured, sendVerificationEmail, sendIntegrationPairingEmail, sendCalendarInvitationEmail };
+async function sendEventInvitationEmail(email, { token, title, startsAt, type, isRecurring, timeZone }, locale = 'en') {
+  const uk = emailLocale(locale) === 'uk';
+  const url = new URL(`/${uk ? 'uk' : 'en'}/event-invite`, config.mail.frontendUrl);
+  url.hash = `token=${encodeURIComponent(token)}`;
+  const date = new Intl.DateTimeFormat(uk ? 'uk-UA' : 'en-US', {
+    dateStyle: 'long', ...(type === 'holiday' ? {} : { timeStyle: 'short' }), timeZone: timeZone || 'UTC',
+  }).format(new Date(startsAt));
+  const series = isRecurring ? (uk ? '\nЗапрошення стосується всієї серії. Вказано дату початку серії.' : '\nThis invitation covers the entire series. The date shown is the first occurrence.') : '';
+  const text = uk
+    ? `Вас запрошено на подію Chronos: ${title}\n${date} (${timeZone || 'UTC'})${series}\n\nПрийняти або відхилити запрошення (7 днів):\n${url}\n\nЯкщо ви не очікували цього листа, проігноруйте його.`
+    : `You are invited to a Chronos event: ${title}\n${date} (${timeZone || 'UTC'})${series}\n\nAccept or decline within 7 days:\n${url}\n\nIf you did not expect this email, ignore it.`;
+  await getTransporter().sendMail({ from: config.mail.user, to: email,
+    subject: uk ? 'Запрошення на подію Chronos' : 'Chronos event invitation', text });
+}
+
+module.exports = { sendEventInvitationEmail, ensureMailConfigured, sendVerificationEmail, sendIntegrationPairingEmail, sendCalendarInvitationEmail };

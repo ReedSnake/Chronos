@@ -49,3 +49,16 @@ test('calendar time zone roundtrip supports DST, including offset changes', () =
   assert.equal(draft.startsAt, '2026-03-29T10:30');
   assert.equal(draft.attendeesText, 'example@test.com');
 });
+
+test('event invitations use scoped send and body-only token preview and response', async () => {
+  const calls = [];
+  const service = new CalendarService({ post: async (...args) => { calls.push(args); return {}; } });
+  await service.sendEventInvitation('a/b', 'event', 'friend@example.test');
+  await service.previewEventInvitation('secret');
+  await service.respondEventInvitation('secret', 'accepted');
+  assert.deepEqual(calls, [
+    ['/calendars/a%2Fb/events/event/invitations', { email: 'friend@example.test' }, { timeoutMs: 30000 }],
+    ['/event-invitations/preview', { token: 'secret' }],
+    ['/event-invitations/respond', { token: 'secret', response: 'accepted' }],
+  ]);
+});

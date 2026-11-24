@@ -15,6 +15,7 @@ import { CalendarViewPage } from '../pages/CalendarViewPage';
 import { CalendarSharePage } from '../pages/CalendarSharePage';
 import { IntegrationsPage } from '../pages/IntegrationsPage';
 import { IntegrationApprovalPage } from '../pages/IntegrationApprovalPage';
+import { EventInvitationPage } from '../pages/EventInvitationPage';
 import { CalendarInvitationPage } from '../pages/CalendarInvitationPage';
 
 export function AppRoutes() {
@@ -30,6 +31,7 @@ export function AppRoutes() {
         <Route path="calendars/view/*" element={<LegacyRouteRedirect />} />
         <Route path="calendar-share" element={<LegacyRouteRedirect />} />
         <Route path="calendar-invite" element={<LegacyRouteRedirect />} />
+        <Route path="event-invite" element={<LegacyRouteRedirect />} />
         <Route path="integrations/*" element={<LegacyRouteRedirect />} />
         <Route path="users/*" element={<LegacyRouteRedirect />} />
         <Route path=":locale" element={<LocaleRoute />}>
@@ -44,6 +46,7 @@ export function AppRoutes() {
             <Route path="calendars/view/:calendarId" element={<CalendarViewPage />} />
             <Route path="calendar-share" element={<CalendarSharePage />} />
             <Route path="calendar-invite" element={<CalendarInvitationPage />} />
+            <Route path="event-invite" element={<EventInvitationPage />} />
             <Route path="integrations" element={<IntegrationsPage />} />
             <Route path="integrations/approve" element={<IntegrationApprovalPage />} />
             <Route path="users/:id" element={<PublicProfilePage />} />

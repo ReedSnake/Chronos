@@ -24,7 +24,6 @@ export function CalendarsPage() {
   const [timeZone, setTimeZone] = useState(Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC');
   const [defaultView, setDefaultView] = useState('month');
   const [defaultEventDurationMinutes, setDefaultEventDurationMinutes] = useState(60);
-  const [isMain, setIsMain] = useState(false);
   const [editValues, setEditValues] = useState({});
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
@@ -55,13 +54,12 @@ export function CalendarsPage() {
     try {
       const result = await applicationContainer.calendarService.create({
         name: name.trim(), description, color, countryCode: countryCode.trim() || null,
-        timeZone, defaultView, defaultEventDurationMinutes, isMain,
+        timeZone, defaultView, defaultEventDurationMinutes,
       });
       setCalendars((current) => [result.calendar, ...current]);
       setName('');
       setDescription('');
       setCountryCode('');
-      setIsMain(false);
     } catch (requestError) {
       setError(getLocalizedApiError(requestError, t, 'calendars.createError'));
     } finally {
@@ -75,13 +73,23 @@ export function CalendarsPage() {
       countryCode: calendar.countryCode || '', timeZone: calendar.timeZone, defaultView: calendar.defaultView,
       defaultEventDurationMinutes: calendar.defaultEventDurationMinutes, isMain: calendar.isMain, isArchived: calendar.isArchived,
     }) };
-    if (!calendar.isOwner) delete values.isMain;
+    delete values.isMain;
+    values.countryCode = values.countryCode || null;
+    if (calendar.isMain) delete values.isArchived;
     try {
       const result = await applicationContainer.calendarService.update(calendar.id, values);
       setCalendars((current) => current.map((item) => (item.id === calendar.id ? result.calendar : item)));
     } catch (requestError) {
       setError(getLocalizedApiError(requestError, t, 'calendars.updateError'));
     }
+  }
+
+  async function toggleHoliday(calendar) {
+    setError('');
+    try {
+      const { calendar: updated } = await applicationContainer.calendarService.update(calendar.id, { isArchived: !calendar.isArchived });
+      setCalendars((current) => current.map((item) => item.id === calendar.id ? updated : item));
+    } catch (err) { setError(getLocalizedApiError(err, t, 'calendars.updateError')); }
   }
 
   async function removeCalendar(calendar) {
@@ -116,15 +124,14 @@ export function CalendarsPage() {
         <select id="calendar-default-view" value={defaultView} onChange={(event) => setDefaultView(event.target.value)}><option value="month">{t('calendars.viewMonth')}</option><option value="agenda">{t('calendars.viewAgenda')}</option></select>
         <label htmlFor="calendar-default-duration">{t('calendars.defaultDuration')}</label>
         <input id="calendar-default-duration" type="number" min="5" max="1440" value={defaultEventDurationMinutes} onChange={(event) => setDefaultEventDurationMinutes(Number(event.target.value))} required />
-        <label><input type="checkbox" checked={isMain} onChange={(event) => setIsMain(event.target.checked)} />{t('calendars.isMain')}</label>
         <button type="submit" disabled={submitting}>{submitting ? t('calendars.creating') : t('calendars.create')}</button>
       </form>
       </details>
       {error && <p role="alert">{error}</p>}
       {!calendars.length && <p>{t('calendars.empty')}</p>}
       {calendars.map((calendar) => {
-        const canManage = calendar.role === 'owner' || calendar.role === 'admin';
-        const canEdit = calendar.role !== 'viewer';
+        const canManage = !calendar.isHolidayCalendar && (calendar.role === 'owner' || calendar.role === 'admin');
+        const canEdit = !calendar.isHolidayCalendar && calendar.role !== 'viewer';
         const edit = editValues[calendar.id] || {
           name: calendar.name, description: calendar.description, color: calendar.color,
           countryCode: calendar.countryCode || '', timeZone: calendar.timeZone, defaultView: calendar.defaultView,
@@ -132,9 +139,11 @@ export function CalendarsPage() {
         };
         return (
           <section key={calendar.id} className="account-card">
-            <h2><span className="calendar-color" style={{ background: calendar.color }} />{calendar.name}</h2>
+            <h2><span className="calendar-color" style={{ background: calendar.color }} />{calendar.isHolidayCalendar ? t('calendarBasics.holidays') : calendar.name}{calendar.isMain && <small> · {t('calendarBasics.main')}</small>}</h2>
             <p>{t('calendars.role', { role: calendarRoleLabel(t, calendar.role) })}</p>
             <Link className="back-link" to={localizedPath(`/calendars/view/${calendar.id}`)}>{t('calendars.view')}</Link>
+            {calendar.isHolidayCalendar && <p>{t('calendarBasics.holidayNote')} · {calendar.countryCode}</p>}
+            {calendar.isHolidayCalendar && <button type="button" onClick={() => void toggleHoliday(calendar)}>{t(calendar.isArchived ? 'calendarBasics.show' : 'calendarBasics.hide')}</button>}
             {canEdit && <details className="account-form">
               <summary>{t('calendars.editTitle')}</summary>
               <label htmlFor={`edit-name-${calendar.id}`}>{t('calendars.name')}</label>
@@ -151,11 +160,10 @@ export function CalendarsPage() {
               <select id={`edit-default-view-${calendar.id}`} value={edit.defaultView} onChange={(event) => setEditValues((current) => ({ ...current, [calendar.id]: { ...edit, defaultView: event.target.value } }))}><option value="month">{t('calendars.viewMonth')}</option><option value="agenda">{t('calendars.viewAgenda')}</option></select>
               <label htmlFor={`edit-default-duration-${calendar.id}`}>{t('calendars.defaultDuration')}</label>
               <input id={`edit-default-duration-${calendar.id}`} type="number" min="5" max="1440" value={edit.defaultEventDurationMinutes} onChange={(event) => setEditValues((current) => ({ ...current, [calendar.id]: { ...edit, defaultEventDurationMinutes: Number(event.target.value) } }))} />
-              <label><input type="checkbox" checked={Boolean(edit.isArchived)} onChange={(event) => setEditValues((current) => ({ ...current, [calendar.id]: { ...edit, isArchived: event.target.checked } }))} />{t('calendars.archived')}</label>
-              {calendar.isOwner && <label><input type="checkbox" checked={Boolean(edit.isMain)} onChange={(event) => setEditValues((current) => ({ ...current, [calendar.id]: { ...edit, isMain: event.target.checked } }))} />{t('calendars.isMain')}</label>}
+              {!calendar.isMain && <label><input type="checkbox" checked={Boolean(edit.isArchived)} onChange={(event) => setEditValues((current) => ({ ...current, [calendar.id]: { ...edit, isArchived: event.target.checked } }))} />{t('calendars.archived')}</label>}
               <button type="button" onClick={() => { void saveCalendar(calendar); }}>{t('calendars.save')}</button>
             </details>}
-            {canManage && <button type="button" className="danger-button" onClick={() => { void removeCalendar(calendar); }}>{t('calendars.delete')}</button>}
+            {canManage && !calendar.isMain && <button type="button" className="danger-button" onClick={() => { void removeCalendar(calendar); }}>{t('calendars.delete')}</button>}
             {canManage && <CalendarCollaborationPanel calendar={calendar} />}
           </section>
         );

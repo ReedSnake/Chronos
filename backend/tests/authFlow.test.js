@@ -37,6 +37,7 @@ test('registration stores verification hash, bcrypt hash and only reports succes
     sendVerificationEmail: async (email, token) => { sent = { email, token }; },
   };
   const service = loadWithMocks('../src/services/authService.js', {
+    './personalCalendarService': { ensureMainCalendar: async () => {} },
     bcryptjs: { hash: async () => 'bcrypt-hash' },
     '../models/User': User,
     '../config/logger': { warn: () => {} },
@@ -58,6 +59,7 @@ test('registration stores verification hash, bcrypt hash and only reports succes
 
 test('SMTP failures surface HTTP 503 and never pretend delivery succeeded', async () => {
   const service = loadWithMocks('../src/services/authService.js', {
+    './personalCalendarService': { ensureMainCalendar: async () => {} },
     bcryptjs: { hash: async () => 'bcrypt-hash' },
     '../models/User': { exists: async () => false, create: async () => {} },
     '../config/logger': { warn: () => {} },
@@ -75,6 +77,7 @@ test('verification consumes a hashed token and creates a session only after atom
   const seen = [];
   const verifiedUser = { _id: 'sampleid', name: 'Jane', email: 'jane@example.com', country: 'XX', emailVerifiedAt: new Date() };
   const service = loadWithMocks('../src/services/authService.js', {
+    './personalCalendarService': { ensureMainCalendar: async () => {} },
     bcryptjs: {},
     '../models/User': { findOneAndUpdate: async (...args) => { seen.push(args); return verifiedUser; } },
     '../config/logger': { warn: () => {} },
@@ -171,6 +174,7 @@ test('Gmail SMTP uses TLS 465 and sends a fragment-based one-time link', async (
 test('login refuses unverified users and does not create a session', async () => {
   let sessions = 0;
   const service = loadWithMocks('../src/services/authService.js', {
+    './personalCalendarService': { ensureMainCalendar: async () => {} },
     bcryptjs: { compare: async () => true },
     '../models/User': { findOne: () => ({ select: async () => ({ passwordHash: 'bcrypt-hash', emailVerifiedAt: null }) }) },
     '../config/logger': { warn: () => {} },
@@ -185,6 +189,7 @@ test('login refuses unverified users and does not create a session', async () =>
 test('expired or already consumed verification link never creates a session', async () => {
   let sessions = 0;
   const service = loadWithMocks('../src/services/authService.js', {
+    './personalCalendarService': { ensureMainCalendar: async () => {} },
     bcryptjs: {},
     '../models/User': { findOneAndUpdate: async () => null },
     '../config/logger': { warn: () => {} },

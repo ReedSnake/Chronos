@@ -164,7 +164,7 @@ const options = {
               description: { type: 'string', maxLength: 2000 },
               color: { type: 'string', example: '#3B82F6' },
               countryCode: { type: 'string', nullable: true, example: 'UA' },
-              isMain: { type: 'boolean' },
+              isMain: { type: 'boolean', enum: [false], description: 'Main calendars are provisioned automatically.' },
               timeZone: { type: 'string', example: 'Europe/Kyiv' },
               defaultView: { type: 'string', enum: ['month', 'agenda'] },
               isArchived: { type: 'boolean' },
@@ -172,7 +172,7 @@ const options = {
               targetUserId: { type: 'string', description: 'For API-key requests, omit to use the integration owner. A different user requires an active integration grant.' },
             },
           } } } },
-          responses: { 201: { description: 'Calendar created.' }, 400: { description: 'Invalid calendar.' }, 401: { description: 'Not signed in or API key invalid.' }, 404: { description: 'Target user did not grant API access.' }, 409: { description: 'A main calendar already exists.' } },
+          responses: { 201: { description: 'Calendar created.' }, 400: { description: 'Invalid calendar.' }, 401: { description: 'Not signed in or API key invalid.' }, 404: { description: 'Target user did not grant API access.' }, 403: { description: 'Main calendars are created automatically.' } },
         },
       },
       '/api/calendars/{id}': {
@@ -190,7 +190,7 @@ const options = {
             { name: 'id', in: 'path', required: true, schema: { type: 'string' } },
             { name: 'targetUserId', in: 'query', required: false, schema: { type: 'string' }, description: 'For API-key requests, omit to use the integration owner. A different user requires an active write grant.' },
           ],
-          responses: { 200: { description: 'Calendar updated.' }, 403: { description: 'Only the owner may set isMain.' }, 404: { description: 'Calendar unavailable.' } },
+          responses: { 200: { description: 'Calendar updated.' }, 403: { description: 'Main status is protected; main calendars cannot be archived. National holidays allow visibility changes only.' }, 404: { description: 'Calendar unavailable.' } },
         },
         delete: {
           tags: ['Calendars'], summary: 'Delete a calendar with admin or owner access',
@@ -198,7 +198,7 @@ const options = {
             { name: 'id', in: 'path', required: true, schema: { type: 'string' } },
             { name: 'targetUserId', in: 'query', required: false, schema: { type: 'string' }, description: 'For API-key requests, omit to use the integration owner. A different user requires an active delete grant.' },
           ],
-          responses: { 204: { description: 'Calendar deleted.' }, 404: { description: 'Calendar unavailable.' } },
+          responses: { 204: { description: 'Calendar deleted.' }, 403: { description: 'Main or system holiday calendar cannot be deleted.' }, 404: { description: 'Calendar unavailable.' } },
         },
       },
       '/api/calendars/{id}/events': {
@@ -240,6 +240,28 @@ const options = {
           tags: ['Events'], summary: 'Delete the event or entire recurring series with editor access',
           parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }, { name: 'eventId', in: 'path', required: true, schema: { type: 'string' } }, { name: 'targetUserId', in: 'query', schema: { type: 'string' } }],
           responses: { 204: { description: 'Event deleted.' }, 404: { description: 'Event or calendar inaccessible.' } },
+        },
+      },
+      '/api/calendars/{id}/events/{eventId}/invitations': {
+        post: {
+          tags: ['Events'], summary: 'Send or resend an invitation to a saved attendee (session and editor access required)',
+          parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }, { name: 'eventId', in: 'path', required: true, schema: { type: 'string' } }],
+          requestBody: { required: true, content: { 'application/json': { schema: { type: 'object', required: ['email'], properties: { email: { type: 'string', format: 'email' } } } } } },
+          responses: { 200: { description: 'SMTP accepted invitation.' }, 409: { description: 'Attendee unavailable or in cooldown.' }, 503: { description: 'Mail unavailable.' } },
+        },
+      },
+      '/api/event-invitations/preview': {
+        post: {
+          tags: ['Events'], summary: 'Preview a pending event invitation by its secret token (no membership granted)',
+          requestBody: { required: true, content: { 'application/json': { schema: { type: 'object', required: ['token'], properties: { token: { type: 'string' } } } } } },
+          responses: { 200: { description: 'Limited event information.' }, 400: { description: 'Invalid or expired token.' } },
+        },
+      },
+      '/api/event-invitations/respond': {
+        post: {
+          tags: ['Events'], summary: 'Accept or decline a pending event invitation once',
+          requestBody: { required: true, content: { 'application/json': { schema: { type: 'object', required: ['token', 'response'], properties: { token: { type: 'string' }, response: { type: 'string', enum: ['accepted', 'declined'] } } } } } },
+          responses: { 200: { description: 'Response stored.' }, 400: { description: 'Invalid, expired or consumed token.' } },
         },
       },
       '/api/calendars/{id}/share-links': {

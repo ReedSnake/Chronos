@@ -120,7 +120,14 @@ export function CalendarViewPage() {
     return grouped;
   }, {}), [calendar?.timeZone, events]);
   const days = useMemo(() => daysForMonth(month), [month]);
-  const canEdit = ['owner', 'admin', 'editor'].includes(calendar?.role);
+  const canEdit = !calendar?.isHolidayCalendar && ['owner', 'admin', 'editor'].includes(calendar?.role);
+  const visibleCalendars = calendars.filter((item) => !item.isArchived || item.id === calendarId);
+  useEffect(() => {
+    if (!calendarId && !loading && visibleCalendars.length) {
+      const item = visibleCalendars.find((entry) => entry.isMain && entry.isOwner) || visibleCalendars[0];
+      navigate(localizedPath(`/calendars/view/${item.id}`), { replace: true });
+    }
+  }, [calendarId, loading, calendars, navigate, localizedPath]);
 
   function chooseCalendar(id) { navigate(localizedPath(`/calendars/view/${id}`)); }
   function moveMonth(offset) {
@@ -169,6 +176,21 @@ export function CalendarViewPage() {
     finally { setBusy(false); }
   }
 
+  async function sendInvitation(email) {
+    if (!selection || !canEdit) return;
+    const id = selection.id;
+    await applicationContainer.calendarService.sendEventInvitation(calendarId, id, email);
+    // Delivery has succeeded; a subsequent read failure must not suggest that
+    // the email was never sent. Refresh the full state when possible.
+    try {
+      const { event } = await applicationContainer.calendarService.getEvent(calendarId, id);
+      setSelection((current) => current?.id === id ? { ...current, attendees: event.attendees } : current);
+    } catch {
+      setSelection((current) => current?.id === id ? { ...current, attendees: current.attendees.map((attendee) => attendee.email === email ? { ...attendee, invitationSentAt: new Date().toISOString() } : attendee) } : current);
+    }
+    setRefresh((current) => current + 1);
+  }
+
   function cancelEdit() { setEditorOpen(false); setEditing(null); }
   function openCreate() { setSelection(null); setEditing(null); setEditorOpen(true); }
   function selectEvent(item) { setSelection(item); setEditorOpen(false); setEditing(null); }
@@ -182,14 +204,14 @@ export function CalendarViewPage() {
 
   return <section className="calendar-view-page">
     <header className="calendar-view-header">
-      <div><h1>{calendar?.name || t('calendarView.title')}</h1>{calendar && <p>{t('calendars.role', { role: calendarRoleLabel(t, calendar.role) })}</p>}</div>
+      <div><h1>{calendar?.isHolidayCalendar ? t('calendarBasics.holidays') : (calendar?.name || t('calendarView.title'))}</h1>{calendar && <p>{t('calendars.role', { role: calendarRoleLabel(t, calendar.role) })}</p>}</div>
       <Link className="back-link" to={localizedPath('/calendars')}>{t('calendarView.manageCalendars')}</Link>
     </header>
     {error && <p role="alert">{error}</p>}
     {!calendars.length && <section className="account-card"><p>{t('calendarView.empty')}</p></section>}
     {calendars.length > 0 && <section className="calendar-picker" aria-label={t('calendarView.chooseCalendar')}>
       <h2>{t('calendarView.chooseCalendar')}</h2>
-      <div className="button-row">{calendars.map((item) => <button key={item.id} type="button" className={item.id === calendarId ? 'active-calendar-button' : ''} onClick={() => chooseCalendar(item.id)}><span className="calendar-color" style={{ background: item.color }} />{item.name}</button>)}</div>
+      <div className="button-row">{visibleCalendars.map((item) => <button key={item.id} type="button" className={item.id === calendarId ? 'active-calendar-button' : ''} onClick={() => chooseCalendar(item.id)}><span className="calendar-color" style={{ background: item.color }} />{item.isHolidayCalendar ? t('calendarBasics.holidays') : item.name}</button>)}</div>
     </section>}
     {calendar && <>
       <div className="calendar-tabs" role="tablist" aria-label={t('calendarView.tabsLabel')}>
@@ -220,7 +242,7 @@ export function CalendarViewPage() {
           {!eventsLoading && !eventsError && !events.length && <p>{t('calendarView.noEvents')}</p>}
           {eventView === 'agenda' && !eventsLoading && <div className="event-list"><h2>{t('calendarView.eventsTitle')}</h2>{events.map((item) => <button type="button" className="event-list-item event-list-button" onClick={() => selectEvent(item)} key={item.occurrenceId || item.id} style={{ borderLeftColor: item.color }}><strong>{item.title}</strong><span>{t(`calendarView.type.${item.type}`)} · {eventDateLabel(item, locale, calendar.timeZone)}</span>{item.description && <span>{item.description}</span>}</button>)}</div>}
         </section>
-        {selection && !editorOpen && <EventDetails event={selection} calendar={calendar} onClose={() => setSelection(null)} onEdit={startEdit} onDelete={deleteEvent} canEdit={canEdit} busy={busy} />}
+        {selection && !editorOpen && <EventDetails key={selection.id} onInvite={sendInvitation} event={selection} calendar={calendar} onClose={() => setSelection(null)} onEdit={startEdit} onDelete={deleteEvent} canEdit={canEdit} busy={busy} />}
         {editorOpen && <EventEditor key={editing?.id || 'new'} event={editing} calendar={calendar} saving={busy} onSave={saveEvent} onCancel={cancelEdit} />}
       </>}
       {activeTab === 'info' && <section className="account-card calendar-info-panel" role="tabpanel"><h2>{t('calendarView.infoTab')}</h2><p>{calendar.description || t('calendarShare.noDescription')}</p><dl><dt>{t('calendars.color')}</dt><dd><span className="calendar-color" style={{ background: calendar.color }} />{calendar.color}</dd><dt>{t('calendarView.country')}</dt><dd>{calendar.countryCode || t('calendarView.notSet')}</dd><dt>{t('calendarView.timeZone')}</dt><dd>{calendar.timeZone}</dd><dt>{t('calendarView.defaultView')}</dt><dd>{t(`calendarView.view.${calendar.defaultView}`)}</dd><dt>{t('calendarView.defaultDuration')}</dt><dd>{t('calendarView.durationMinutes', { minutes: calendar.defaultEventDurationMinutes })}</dd><dt>{t('calendarView.createdAt')}</dt><dd>{calendar.createdAt ? new Date(calendar.createdAt).toLocaleString(locale, { timeZone: calendar.timeZone }) : t('calendarView.notSet')}</dd></dl></section>}

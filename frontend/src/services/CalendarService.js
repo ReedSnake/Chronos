@@ -17,6 +17,9 @@ export class CalendarService {
     return this.httpClient.get(`/calendars/${encodeURIComponent(id)}/events${suffix}`);
   }
   getEvent(id, eventId) { return this.httpClient.get(`/calendars/${encodeURIComponent(id)}/events/${encodeURIComponent(eventId)}`); }
+  sendEventInvitation(id, eventId, email) { return this.httpClient.post(`/calendars/${encodeURIComponent(id)}/events/${encodeURIComponent(eventId)}/invitations`, { email }, { timeoutMs: 30000 }); }
+  previewEventInvitation(token) { return this.httpClient.post('/event-invitations/preview', { token }); }
+  respondEventInvitation(token, response) { return this.httpClient.post('/event-invitations/respond', { token, response }); }
   createEvent(id, values) { return this.httpClient.post(`/calendars/${encodeURIComponent(id)}/events`, values); }
   updateEvent(id, eventId, values) { return this.httpClient.patch(`/calendars/${encodeURIComponent(id)}/events/${encodeURIComponent(eventId)}`, values); }
   deleteEvent(id, eventId) { return this.httpClient.delete(`/calendars/${encodeURIComponent(id)}/events/${encodeURIComponent(eventId)}`); }

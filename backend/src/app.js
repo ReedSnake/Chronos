@@ -69,6 +69,7 @@ app.use('/api/integrations', integrationRoutes);
 app.use('/api/me', integrationAccessRoutes);
 app.use('/api/calendar-share', sharedCalendarRouter);
 app.use('/api/calendar-invitations', calendarInvitationRouter);
+app.use('/api/event-invitations', require('./routes/eventInvitationRoutes').publicRouter);
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpecification, {
   customSiteTitle: 'Chronos API documentation',
 }));

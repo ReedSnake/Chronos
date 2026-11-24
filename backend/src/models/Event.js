@@ -20,6 +20,8 @@ const attendeeSchema = new Schema({
     default: null,
   },
   expiresAt: { type: Date, default: null },
+  invitationSentAt: { type: Date, default: null },
+  lastInviteAttemptAt: { type: Date, default: null, select: false },
   inviteStatus: {
     type: String,
     enum: ['pending', 'accepted', 'declined'],
@@ -88,8 +90,11 @@ const eventSchema = new Schema({
   internationalName: { type: String, trim: true, maxlength: 200, default: null },
 }, {
   collection: 'events',
+  optimisticConcurrency: true,
   timestamps: true,
 });
+
+eventSchema.index({ 'attendees.inviteToken': 1 });
 
 function requireDate(event, field, message) {
   if (!event[field]) event.invalidate(field, message);

@@ -66,6 +66,7 @@ test('country, settings and user ID validation rejects invalid values and fields
 
 test('own profile includes email/settings but limited profile never includes them', () => {
   const service = loadWithMocks('../src/services/userService.js', {
+    './personalCalendarService': { ensurePersonalCalendars: async () => {} },
     '../models/User': {}, '../models/Avatar': {}, '../models/AuthSession': {}, './sessionService': {},
   });
   const user = { _id: '0123456789abcdef01234567', name: 'Maya', bio: 'Hello', email: 'maya@example.test',
@@ -86,6 +87,7 @@ test('updates whitelist $set fields, verifies countries externally, and clears a
   const user = { _id: '0123456789abcdef01234567', name: 'Maya', email: 'm@example.test' };
   const verifiedCountries = [];
   const service = loadWithMocks('../src/services/userService.js', {
+    './personalCalendarService': { ensurePersonalCalendars: async () => {} },
     '../models/User': {
       findByIdAndUpdate: async (...args) => { calls.push(args); return user; },
       findById: async () => null,
@@ -127,6 +129,7 @@ test('country provider accepts listed codes, rejects unlisted codes, and maps fa
 test('image service rejects unsupported, oversized and spoofed images', async () => {
   let saved;
   const service = loadWithMocks('../src/services/userService.js', {
+    './personalCalendarService': { ensurePersonalCalendars: async () => {} },
     '../models/User': { findByIdAndUpdate: async () => ({ _id: '0123456789abcdef01234567', name: 'Maya', email: 'm@example.test' }) },
     '../models/Avatar': { findOneAndUpdate: async (...args) => { saved = args; } },
     '../models/AuthSession': {}, './sessionService': {},
@@ -147,6 +150,7 @@ test('account deletion revokes sessions and removes avatar before deleting the u
   const req = { headers: {} };
   const res = {};
   const service = loadWithMocks('../src/services/userService.js', {
+    './personalCalendarService': { ensurePersonalCalendars: async () => {} },
     '../models/User': {
       findById: (id) => { assert.equal(id, userId); calls.push('lookup'); return { select: () => ({ lean: async () => ({ _id: id, email: 'maya@example.test' }) }) }; },
       deleteOne: async (filter) => { assert.deepEqual(filter, { _id: userId }); calls.push('user'); return { deletedCount: 1 }; },
@@ -210,6 +214,7 @@ test('account deletion revokes sessions and removes avatar before deleting the u
 test('account deletion returns 404 without clearing data when the user no longer exists', async () => {
   const calls = [];
   const service = loadWithMocks('../src/services/userService.js', {
+    './personalCalendarService': { ensurePersonalCalendars: async () => {} },
     '../models/User': {
       findById: () => ({ select: () => ({ lean: async () => null }) }),
       deleteOne: async () => { calls.push('user'); },
@@ -228,6 +233,7 @@ test('account deletion keeps the user when session revocation fails', async () =
   const calls = [];
   const failure = new Error('Session store unavailable');
   const service = loadWithMocks('../src/services/userService.js', {
+    './personalCalendarService': { ensurePersonalCalendars: async () => {} },
     '../models/User': {
       findById: () => ({ select: () => ({ lean: async () => ({ _id: '0123456789abcdef01234567', email: 'maya@example.test' }) }) }),
       deleteOne: async () => { calls.push('user'); },
@@ -247,6 +253,7 @@ test('account deletion keeps the user when related-data cleanup fails', async ()
     const calls = [];
     const failure = new Error(`${failingStep} cleanup failed`);
     const service = loadWithMocks('../src/services/userService.js', {
+    './personalCalendarService': { ensurePersonalCalendars: async () => {} },
       '../models/User': {
         findById: () => ({ select: () => ({ lean: async () => ({ _id: userId, email: 'maya@example.test' }) }) }),
         deleteOne: async () => { calls.push('user'); return { deletedCount: 1 }; },
@@ -272,6 +279,7 @@ test('account deletion can be retried after a temporary avatar cleanup failure',
   let attempt = 0;
   let deleted = 0;
   const service = loadWithMocks('../src/services/userService.js', {
+    './personalCalendarService': { ensurePersonalCalendars: async () => {} },
     '../models/User': {
       findById: () => ({ select: () => ({ lean: async () => ({ _id: userId, email: 'maya@example.test' }) }) }),
       deleteOne: async () => { deleted++; return { deletedCount: 1 }; },
@@ -293,6 +301,7 @@ test('account deletion can be retried after a temporary avatar cleanup failure',
 test('account deletion reports a race when the final user deletion finds no account', async () => {
   const userId = '0123456789abcdef01234567';
   const service = loadWithMocks('../src/services/userService.js', {
+    './personalCalendarService': { ensurePersonalCalendars: async () => {} },
     '../models/User': {
       findById: () => ({ select: () => ({ lean: async () => ({ _id: userId, email: 'maya@example.test' }) }) }),
       deleteOne: async () => ({ deletedCount: 0 }),
@@ -314,6 +323,7 @@ test('account deletion clears owned records and external references to the delet
   const queries = {};
   const capture = (key) => async (filter, update) => { (queries[key] ||= []).push({ filter, update }); };
   const service = loadWithMocks('../src/services/userService.js', {
+    './personalCalendarService': { ensurePersonalCalendars: async () => {} },
     '../models/User': {
       findById: () => ({ select: () => ({ lean: async () => ({ _id: userId, email }) }) }),
       deleteOne: async () => ({ deletedCount: 1 }),

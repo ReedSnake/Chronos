@@ -3,6 +3,7 @@ const CalendarMember = require('../models/CalendarMember');
 const CalendarShareLink = require('../models/CalendarShareLink');
 const CalendarInvitation = require('../models/CalendarInvitation');
 const Event = require('../models/Event');
+const { ensurePersonalCalendars } = require('./personalCalendarService');
 const AppError = require('../utils/AppError');
 const { hasCalendarRole } = require('../constants/calendarRoles');
 
@@ -12,7 +13,8 @@ function calendarResponse(calendar, role) {
     name: calendar.name,
     description: calendar.description || '',
     color: calendar.color,
-    isMain: calendar.isMain,
+    isMain: Boolean(calendar.isMain),
+    isHolidayCalendar: Boolean(calendar.isHolidayCalendar),
     countryCode: calendar.countryCode || null,
     timeZone: calendar.timeZone || 'UTC',
     defaultView: calendar.defaultView || 'month',
@@ -26,6 +28,7 @@ function calendarResponse(calendar, role) {
 }
 
 async function createCalendar(ownerUserId, values) {
+  if (values.isMain) throw new AppError('The main calendar is created automatically', 403, 'CALENDAR_MAIN_FORBIDDEN');
   try {
     const calendar = await Calendar.create({ ownerUserId, ...values });
     return calendarResponse(calendar, 'owner');
@@ -38,6 +41,7 @@ async function createCalendar(ownerUserId, values) {
 }
 
 async function listCalendars(userId) {
+  await ensurePersonalCalendars(userId);
   const [ownedCalendars, memberships] = await Promise.all([
     Calendar.find({ ownerUserId: userId }).sort({ updatedAt: -1, _id: -1 }),
     CalendarMember.find({ userId }).select('calendarId role').lean(),
@@ -55,8 +59,8 @@ async function listCalendars(userId) {
     : [];
 
   return [
-    ...ownedCalendars.map((calendar) => calendarResponse(calendar, 'owner')),
-    ...sharedCalendars.map((calendar) => calendarResponse(
+    ...ownedCalendars.filter((calendar) => !calendar.isHolidayCalendar || calendar.countryCode).sort((a, b) => Number(Boolean(b.isMain)) - Number(Boolean(a.isMain))).map((calendar) => calendarResponse(calendar, 'owner')),
+    ...sharedCalendars.filter((calendar) => !calendar.isHolidayCalendar).map((calendar) => calendarResponse(
       calendar,
       memberRoleByCalendarId.get(String(calendar._id)),
     )),
@@ -70,6 +74,10 @@ function calendarNotFound() {
 async function getUserCalendarAccess(userId, calendarId, requiredRole = 'viewer') {
   const calendar = await Calendar.findById(calendarId);
   if (!calendar) throw calendarNotFound();
+  if (calendar.isHolidayCalendar) {
+    if (String(calendar.ownerUserId) !== String(userId)) throw calendarNotFound();
+    if (requiredRole !== 'viewer') throw new AppError('National holidays are read-only', 403, 'HOLIDAY_CALENDAR_READ_ONLY');
+  }
   if (String(calendar.ownerUserId) === String(userId)) {
     return { calendar, role: 'owner' };
   }
@@ -84,9 +92,17 @@ async function getCalendarForUser(userId, calendarId) {
 }
 
 async function updateCalendarForUser(userId, calendarId, values) {
-  const { role } = await getUserCalendarAccess(userId, calendarId, 'editor');
-  if (Object.hasOwn(values, 'isMain') && role !== 'owner') {
-    throw new AppError('Only the calendar owner can change its main status', 403, 'CALENDAR_MAIN_FORBIDDEN');
+  const { calendar: existing, role } = await getUserCalendarAccess(userId, calendarId);
+  if (existing.isHolidayCalendar) {
+    if (role !== 'owner' || Object.keys(values).some((key) => key !== 'isArchived')) {
+      throw new AppError('National holidays are read-only', 403, 'HOLIDAY_CALENDAR_READ_ONLY');
+    }
+  } else if (!hasCalendarRole(role, 'editor')) {
+    throw calendarNotFound();
+  }
+  if ((Object.hasOwn(values, 'isMain') && values.isMain !== Boolean(existing.isMain))
+      || (existing.isMain && values.isArchived)) {
+    throw new AppError('The main calendar cannot be hidden or changed', 403, 'CALENDAR_MAIN_FORBIDDEN');
   }
   try {
     const calendar = await Calendar.findByIdAndUpdate(calendarId, { $set: values }, { new: true, runValidators: true });
@@ -110,13 +126,14 @@ async function removeCalendarData(calendarId) {
 }
 
 async function deleteCalendarForUser(userId, calendarId) {
-  await getUserCalendarAccess(userId, calendarId, 'admin');
+  const { calendar } = await getUserCalendarAccess(userId, calendarId, 'admin');
+  if (calendar.isMain) throw new AppError('The main calendar cannot be deleted', 403, 'CALENDAR_MAIN_FORBIDDEN');
   await removeCalendarData(calendarId);
 }
 
 async function getCalendarForShareLink(link) {
   const calendar = await Calendar.findById(link.calendarId);
-  if (!calendar) throw calendarNotFound();
+  if (!calendar || calendar.isHolidayCalendar) throw calendarNotFound();
   return calendarResponse(calendar, link.role);
 }
 
@@ -124,18 +141,23 @@ async function updateCalendarForShareLink(link, values) {
   if (Object.hasOwn(values, 'isMain')) {
     throw new AppError('Share links cannot change the main calendar', 403, 'CALENDAR_MAIN_FORBIDDEN');
   }
+  const existing = await Calendar.findById(link.calendarId);
+  if (!existing) throw calendarNotFound();
+  if (existing.isHolidayCalendar) throw new AppError('National holidays are read-only', 403, 'HOLIDAY_CALENDAR_READ_ONLY');
+  if (existing.isMain && values.isArchived) throw new AppError('The main calendar cannot be hidden', 403, 'CALENDAR_MAIN_FORBIDDEN');
   const calendar = await Calendar.findByIdAndUpdate(
     link.calendarId,
     { $set: values },
     { new: true, runValidators: true },
   );
-  if (!calendar) throw calendarNotFound();
+  if (!calendar || calendar.isHolidayCalendar) throw calendarNotFound();
   return calendarResponse(calendar, link.role);
 }
 
 async function claimCalendarMembership(userId, link) {
   const calendar = await Calendar.findById(link.calendarId);
   if (!calendar) throw calendarNotFound();
+  if (calendar.isHolidayCalendar) throw new AppError('National holidays are read-only', 403, 'HOLIDAY_CALENDAR_READ_ONLY');
   if (String(calendar.ownerUserId) === String(userId)) return calendarResponse(calendar, 'owner');
 
   let membership = await CalendarMember.findOne({ calendarId: calendar._id, userId });

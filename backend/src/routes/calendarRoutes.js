@@ -20,6 +20,7 @@ router.post('/', authOrigin, requireCalendarCreateAccess, asyncHandler(calendarC
 router.use('/', managementRouter);
 router.use('/', invitationManagementRouter);
 router.use('/', memberManagementRouter);
+router.use('/', require('./eventInvitationRoutes').managementRouter);
 router.get('/:id/events', requireCalendarReadAccess, asyncHandler(eventController.list));
 router.post('/:id/events', authOrigin, requireCalendarWriteAccess, asyncHandler(eventController.create));
 router.get('/:id/events/:eventId', requireCalendarReadAccess, asyncHandler(eventController.get));

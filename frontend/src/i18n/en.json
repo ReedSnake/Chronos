@@ -59,7 +59,7 @@
     "COUNTRIES_SERVICE_UNAVAILABLE": "Countries are currently unavailable.",
     "UNSUPPORTED_COUNTRY": "This country is not supported.",
     "CALENDAR_NOT_FOUND": "The calendar was not found or you do not have access.",
-    "CALENDAR_MAIN_FORBIDDEN": "Only the calendar owner can change the main calendar setting.",
+    "CALENDAR_MAIN_FORBIDDEN": "The main calendar cannot be deleted, hidden or demoted.",
     "MAIN_CALENDAR_EXISTS": "Only one main calendar is allowed.",
     "CALENDAR_SHARE_NOT_CONFIGURED": "Public calendar links are not configured.",
     "CALENDAR_SHARE_CREATION_FAILED": "The calendar link could not be created.",
@@ -89,7 +89,13 @@
     "INVALID_PAIRING_TOKEN": "This integration approval link is invalid or expired.",
     "INVALID_PAIRING_REQUEST": "This integration request is invalid or expired.",
     "EVENT_NOT_FOUND": "Event unavailable or inaccessible.",
-    "EVENT_RANGE_TOO_LARGE": "Too many events or too long a range. Narrow the dates."
+    "EVENT_RANGE_TOO_LARGE": "Too many events or too long a range. Narrow the dates.",
+    "HOLIDAY_CALENDAR_READ_ONLY": "National holidays are read-only.",
+    "HOLIDAYS_UNAVAILABLE": "Holiday service is temporarily unavailable.",
+    "HOLIDAYS_RANGE_UNSUPPORTED": "Holiday year range is not supported.",
+    "EVENT_CHANGED": "Event changed. Reload and try again.",
+    "EVENT_INVITATION_INVALID": "Invitation is invalid, expired or already answered.",
+    "EVENT_INVITATION_NOT_SENDABLE": "Attendee is missing, already answered or recently invited."
   },
   "common": {
     "email": "Email",
@@ -471,5 +477,26 @@
     "title": "Page not found",
     "description": "No content is available for {path}.",
     "back": "Return to home"
+  },
+  "calendarBasics": {
+    "main": "Main",
+    "holidays": "National holidays",
+    "holidayNote": "Public holidays for your profile country (read-only)",
+    "show": "Show calendar",
+    "hide": "Hide calendar"
+  },
+  "eventInvitations": {
+    "title": "Event invitation",
+    "send": "Send invitation",
+    "resend": "Resend invitation",
+    "sending": "Sending…",
+    "sent": "Invitation sent",
+    "sendError": "Unable to send invitation",
+    "invalid": "Invitation is invalid or expired",
+    "accept": "Accept",
+    "decline": "Decline",
+    "accepted": "You accepted the invitation",
+    "declined": "You declined the invitation",
+    "series": "Your response applies to the entire event series"
   }
 }

@@ -11,6 +11,7 @@ const ApiKey = require('../models/ApiKey');
 const IntegrationAccessGrant = require('../models/IntegrationAccessGrant');
 const PairingRequest = require('../models/PairingRequest');
 const sessionService = require('./sessionService');
+const { ensurePersonalCalendars } = require('./personalCalendarService');
 const countryService = require('./countryService');
 const AppError = require('../utils/AppError');
 
@@ -63,12 +64,12 @@ async function updateProfile(userId, values) {
 }
 
 async function updateCountry(userId, { country }) {
-  if (country === null) {
-    return updateUser(userId, { $unset: { country: '' } });
-  }
-
-  await countryService.ensureCountryIsAvailable(country);
-  return updateUser(userId, { $set: { country } });
+  if (country !== null) await countryService.ensureCountryIsAvailable(country);
+  const profile = await updateUser(userId, country === null
+    ? { $unset: { country: '' } } : { $set: { country } });
+  // Refresh the system calendar immediately, including removal of a country.
+  await ensurePersonalCalendars(userId);
+  return profile;
 }
 
 async function updateSettings(userId, fields) {

@@ -100,6 +100,7 @@ test('calendar service assigns ownership and includes direct memberships in list
   let created;
   let findCalls = 0;
   const service = loadWithMocks('../src/services/calendarService.js', {
+    './personalCalendarService': { ensurePersonalCalendars: async () => {} },
     '../models/Calendar': {
       create: async (data) => {
         created = data;
@@ -128,6 +129,7 @@ test('calendar service assigns ownership and includes direct memberships in list
 
 test('accepting an old invitation does not change a direct member role', async () => {
   const service = loadWithMocks('../src/services/calendarService.js', {
+    './personalCalendarService': { ensurePersonalCalendars: async () => {} },
     '../models/Calendar': {
       findById: async () => ({
         _id: 'calendar-id', ownerUserId: 'owner-id', name: 'Team', description: '', color: '#3B82F6', isMain: false,
@@ -146,6 +148,7 @@ test('accepting an old invitation does not change a direct member role', async (
 test('calendar deletion removes its event records with other calendar data', async () => {
   let deletedEvents;
   const service = loadWithMocks('../src/services/calendarService.js', {
+    './personalCalendarService': { ensurePersonalCalendars: async () => {} },
     '../models/Calendar': {
       findById: async () => ({ _id: 'calendar-id', ownerUserId: 'owner-id' }),
       deleteOne: async () => ({ deletedCount: 1 }),

@@ -6,7 +6,6 @@ const calendarSchema = new Schema({
     ref: 'User',
     required: true,
     immutable: true,
-    index: true,
   },
   name: {
     type: String,
@@ -32,6 +31,7 @@ const calendarSchema = new Schema({
     type: Boolean,
     default: false,
   },
+  isHolidayCalendar: { type: Boolean, default: false, immutable: true },
   countryCode: {
     type: String,
     trim: true,
@@ -65,13 +65,24 @@ const calendarSchema = new Schema({
   timestamps: true,
 });
 
-// A user can designate at most one personal calendar as their main calendar.
+// The different compound key patterns avoid colliding with legacy indexes
+// that used the same ownerUserId-only index name for different options.
+calendarSchema.index({ ownerUserId: 1, updatedAt: -1 });
+// One automatic main calendar per user.
 calendarSchema.index(
-  { ownerUserId: 1 },
+  { ownerUserId: 1, isMain: 1 },
   { unique: true, partialFilterExpression: { isMain: true } },
 );
 
+calendarSchema.index(
+  { ownerUserId: 1, isHolidayCalendar: 1 },
+  { unique: true, partialFilterExpression: { isHolidayCalendar: true } },
+);
+
 calendarSchema.pre('validate', function validateTimeZone() {
+  if (this.isMain && (this.isArchived || this.isHolidayCalendar)) {
+    this.invalidate('isMain', 'The main calendar must be visible and personal');
+  }
   try {
     Intl.DateTimeFormat('en-US', { timeZone: this.timeZone }).format();
   } catch {

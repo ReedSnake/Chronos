@@ -75,7 +75,7 @@ test('CRUD checks editor/viewer permissions and scopes events to the selected ca
   const service = loadWithMocks('../src/services/eventService.js', {
     '../models/Event': {
       create: async (values) => ({ _id: EVENT_ID, ...values }),
-      findOne: async (query) => { calls.push(query); return eventExists ? stored : null; },
+      findOne: (query) => { calls.push(query); const value = eventExists ? stored : null; return { then: (resolve) => Promise.resolve(value).then(resolve), select: async () => value }; },
       deleteOne: async (query) => { calls.push(query); return { deletedCount: eventExists ? 1 : 0 }; },
     },
     './calendarService': {
