@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { TablerIcon } from '../../components/layout/TablerIcon';
+import './event-surface.css';
 import { getLocalizedApiError } from '../../i18n/apiErrors';
 import { useLocale } from '../../i18n/LocaleProvider';
 import { eventDateLabel } from './eventForm';
@@ -6,6 +8,9 @@ import { eventDateLabel } from './eventForm';
 export function EventDetails({ event, calendar, onClose, onEdit, onDelete, canEdit, busy, onInvite }) {
   const { locale, t } = useLocale();
   const timeZone = calendar.timeZone || 'UTC';
+  const [tab,setTab]=useState('info');
+  const uk=locale==='uk';
+  const stages=event.type==='task'?['todo','in_progress','done']:[];
   const [sending, setSending] = useState(null);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
@@ -16,7 +21,10 @@ export function EventDetails({ event, calendar, onClose, onEdit, onDelete, canEd
     finally { setSending(null); }
   }
   return <section className="account-card event-details" aria-label={t('calendarView.event.details')}>
-    <div className="event-details-heading"><h2>{event.title}</h2><button type="button" onClick={onClose}>{t('calendarView.event.close')}</button></div>
+    <header className="event-surface-header"><div className="event-surface-title"><span className="event-surface-symbol"><TablerIcon name={event.type==='task'?'checkbox':event.type==='reminder'?'bell':'calendar-event'} size={24}/></span><div><h2>{event.title}</h2><p>{calendar.name} · {t('calendarView.type.'+event.type)}</p></div></div><button type="button" className="event-close" onClick={onClose} aria-label={t('calendarView.event.close')}>×</button></header>
+    <div className="event-surface-tabs" role="group" aria-label={uk?'Розділи події':'Event sections'}>{[['info',uk?'Інформація':'Info'],['notes',uk?'Нотатки':'Notes']].map(([key,label])=><button key={key} type="button" aria-pressed={tab===key} onClick={()=>setTab(key)}>{label}</button>)}</div>
+    <div className="event-surface-body" hidden={tab!=='info'}>
+    {stages.length>0&&<div className="event-stage-track">{stages.map((status,i)=><span key={status} className={i<=stages.indexOf(event.status)?'reached':''} aria-current={event.status===status?'step':undefined}><i>{i<stages.indexOf(event.status)?<TablerIcon name="check" size={12}/>:i+1}</i>{t('statuses.'+status)}</span>)}</div>
     <dl>
       <dt>{t('calendarView.event.type')}</dt><dd>{t(`calendarView.type.${event.type}`)}</dd>
       <dt>{t(`calendarView.event.${event.type === 'task' ? 'deadline' : event.type === 'reminder' ? 'remindAt' : event.type === 'holiday' ? 'date' : 'startsAt'}`)}</dt><dd>{eventDateLabel(event, locale, timeZone)}</dd>
@@ -27,10 +35,11 @@ export function EventDetails({ event, calendar, onClose, onEdit, onDelete, canEd
       {event.internationalName && <><dt>{t('calendarView.event.internationalName')}</dt><dd>{event.internationalName}</dd></>}
       {event.categories?.length > 0 && <><dt>{t('calendarView.categories')}</dt><dd>{event.categories.join(', ')}</dd></>}
     </dl>
-    {event.description && <p>{event.description}</p>}
-    <div><strong>{t('calendarView.event.attendees')}</strong>{event.attendees?.length ? <ul>{event.attendees.map((attendee) => <li key={attendee.email}>{attendee.email} · {t(`statuses.${attendee.inviteStatus || 'pending'}`)}
+
+    <div><strong>{t('calendarView.event.attendees')}</strong>{event.attendees?.length ? <ul className="event-participants">{event.attendees.map((attendee) => <li key={attendee.email}><span className="event-participant-avatar" aria-hidden="true">{attendee.email.slice(0,1).toUpperCase()}</span><span className="event-participant-text">{attendee.email}<small>{t(`statuses.${attendee.inviteStatus || 'pending'}`)}</small></span>
       {canEdit && onInvite && attendee.inviteStatus !== 'accepted' && attendee.inviteStatus !== 'declined' && <button type="button" disabled={busy || Boolean(sending)} onClick={() => void invite(attendee.email)}>{t(sending === attendee.email ? 'eventInvitations.sending' : attendee.invitationSentAt ? 'eventInvitations.resend' : 'eventInvitations.send')}</button>}</li>)}</ul> : <p>{t('calendarView.event.noAttendees')}</p>}</div>
     {message && <p role="status">{message}</p>}{error && <p role="alert">{error}</p>}
-    {canEdit && <><div className="button-row"><button type="button" onClick={onEdit} disabled={busy}>{t('calendarView.event.edit')}</button><button type="button" className="danger-button" onClick={onDelete} disabled={busy}>{t('calendarView.event.delete')}</button></div>{event.isRecurring && <p className="field-note">{t('calendarView.event.editSeriesOnly')}</p>}</>}
+    </div><div className="event-surface-body" hidden={tab!=='notes'}><p className="event-notes">{event.description||(uk?'Нотаток поки немає':'No notes yet')}</p></div>
+    {canEdit && <><div className="button-row event-surface-footer"><button type="button" onClick={onEdit} disabled={busy}>{t('calendarView.event.edit')}</button><button type="button" className="danger-button" onClick={onDelete} disabled={busy}>{t('calendarView.event.delete')}</button></div>{event.isRecurring && <p className="field-note">{t('calendarView.event.editSeriesOnly')}</p>}</>}
   </section>;
 }
