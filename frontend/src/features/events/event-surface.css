@@ -41,7 +41,7 @@
 
 /* Reference-inspired event editor. Scoped to the shared modal, not the old account form. */
 .event-dialog:has(.event-editor-refined),.dash-modal:has(.event-editor-refined) { width:min(580px,calc(100% - 28px)); padding:0; border:0; border-radius:24px; max-height:92dvh; overflow:auto; }
-.event-dialog:has(.event-editor-refined)::backdrop,.dash-modal:has(.event-editor-refined)::backdrop { background:#30303040; backdrop-filter:blur(4px); }
+.event-dialog:has(.event-editor-refined)::backdrop,.dash-modal:has(.event-editor-refined)::backdrop { background:var(--chronos-dialog-backdrop); backdrop-filter:blur(4px); }
 .event-dialog .event-editor-refined,.dash-modal .event-editor-refined { display:block; padding:0; margin:0; background:#fff; border:0; border-radius:0; color:var(--chronos-ink); }
 .event-editor-refined .event-surface-header { position:relative; overflow:hidden; padding:28px 28px 22px; border-radius:0; background:repeating-linear-gradient(35deg,transparent 0 43px,#30303005 43px 44px),repeating-linear-gradient(145deg,transparent 0 52px,#30303005 52px 53px),linear-gradient(115deg,#e8eff6,#f5bc5a26); }
 .event-editor-refined .event-surface-title { gap:14px; }.event-editor-refined .event-surface-symbol { width:48px; height:48px; color:var(--chronos-ink); background:#ffffff70; border:1px solid #30303013; border-radius:12px; }.event-editor-refined .event-surface-title h2 { font-size:20px; letter-spacing:-.025em; font-weight:620; }.event-editor-refined .event-surface-title p { font-size:12px; margin-top:5px; }
@@ -61,7 +61,7 @@
 @media(max-width:480px){.event-editor-refined .event-surface-header,.event-editor-refined .event-surface-body,.event-editor-refined .event-surface-footer{padding:17px}.event-editor-refined .event-surface-tabs{padding:0 17px}.event-date-group{grid-template-columns:1fr}}
 
 /* Chronos inspector surfaces — flat white, inline properties, a single accent. */
-.event-dialog:has(.event-editor-refined),.dash-modal:has(.event-editor-refined),.event-dialog:has(.event-details),.dash-modal:has(.event-details){width:min(490px,calc(100% - 28px));border-radius:18px;box-shadow:0 18px 60px #30303022}
+.event-dialog:has(.event-editor-refined),.dash-modal:has(.event-editor-refined),.event-dialog:has(.event-details),.dash-modal:has(.event-details){width:min(490px,calc(100% - 28px));border-radius:var(--chronos-dialog-radius);box-shadow:var(--chronos-dialog-shadow)}
 .event-editor-refined .event-surface-header,.tb-dialog .event-editor-refined .event-surface-header,.event-details .event-surface-header{background:white;padding:17px 22px 10px;align-items:center;gap:8px;border-radius:0}
 .event-editor-refined .event-surface-header h2{font-size:14px;font-weight:600;letter-spacing:0;margin:0}
 .event-editor-refined .event-close,.event-details .event-close{color:#30303090;padding:3px!important;display:grid;place-items:center;flex:none}
