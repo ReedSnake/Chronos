@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { applicationContainer } from '../../app/applicationContainer';
 import { useLocale } from '../../i18n/LocaleProvider';
 import { TablerIcon as Icon } from '../../components/layout/TablerIcon';
@@ -32,6 +32,9 @@ function FocusTimer({ c }) {
 export function Dashboard({ user }) {
   const { locale,localizedPath,t }=useLocale();
   const c=words[locale]||words.en;
+  const navigate=useNavigate();
+  const dialog=useRef(null);
+
   const zone=user.settings?.timeZone||'UTC';
   const starts=user.settings?.weekStartsOn||'monday';
   const [now,setNow]=useState(()=>new Date());
@@ -42,13 +45,13 @@ export function Dashboard({ user }) {
   const [error,setError]=useState(false);
   const [selected,setSelected]=useState(null);
   const [editor,setEditor]=useState(false);
+  useEffect(()=>{if(editor&&dialog.current&&!dialog.current.open)dialog.current.showModal();},[editor]);
   const [calendarId,setCalendarId]=useState('');
   const [saving,setSaving]=useState(false);
   const [lookup,setLookup]=useState('');
   useEffect(()=>{const interval=window.setInterval(()=>setNow(new Date()),60000);return ()=>window.clearInterval(interval);},[]);
   const currentRange=weekWindow(now,zone,starts);
-  const shifted=new Date(now.getTime());shifted.setUTCDate(shifted.getUTCDate()+offset*7);
-  const range=weekWindow(shifted,zone,starts);
+  const range=weekWindow(now,zone,starts,offset);
   const weekKey=range.days[0];
   const actualToday=currentRange.today;
   useEffect(()=>{
@@ -74,12 +77,14 @@ export function Dashboard({ user }) {
   const schedule=localizedPath('/calendars/view');
   const value=n=>loading||error?'—':n;
   async function save(values){setSaving(true);try{await applicationContainer.calendarService.createEvent(activeCalendar.id,values);setEditor(false);setReload(n=>n+1);}catch(err){throw new Error(getLocalizedApiError(err,t,'calendarView.event.saveError'));}finally{setSaving(false);}}
-  const dateLabel=new Intl.DateTimeFormat(locale,{month:'short',day:'numeric',timeZone:'UTC'}).formatRange(new Date(range.days[0]+'T12:00:00Z'),new Date(range.days[6]+'T12:00:00Z'));
+  const dateFormat=new Intl.DateTimeFormat(locale,{month:'short',day:'numeric',timeZone:'UTC'});
+  const firstDate=new Date(range.days[0]+'T12:00:00Z'),lastDate=new Date(range.days[6]+'T12:00:00Z');
+  const dateLabel=typeof dateFormat.formatRange==='function'?dateFormat.formatRange(firstDate,lastDate):dateFormat.format(firstDate)+' – '+dateFormat.format(lastDate);
   return <section className="dashboard">
     <header className="dash-header"><div><span className="dash-kicker">{fullDay(actualToday)}</span><h1>{c.welcome}, {user.name?.trim().split(/\s+/)[0]||''}!</h1><p>{c.overview}</p></div><div className="dash-header-actions"><Link className="dash-action dash-action-light" to={schedule}><Icon name="calendar" size={19}/>{c.view}</Link><button className="dash-action dash-action-accent" type="button" disabled={loading||!editable.length} onClick={()=>{setCalendarId(activeCalendar.id);setEditor(true);}}><Icon name="plus" size={20}/>{c.add}</button></div></header>
     {(error||data.failed>0)&&<div className="dash-error" role="alert">{error?c.error:c.partial}<button type="button" onClick={()=>setReload(n=>n+1)}>{t('common.retry')}</button></div>}
     <div className="dash-overview">
-      <div className="dash-week-control"><span>{c.currentWeek}</span><div><button className="dash-round dash-round-light" type="button" aria-label={c.previous} onClick={()=>setOffset(n=>n-1)}><Icon name="chevron-left" size={18}/></button><strong>{dateLabel}</strong><button className="dash-round dash-round-light" type="button" aria-label={c.next} onClick={()=>setOffset(n=>n+1)}><Icon name="chevron-right" size={18}/></button>{offset!==0&&<button type="button" className="dash-text-button" onClick={()=>setOffset(0)}>{c.today}</button>}</div></div>
+      <div className="dash-week-control"><span>{offset===0?c.currentWeek:c.week}</span><div><button className="dash-round dash-round-light" type="button" aria-label={c.previous} onClick={()=>setOffset(n=>n-1)}><Icon name="chevron-left" size={18}/></button><strong>{dateLabel}</strong><button className="dash-round dash-round-light" type="button" aria-label={c.next} onClick={()=>setOffset(n=>n+1)}><Icon name="chevron-right" size={18}/></button>{offset!==0&&<button type="button" className="dash-text-button" onClick={()=>setOffset(0)}>{c.today}</button>}</div></div>
       {[[c.meetings,model.meetings.length,'users'],[c.tasks,model.tasks.length,'checkbox'],[c.reminders,model.reminders.length,'bell']].map(([label,n,icon])=><article className="dash-stat" key={icon}><span className="dash-stat-label"><span className="dash-stat-icon"><Icon name={icon} size={19}/></span>{label}</span><strong>{value(n)}</strong></article>)}
     </div>
     <div className="dash-grid" aria-busy={loading}>
@@ -87,9 +92,9 @@ export function Dashboard({ user }) {
       <section className="dash-card dash-activity"><CardHead title={c.planning} action={<ArrowLink to={schedule} label={c.view}/>}/><div className="dash-activity-value">{loading||error?'—':(model.minutes/60).toLocaleString(locale,{maximumFractionDigits:1})}<small> h</small></div><p className="dash-muted">{c.planned}</p><div className="dash-bars">{model.days.map(day=><div key={day.key} className={day.key===actualToday?'is-today':''}><div className="dash-bar-track"><span style={{height:loading||error?'0%':Math.max(0,Math.min(100,day.minutes/maxMinutes*100))+'%'}} title={Math.round(day.minutes)+' min'}/></div><i/><small>{weekday(day.key)}</small></div>)}</div></section>
       <FocusTimer c={c}/>
       <section className="dash-card dash-tasks"><CardHead title={c.complete}/><div className="dash-task-top"><strong>{value(percent)}{!loading&&!error?'%':''}</strong><span>{value(model.done)}/{value(model.tasks.length)} {c.done}</span></div><div className="dash-task-progress"><span style={{width:loading||error?'0%':percent+'%'}}/></div><div className="dash-task-list"><div className="dash-dark-head"><h3>{c.tasks}</h3><span>{value(model.tasks.length)}</span></div>{loading?<p className="dash-dark-empty">{t('common.loading')}</p>:!model.tasks.length?<p className="dash-dark-empty">{error?c.error:c.noTasks}</p>:model.tasks.slice(0,8).map(event=><Link to={linkFor(event)} className="dash-task" key={eventKey(event)}><span className="dash-task-symbol"><Icon name={event.status==='done'?'check':'checkbox'} size={19}/></span><span><strong>{event.title}</strong><small>{formatTime(event)} · {event.calendarName}</small></span><i className={event.status==='done'?'done':''}>{event.status==='done'&&<Icon name="check" size={13}/>}</i></Link>)}<Link className="dash-dark-link" to={schedule}>{c.view}<Icon name="arrow-right" size={16}/></Link></div></section>
-      <section className="dash-card dash-calendars"><CardHead title={c.calendars} action={<ArrowLink to={localizedPath('/calendars')} label={c.manage}/>}/><div className="dash-calendar-list">{loading?<p className="dash-muted">{t('common.loading')}</p>:!data.calendars.length?<p className="dash-muted">{error?c.error:c.noCalendars}</p>:data.calendars.slice(0,5).map(cal=><Link key={cal.id} to={localizedPath('/calendars/view/'+encodeURIComponent(cal.id))}><i style={{background:cal.color}}/><span>{cal.isHolidayCalendar?t('calendarBasics.holidays'):cal.name}</span><Icon name="chevron-right" size={15}/></Link>)}</div><details className="dash-lookup"><summary>{c.lookup}</summary><form onSubmit={e=>{e.preventDefault();if(lookup.trim())window.location.assign(localizedPath('/users/'+encodeURIComponent(lookup.trim())));}}><input aria-label={c.profileId} placeholder={c.profileId} value={lookup} onChange={e=>setLookup(e.target.value)} required/><button type="submit">{c.find}</button></form></details></section>
+      <section className="dash-card dash-calendars"><CardHead title={c.calendars} action={<ArrowLink to={localizedPath('/calendars')} label={c.manage}/>}/><div className="dash-calendar-list">{loading?<p className="dash-muted">{t('common.loading')}</p>:!data.calendars.length?<p className="dash-muted">{error?c.error:c.noCalendars}</p>:data.calendars.slice(0,5).map(cal=><Link key={cal.id} to={localizedPath('/calendars/view/'+encodeURIComponent(cal.id))}><i style={{background:cal.color}}/><span>{cal.isHolidayCalendar?t('calendarBasics.holidays'):cal.name}</span><Icon name="chevron-right" size={15}/></Link>)}</div><details className="dash-lookup"><summary>{c.lookup}</summary><form onSubmit={e=>{e.preventDefault();if(lookup.trim())navigate(localizedPath('/users/'+encodeURIComponent(lookup.trim())));}}><input aria-label={c.profileId} placeholder={c.profileId} value={lookup} onChange={e=>setLookup(e.target.value)} required/><button type="submit">{c.find}</button></form></details></section>
       <section className="dash-card dash-week"><CardHead title={c.week} action={<ArrowLink to={schedule} label={c.view}/>}/><div className="dash-week-days">{model.days.map(day=><button type="button" key={day.key} className={day.key===activeDay?'active':''} onClick={()=>setSelected(day.key)} aria-pressed={day.key===activeDay}><small>{weekday(day.key)}</small><strong>{Number(day.key.slice(-2))}</strong><i className={!loading&&day.events.length?'has-events':''}/></button>)}</div><div className="dash-day-heading"><strong>{fullDay(activeDay)}</strong><small>{value(chosen?.events.length||0)} {c.eventsToday.toLowerCase().replace(/ today| сьогодні/,'')}</small></div><div className="dash-day-events">{loading?<p className="dash-muted">{t('common.loading')}</p>:!chosen?.events.length?<div className="dash-day-empty"><Icon name="calendar-event" size={30}/><span>{error?c.error:c.noEvents}</span></div>:chosen.events.slice().sort((a,b)=>String(dateOf(a)||'').localeCompare(String(dateOf(b)||''))).slice(0,5).map(event=><Link className="dash-day-event" to={linkFor(event)} key={eventKey(event)}><span className="dash-event-time">{formatTime(event)}</span><span className="dash-event-block"><Icon name={typeIcon[event.type]||'calendar'} size={19}/><span><strong>{event.title}</strong><small>{event.calendarName}</small></span><Icon name="chevron-right" size={16}/></span></Link>)}</div></section>
     </div>
-    {editor&&activeCalendar&&<div className="dash-modal-backdrop" onClick={e=>{if(e.target===e.currentTarget&&!saving)setEditor(false);}}><section className="dash-modal" role="dialog" aria-modal="true" aria-label={c.add}><div className="dash-modal-top"><label>{c.selectCalendar}<select value={activeCalendar.id} disabled={saving} onChange={e=>setCalendarId(e.target.value)}>{editable.map(cal=><option value={cal.id} key={cal.id}>{cal.name}</option>)}</select></label><button type="button" className="dash-text-button" disabled={saving} onClick={()=>setEditor(false)}>{c.close}</button></div><EventEditor key={activeCalendar.id} calendar={activeCalendar} saving={saving} onSave={save} onCancel={()=>setEditor(false)}/></section></div>}
+    {editor&&activeCalendar&&<dialog ref={dialog} className="dash-modal" aria-label={c.add} onCancel={e=>{e.preventDefault();if(!saving)setEditor(false);}}><div className="dash-modal-top"><label>{c.selectCalendar}<select value={activeCalendar.id} disabled={saving} onChange={e=>setCalendarId(e.target.value)}>{editable.map(cal=><option value={cal.id} key={cal.id}>{cal.name}</option>)}</select></label><button type="button" className="dash-text-button" disabled={saving} onClick={()=>setEditor(false)}>{c.close}</button></div><EventEditor key={activeCalendar.id} calendar={activeCalendar} saving={saving} onSave={save} onCancel={()=>setEditor(false)}/></dialog>}
   </section>;
 }
