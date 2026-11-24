@@ -1,5 +1,5 @@
 import { BlobMascot } from '../components/auth/BlobMascot';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { applicationContainer } from '../app/applicationContainer';
 import { PageTemplate } from '../components/layout/PageTemplate';
@@ -15,6 +15,7 @@ import { CalendarOverview } from '../features/events/CalendarOverview';
 import { PlannerGrid, shiftDay, weekDays } from '../features/events/PlannerGrid';
 import { TablerIcon as Icon } from '../components/layout/TablerIcon';
 import '../styles/calendar-workspace.css';
+import '../styles/calendar-fit.css';
 import { EVENT_TYPES, eventDayKey, eventDateLabel, fromCalendarInput } from '../features/events/eventForm';
 
 function calendarRoleLabel(t, role) {
@@ -61,6 +62,32 @@ async function fetchAllEvents(calendarId, filters, timeZone) {
     if (page >= result.pagination.totalPages) return events;
   }
   throw new Error('EVENT_RANGE_TOO_LARGE');
+}
+
+function FittedAgenda({eventsByDay,locale,t,zone,onSelect,typeName,loading}) {
+  const listRef=useRef(null);
+  const [capacity,setCapacity]=useState(8);
+  const [page,setPage]=useState(0);
+  useEffect(()=>{
+    const el=listRef.current;
+    if(!el)return;
+    const measure=()=>setCapacity(Math.max(1,Math.floor(el.clientHeight/48)));
+    measure();
+    const observer=new ResizeObserver(measure);
+    observer.observe(el);
+    return()=>observer.disconnect();
+  },[]);
+  const entries=Object.entries(eventsByDay).sort(([a],[b])=>a.localeCompare(b)).flatMap(([date,items])=>items.slice().sort((a,b)=>String(a.startsAt||a.deadline||a.remindAt||a.date).localeCompare(String(b.startsAt||b.deadline||b.remindAt||b.date))).map(event=>({date,event})));
+  const pages=Math.max(1,Math.ceil(entries.length/capacity));
+  const current=Math.min(page,pages-1);
+  useEffect(()=>setPage(0),[eventsByDay]);
+  return <div className="fitted-agenda">
+    <div className="fitted-agenda-list" ref={listRef}>
+      {!loading&&!entries.length&&<p className="chrono-empty">{t('calendarView.noEvents')}</p>}
+      {entries.slice(current*capacity,(current+1)*capacity).map(({date,event:e})=><button type="button" key={e.calendarId+':'+(e.occurrenceId||e.id)} className="chrono-agenda-event" onClick={()=>onSelect(e)}><i style={{background:e.color||'var(--chronos-accent)'}}/><span><strong>{e.title}</strong><small>{e.calendarName} · {typeName(e.type)}</small></span><small>{eventDateLabel(e,locale,zone)||date}</small><Icon name="chevron-right" size={16}/></button>)}
+    </div>
+    <div className="fitted-agenda-pages"><button type="button" disabled={current===0} aria-label={locale==='uk'?'Попередня сторінка':'Previous page'} onClick={()=>setPage(current-1)}><Icon name="chevron-left" size={16}/></button><span>{current+1} / {pages}</span><button type="button" disabled={current+1>=pages} aria-label={locale==='uk'?'Наступна сторінка':'Next page'} onClick={()=>setPage(current+1)}><Icon name="chevron-right" size={16}/></button></div>
+  </div>;
 }
 
 export function CalendarViewPage() {
@@ -297,7 +324,7 @@ export function CalendarViewPage() {
           {horizontal&&<DayPlanner view={eventView} days={plannerDays} events={events} calendars={timelineCalendars} day={day} zone={calendar.timeZone||'UTC'} fullDay={fullDay} loading={eventsLoading} error={eventsError} partial={partial} onSelect={selectEvent} onCreate={openCreate} canEdit={canEdit} onDaySelect={setPlannerDate}/>}
           {eventView==='week'&&weekGrid&&<PlannerGrid key={eventView} view={eventView} days={plannerDays} events={events} calendars={timelineCalendars} zone={calendar.timeZone||'UTC'} onSelect={selectEvent} selectedDay={day} onDaySelect={setPlannerDate} fullDay={fullDay}/>}
           {eventView==='month'&&<MonthPlanner day={day} today={today} startsOn={startsOn} events={events} zone={calendar.timeZone||'UTC'} calendarName={calendar.name} loading={eventsLoading} error={eventsError} partial={partial} canEdit={canEdit} onDaySelect={setPlannerDate} onSelect={selectEvent} onCreate={createOn}/>}
-          {eventView==='agenda'&&<div className="chrono-agenda">{!eventsLoading&&!events.length?<p className="chrono-empty">{t('calendarView.noEvents')}</p>:Object.entries(eventsByDay).sort(([a],[b])=>a.localeCompare(b)).map(([key,items])=><section key={key}><h3>{new Date(key+'T12:00:00Z').toLocaleDateString(locale,{weekday:'long',month:'long',day:'numeric',timeZone:'UTC'})}</h3>{items.slice().sort((a,b)=>String(a.startsAt||a.deadline||a.remindAt||a.date).localeCompare(String(b.startsAt||b.deadline||b.remindAt||b.date))).map(e=><button type="button" key={eventKey(e)} className="chrono-agenda-event" onClick={()=>selectEvent(e)}><i style={{background:e.color||'var(--chronos-accent)'}}/><span><strong>{e.title}</strong><small>{e.calendarName} · {typeName(e.type)}</small></span><small>{eventDateLabel(e,locale,calendar.timeZone)}</small><Icon name="chevron-right" size={16}/></button>)}</section>)}</div>}
+          {eventView==='agenda'&&<FittedAgenda eventsByDay={eventsByDay} locale={locale} t={t} zone={calendar.timeZone} onSelect={selectEvent} typeName={typeName} loading={eventsLoading}/>} 
         </div>
         <footer className="chrono-footer"><span>{eventsLoading?'—':events.length} {uk?'подій':'events'}{partial?' · '+(uk?'неповні дані':'partial data'):''}</span><span>{uk?'Створення в':'New events in'} <strong>{calendar.name}</strong></span></footer>
       </div>
