@@ -1,6 +1,6 @@
+import { FlowSurface } from '../components/layout/FlowSurface';
 import { useEffect, useState } from 'react';
 import { applicationContainer } from '../app/applicationContainer';
-import { PageTemplate } from '../components/layout/PageTemplate';
 import { useLocale } from '../i18n/LocaleProvider';
 import { getLocalizedApiError } from '../i18n/apiErrors';
 
@@ -28,14 +28,13 @@ export function EventInvitationPage() {
     } catch (err) { setError(err.code || 'REQUEST_FAILED'); }
     finally { setBusy(false); }
   }
-  return <PageTemplate><section className="account-card">
-    <h1>{t('eventInvitations.title')}</h1>
+  return <FlowSurface title={t('eventInvitations.title')} icon={answer === 'accepted' ? 'check' : answer === 'declined' ? 'x' : 'calendar-event'} tone={answer === 'accepted' ? 'success' : ''}>
     {error && <p role="alert">{getLocalizedApiError({ code: error }, t, 'eventInvitations.invalid')}</p>}
     {answer ? <p role="status">{t(`eventInvitations.${answer}`)}</p> : event ? <>
-      <h2>{event.title}</h2>
+      <div className="flow-summary"><h2>{event.title}</h2>
       <p>{t(`calendarView.type.${event.type}`)} · {event.type === 'holiday' ? event.startsAt.slice(0, 10) : new Date(event.startsAt).toLocaleString(locale, { dateStyle: 'medium', timeStyle: 'short' })}</p>
-      {event.isRecurring && <p>{t('eventInvitations.series')}</p>}
-      <div className="button-row"><button type="button" disabled={busy} onClick={() => void respond('accepted')}>{t('eventInvitations.accept')}</button><button type="button" disabled={busy} onClick={() => void respond('declined')}>{t('eventInvitations.decline')}</button></div>
+      {event.isRecurring && <p>{t('eventInvitations.series')}</p>}</div>
+      <div className="button-row"><button type="button" className="flow-primary" disabled={busy} onClick={() => void respond('accepted')}>{t('eventInvitations.accept')}</button><button type="button" disabled={busy} onClick={() => void respond('declined')}>{t('eventInvitations.decline')}</button></div>
     </> : !error && <p role="status">{t('common.loading')}</p>}
-  </section></PageTemplate>;
+  </FlowSurface>;
 }
