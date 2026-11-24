@@ -46,9 +46,7 @@ export function PlannerGrid({view,days,events,calendars,zone,onSelect,selectedDa
  const {first,last}=visibleHours(allBlocks,fullDay);
  const span=(last-first)*60;
  const position=n=>(n-first*60)/span*100;
- const hourHeight=44;
- const height=(last-first)*hourHeight;
- const y=n=>(n-first*60)/60*hourHeight;
+ const y=n=>position(n);
  const hours=Array.from({length:last-first},(_,i)=>first+i);
  const nowVisible=nowMinute>=first*60&&nowMinute<last*60;
  const isWeekend=d=>[0,6].includes(new Date(d+'T12:00:00Z').getUTCDay());
@@ -74,15 +72,15 @@ export function PlannerGrid({view,days,events,calendars,zone,onSelect,selectedDa
    })}
   </div></div>
  }
- return <div className="planner-viewport week-viewport" ref={viewport}><div className="planner-week" style={{'--hour-height':hourHeight+'px'}}>
+ return <div className="planner-viewport week-viewport" ref={viewport}><div className="planner-week" style={{'--hour-height':100/(last-first)+'%'}}>
   <div className="planner-week-head planner-zone" title={zone}>{zone.split('/').pop().replaceAll('_',' ')}</div>
   {days.map(d=><div key={d} className={'planner-week-head'+(d===today?' today':'')+(d===selectedDay?' selected':'')}><button type="button" onClick={()=>onDaySelect?.(d)} aria-pressed={d===selectedDay}><small>{new Date(d+'T12:00:00Z').toLocaleDateString(locale,{weekday:'short',timeZone:'UTC'})}</small><strong>{Number(d.slice(-2))}</strong></button></div>)}
   <div className="planner-all-day">{locale==='uk'?'Увесь день':'All day'}</div>
   {days.map(d=><div className="planner-all-day" key={d}>{events.filter(e=>e.type==='holiday'&&eventDayKey(e,zone)===d).map(e=><button key={keyOf(e)} onClick={()=>onSelect(e)}>{e.title}</button>)}</div>)}
-  <div className="planner-hour-labels" style={{height}}>{hours.map(h=><span key={h} style={{top:y(h*60)+5}}>{timeLabel(h*60)}</span>)}</div>
-  {days.map(d=>{const {blocks,lanes}=dayBlocks(events,d,zone);return <div key={d} className={'planner-day-lane'+(isWeekend(d)?' weekend':'')+(d===selectedDay?' selected':'')} style={{height}}>
-    {blocks.map(b=>block(b,{top:clamp(y(b.start)+2,0,height-22),height:b.point?23:Math.max(22,Math.min(y(b.end)-y(b.start)-3,height-y(b.start))),left:'calc('+b.lane/lanes*100+'% + 3px)',width:'calc('+100/lanes+'% - 6px)'}))}
-    {d===today&&nowVisible&&<i className="planner-now" style={{top:y(nowMinute)}}><span>{timeLabel(nowMinute)}</span></i>}
+  <div className="planner-hour-labels">{hours.filter((h,i)=>!fullDay||i%2===0).map(h=><span key={h} style={{top:y(h*60)+'%'}}>{timeLabel(h*60)}</span>)}</div>
+  {days.map(d=>{const {blocks,lanes}=dayBlocks(events,d,zone);return <div key={d} className={'planner-day-lane'+(isWeekend(d)?' weekend':'')+(d===selectedDay?' selected':'')}>
+    {blocks.map(b=>block(b,{top:'min('+y(b.start)+'%, calc(100% - 12px))',height:b.point?'min(20px, '+(100-y(b.start))+'%)':'max(10px, calc('+(y(b.end)-y(b.start))+'% - 1px))',left:'calc('+b.lane/lanes*100+'% + 3px)',width:'calc('+100/lanes+'% - 6px)'}))}
+    {d===today&&nowVisible&&<i className="planner-now" style={{top:y(nowMinute)+'%'}}><span>{timeLabel(nowMinute)}</span></i>}
    </div>})}
  </div></div>
 }
