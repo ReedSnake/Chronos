@@ -11,6 +11,7 @@ import { EventDetails } from '../features/events/EventDetails';
 import { EventDialog } from '../features/events/EventDialog';
 import { DayPlanner } from '../features/events/DayPlanner';
 import { MonthPlanner } from '../features/events/MonthPlanner';
+import { CalendarEventActionsProvider, CalendarEventButton, EventSymbol } from '../features/events/CalendarEventActions';
 import { CalendarOverview } from '../features/events/CalendarOverview';
 import { PlannerGrid, shiftDay, weekDays } from '../features/events/PlannerGrid';
 import { TablerIcon as Icon } from '../components/layout/TablerIcon';
@@ -84,7 +85,7 @@ function FittedAgenda({eventsByDay,locale,t,zone,onSelect,typeName,loading}) {
   return <div className="fitted-agenda">
     <div className="fitted-agenda-list" ref={listRef}>
       {!loading&&!entries.length&&<p className="chrono-empty">{t('calendarView.noEvents')}</p>}
-      {entries.slice(current*capacity,(current+1)*capacity).map(({date,event:e})=><button type="button" key={e.calendarId+':'+(e.occurrenceId||e.id)} className="chrono-agenda-event" onClick={()=>onSelect(e)}><i style={{background:e.color||'var(--chronos-accent)'}}/><span><strong>{e.title}</strong><small>{e.calendarName} · {typeName(e.type)}</small></span><small>{eventDateLabel(e,locale,zone)||date}</small><Icon name="chevron-right" size={16}/></button>)}
+      {entries.slice(current*capacity,(current+1)*capacity).map(({date,event:e})=><CalendarEventButton event={e} key={e.calendarId+':'+(e.occurrenceId||e.id)} className="chrono-agenda-event" onClick={()=>onSelect(e)}><EventSymbol event={e}/><span><strong>{e.title}</strong><small>{e.calendarName} · {typeName(e.type)}</small></span><small>{eventDateLabel(e,locale,zone)||date}</small><Icon name="chevron-right" size={16}/></CalendarEventButton>)}
     </div>
     <div className="fitted-agenda-pages"><button type="button" disabled={current===0} aria-label={locale==='uk'?'Попередня сторінка':'Previous page'} onClick={()=>setPage(current-1)}><Icon name="chevron-left" size={16}/></button><span>{current+1} / {pages}</span><button type="button" disabled={current+1>=pages} aria-label={locale==='uk'?'Наступна сторінка':'Next page'} onClick={()=>setPage(current+1)}><Icon name="chevron-right" size={16}/></button></div>
   </div>;
@@ -244,6 +245,27 @@ export function CalendarViewPage() {
     setRefresh((current) => current + 1);
   }
 
+  const taskMutation=useRef(false);
+  function canChangeTask(item){
+    const source=calendars.find(c=>c.id===(item.calendarId||calendarId));
+    return item.type==='task'&&source&&!source.isArchived&&!source.isHolidayCalendar&&['owner','admin','editor'].includes(source.role);
+  }
+  async function toggleTask(item){
+    if(busy||taskMutation.current||!canChangeTask(item))return;
+    if(item.isRecurring&&!window.confirm(t('calendarView.event.editSeriesOnly')))return;
+    taskMutation.current=true;
+    setBusy(true);setEventsError('');
+    const sourceId=item.calendarId||calendarId;
+    const nextStatus=item.status==='done'?'todo':'done';
+    try{
+      await applicationContainer.calendarService.updateEvent(sourceId,item.id,{status:nextStatus});
+      const change=e=>e.id===item.id&&(e.calendarId||calendarId)===sourceId?{...e,status:nextStatus}:e;
+      setEvents(old=>old.map(change));
+      setSelection(old=>old?change(old):null);
+    }catch(err){setEventsError(getLocalizedApiError(err,t,'calendarView.event.saveError'));}
+    finally{taskMutation.current=false;setBusy(false);}
+  }
+
   function cancelEdit() { setEditorOpen(false); setEditing(null); }
   function openCreate() { setSelection(null); setEditing(null); setEventsError(''); setEditorOpen(true); }
   function selectEvent(item) { setSelection(item); setEventsError(''); setEditorOpen(false); setEditing(null); }
@@ -264,14 +286,14 @@ export function CalendarViewPage() {
   const plannerDays=['week','overview'].includes(eventView)?weekDays(day,startsOn):[day];
   useEffect(()=>{if(calendar?.id)setPlannerDate(day,eventView);},[calendar?.id,startsOn]);
   const plannerLabel=plannerDays.map(d=>new Date(d+'T12:00:00Z').toLocaleDateString(locale,{month:'short',day:'numeric',timeZone:'UTC'}));
-  const viewLabels={overview:locale==='uk'?'Огляд':'Overview',day:locale==='uk'?'День':'Day',timeline:locale==='uk'?'Шкала часу':'Timeline',week:locale==='uk'?'Тиждень':'Week',month:t('calendarView.view.month'),agenda:t('calendarView.view.agenda')};
+  const viewLabels={overview:locale==='uk'?'Огляд':'Overview',day:locale==='uk'?'День':'Day',week:locale==='uk'?'Тиждень':'Week',month:t('calendarView.view.month'),agenda:t('calendarView.view.agenda')};
 
   if (status === 'loading' || loading) return <PageTemplate><BlobMascot mood="loading" compact /><p role="status">{t('common.loading')}</p></PageTemplate>;
   if (status !== 'authenticated') return <PageTemplate><p>{t('calendarView.signInBefore')}<Link to={localizedPath('/login')}>{t('common.signIn')}</Link>{t('calendarView.signInAfter')}</p></PageTemplate>;
 
   const uk=locale==='uk';
   const today=eventDayKey({startsAt:new Date()},calendar?.timeZone||'UTC');
-  const title=['week','overview'].includes(eventView)?plannerLabel[0]+' – '+plannerLabel[6]:['timeline','day'].includes(eventView)?new Date(day+'T12:00:00Z').toLocaleDateString(locale,{month:'long',day:'numeric',year:'numeric',timeZone:'UTC'}):new Date(day+'T12:00:00Z').toLocaleDateString(locale,{month:'long',year:'numeric',timeZone:'UTC'});
+  const title=['week','overview'].includes(eventView)?plannerLabel[0]+' – '+plannerLabel[6]:eventView==='day'?new Date(day+'T12:00:00Z').toLocaleDateString(locale,{month:'long',day:'numeric',year:'numeric',timeZone:'UTC'}):new Date(day+'T12:00:00Z').toLocaleDateString(locale,{month:'long',year:'numeric',timeZone:'UTC'});
   const miniMonth=month.toLocaleDateString(locale,{month:'long',year:'numeric'});
   const eventKey=e=>(e.calendarId||calendarId)+':'+(e.occurrenceId||e.id);
   const typeName=type=>type==='arrangement'?(uk?'Зустрічі':'Meetings'):t('calendarView.type.'+type);
@@ -281,13 +303,13 @@ export function CalendarViewPage() {
     else setPlannerDate(shiftDay(day,direction*(['week','overview'].includes(eventView)?7:1)));
   }
   function createOn(key){if(!canEdit)return;setPlannerDate(key);openCreate();}
-  const horizontal=eventView==='day'||eventView==='timeline'||eventView==='week'&&!weekGrid;
-  return <section className={'chrono-calendar chrono-mode-'+eventView+(horizontal?' chrono-mode-horizontal':'')}>
+  const horizontal=eventView==='day'||eventView==='week'&&!weekGrid;
+  return <CalendarEventActionsProvider value={{canChange:canChangeTask,toggle:toggleTask,busy:busy||eventsLoading}}><section className={'chrono-calendar chrono-mode-'+eventView+(horizontal?' chrono-mode-horizontal':'')}>
     <header className="chrono-heading">
       <div><h1>{uk?'Календар':'Calendar'}</h1><p>{calendar?.timeZone||user?.settings?.timeZone||'UTC'}</p></div>
       <div className="chrono-heading-actions">
         <div className="chrono-segments" role="group" aria-label={t('calendarView.event.viewSwitch')}>
-          {['overview','day','week','month','timeline','agenda'].map(view=><button key={view} type="button" aria-pressed={eventView===view} onClick={()=>switchView(view)}>{viewLabels[view]}</button>)}
+          {['overview','day','week','month','agenda'].map(view=><button key={view} type="button" aria-pressed={eventView===view} onClick={()=>switchView(view)}>{viewLabels[view]}</button>)}
         </div>
         {canEdit&&<button className="chrono-primary" type="button" onClick={openCreate}><Icon name="plus" size={18}/>{t('calendarView.event.create')}</button>}
       </div>
@@ -306,13 +328,13 @@ export function CalendarViewPage() {
         </section>
         <section className="chrono-day-preview">
           <div className="chrono-rail-head"><h2>{new Date(day+'T12:00:00Z').toLocaleDateString(locale,{month:'short',day:'numeric',timeZone:'UTC'})}</h2><span>{eventsLoading?'—':selectedEvents.length}</span></div>
-          {eventsLoading?<p>{t('common.loading')}</p>:selectedEvents.length?selectedEvents.slice(0,6).map(e=><button type="button" className="chrono-preview-event" key={eventKey(e)} onClick={()=>selectEvent(e)}><i style={{background:e.color||'var(--chronos-accent)'}}/><span><strong>{e.title}</strong><small>{eventDateLabel(e,locale,calendar.timeZone)}</small></span></button>):<p>{t('calendarView.noEvents')}</p>}
+          {eventsLoading?<p>{t('common.loading')}</p>:selectedEvents.length?selectedEvents.slice(0,6).map(e=><CalendarEventButton event={e} className="chrono-preview-event" key={eventKey(e)} onClick={()=>selectEvent(e)}><EventSymbol event={e} size={13}/><span><strong>{e.title}</strong><small>{eventDateLabel(e,locale,calendar.timeZone)}</small></span></CalendarEventButton>):<p>{t('calendarView.noEvents')}</p>}
         </section>
       </aside>
       <div className="chrono-board">
         <div className="chrono-toolbar">
           <div className="chrono-period"><button type="button" aria-label={uk?'Назад':'Previous'} onClick={()=>navigatePeriod(-1)}><Icon name="chevron-left" size={19}/></button><h2>{title}</h2><button type="button" aria-label={uk?'Далі':'Next'} onClick={()=>navigatePeriod(1)}><Icon name="chevron-right" size={19}/></button><button className="chrono-today" type="button" onClick={()=>setPlannerDate(today)}>{uk?'Сьогодні':'Today'}</button></div>
-          <div className="chrono-tools">{eventView==='week'&&<button type="button" className="chrono-hours" aria-pressed={weekGrid} onClick={()=>setWeekGrid(v=>!v)}>{weekGrid?(uk?'Сітка':'Grid'):(uk?'Шкала':'Timeline')}</button>}{(['overview','month'].includes(eventView)||horizontal)&&<details className="chrono-filter chrono-overview-sources"><summary>{uk?'Календарі':'Calendars'}<Icon name="chevron-down" size={15}/></summary><div className="chrono-filter-pop"><label>{uk?'Дата':'Date'}<input type="date" value={day} onChange={e=>{if(e.target.value)setPlannerDate(e.target.value)}}/></label><label>{uk?'Нові події в':'New events in'}<select value={calendarId} onChange={e=>chooseCalendar(e.target.value)}>{visibleCalendars.map(item=><option key={item.id} value={item.id}>{item.name}</option>)}</select></label>{visibleCalendars.map(item=><div className="chrono-source" key={item.id}><input type="checkbox" aria-label={item.name} checked={!hiddenCalendars.includes(item.id)} onChange={()=>setHiddenCalendars(old=>old.includes(item.id)?old.filter(id=>id!==item.id):[...old,item.id])}/><i style={{background:item.color||'var(--chronos-accent)'}}/><span>{item.name}</span></div>)}<Link to={localizedPath('/calendars')}>{t('calendarView.manageCalendars')}</Link></div></details>}{['week','timeline','day'].includes(eventView)&&<button type="button" className="chrono-hours" aria-pressed={fullDay} onClick={()=>setFullDay(v=>!v)}>{uk?'24 год':'24h'}</button>}<details className="chrono-filter"><summary>{uk?'Фільтри':'Filters'}{filters.types.length+filters.categories.length>0&&<span>{filters.types.length+filters.categories.length}</span>}<Icon name="chevron-down" size={15}/></summary><div className="chrono-filter-pop"><strong>{t('calendarView.types')}</strong>{EVENT_TYPES.map(type=><label key={type}><input type="checkbox" checked={filters.types.includes(type)} onChange={()=>toggleType(type)}/>{typeName(type)}</label>)}<label className="chrono-filter-categories">{t('calendarView.categories')}<input value={categoryInput} onChange={e=>updateCategories(e.target.value)} placeholder={t('calendarView.categoriesPlaceholder')}/></label><button type="button" onClick={()=>{setCategoryInput('');setFilters(old=>({...old,types:[],categories:[]}));}}>{uk?'Скинути':'Reset'}</button></div></details></div>
+          <div className="chrono-tools">{eventView==='week'&&<button type="button" className="chrono-hours" aria-pressed={weekGrid} onClick={()=>setWeekGrid(v=>!v)}>{weekGrid?(uk?'Сітка':'Grid'):(uk?'Горизонтально':'Horizontal')}</button>}{(['overview','month'].includes(eventView)||horizontal)&&<details className="chrono-filter chrono-overview-sources"><summary>{uk?'Календарі':'Calendars'}<Icon name="chevron-down" size={15}/></summary><div className="chrono-filter-pop"><label>{uk?'Дата':'Date'}<input type="date" value={day} onChange={e=>{if(e.target.value)setPlannerDate(e.target.value)}}/></label><label>{uk?'Нові події в':'New events in'}<select value={calendarId} onChange={e=>chooseCalendar(e.target.value)}>{visibleCalendars.map(item=><option key={item.id} value={item.id}>{item.name}</option>)}</select></label>{visibleCalendars.map(item=><div className="chrono-source" key={item.id}><input type="checkbox" aria-label={item.name} checked={!hiddenCalendars.includes(item.id)} onChange={()=>setHiddenCalendars(old=>old.includes(item.id)?old.filter(id=>id!==item.id):[...old,item.id])}/><i style={{background:item.color||'var(--chronos-accent)'}}/><span>{item.name}</span></div>)}<Link to={localizedPath('/calendars')}>{t('calendarView.manageCalendars')}</Link></div></details>}{['week','day'].includes(eventView)&&<button type="button" className="chrono-hours" aria-pressed={fullDay} onClick={()=>setFullDay(v=>!v)}>{uk?'24 год':'24h'}</button>}<details className="chrono-filter"><summary>{uk?'Фільтри':'Filters'}{filters.types.length+filters.categories.length>0&&<span>{filters.types.length+filters.categories.length}</span>}<Icon name="chevron-down" size={15}/></summary><div className="chrono-filter-pop"><strong>{t('calendarView.types')}</strong>{EVENT_TYPES.map(type=><label key={type}><input type="checkbox" checked={filters.types.includes(type)} onChange={()=>toggleType(type)}/>{typeName(type)}</label>)}<label className="chrono-filter-categories">{t('calendarView.categories')}<input value={categoryInput} onChange={e=>updateCategories(e.target.value)} placeholder={t('calendarView.categoriesPlaceholder')}/></label><button type="button" onClick={()=>{setCategoryInput('');setFilters(old=>({...old,types:[],categories:[]}));}}>{uk?'Скинути':'Reset'}</button></div></details></div>
         </div>
         {horizontal&&<div className="chrono-day-strip">{weekDays(day,startsOn).map(key=><button type="button" key={key} aria-pressed={key===day} onClick={()=>setPlannerDate(key)}><small>{new Date(key+'T12:00:00Z').toLocaleDateString(locale,{weekday:'short',timeZone:'UTC'})}</small><strong>{Number(key.slice(-2))}</strong>{key===today&&<i/>}</button>)}</div>}
         {eventView==='agenda'&&<div className="chrono-range"><label>{t('calendarView.from')}<input type="date" value={filters.from} onChange={e=>setFilters(old=>({...old,from:e.target.value}))}/></label><label>{t('calendarView.to')}<input type="date" value={filters.to} onChange={e=>setFilters(old=>({...old,to:e.target.value}))}/></label></div>}
@@ -334,5 +356,5 @@ export function CalendarViewPage() {
       {selection&&!editorOpen&&eventCalendar&&<EventDetails key={eventKey(selection)} onInvite={sendInvitation} event={selection} calendar={eventCalendar} onClose={()=>setSelection(null)} onEdit={startEdit} onDelete={deleteEvent} canEdit={eventCanEdit} busy={busy}/>}
       {editorOpen&&<EventEditor key={editing?.id||'new'} event={editing} initialDay={day} calendar={editing?eventCalendar:calendar} saving={busy} onSave={saveEvent} onCancel={cancelEdit}/>}
     </EventDialog>}
-  </section>;
+  </section></CalendarEventActionsProvider>;
 }
