@@ -20,11 +20,12 @@ export function ApplicationPage() {
   const isPublicHome = status === 'anonymous' && pathname.replace(/\/$/, '') === localizedPath('/').replace(/\/$/, '');
   const authResolved = status !== 'loading';
   const workspaceRoute = pathname.replace(/^\/[^/]+/, '').replace(/\/$/, '');
-  const inWorkspace = signedIn && (workspaceRoute === '' || /^\/(account|calendars|integrations|users)(\/|$)/.test(workspaceRoute)) && workspaceRoute !== '/integrations/approve';
+  const inWorkspace = signedIn && (workspaceRoute === '' || /^\/(account|calendars|integrations|users|tasks)(\/|$)/.test(workspaceRoute)) && workspaceRoute !== '/integrations/approve';
   if (inWorkspace) {
     const items = [
       ['/', 'layout-dashboard', locale === 'uk' ? 'Огляд' : 'Dashboard'],
       ['/calendars/view', 'calendar-week', locale === 'uk' ? 'Розклад' : 'Schedule'],
+      ['/tasks', 'checkbox', locale === 'uk' ? 'Завдання' : 'Tasks'],
       ['/calendars', 'calendar', t('navigation.calendars')],
       ['/integrations', 'plug', t('navigation.integrations')],
       ['/account', 'settings', locale === 'uk' ? 'Налаштування' : 'Settings'],
