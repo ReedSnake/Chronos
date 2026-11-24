@@ -86,7 +86,7 @@
 @media(max-width:600px){.cm-page{gap:14px}.cm-heading{align-items:flex-start;flex-wrap:wrap}.cm-heading p{font-size:12px}.cm-toolbar{gap:9px}.cm-search{width:100%}.cm-card{padding:15px}.cm-modal-header,.cm-form-body,.cm-collaboration,.cm-modal-footer{padding:16px}.cm-tabs{padding:6px 12px}.cm-tabs button{padding:7px;font-size:11px}.cm-field-pair{grid-template-columns:1fr}.cm-danger{padding:0 16px 14px}}
 
 /* Native-style inspector: identity first, compact properties second. */
-.event-dialog:has(.cm-dialog){width:min(460px,calc(100% - 28px));border-radius:18px;box-shadow:0 18px 60px #30303022}
+.event-dialog:has(.cm-dialog){width:min(460px,calc(100% - 28px));border-radius:var(--chronos-dialog-radius);box-shadow:var(--chronos-dialog-shadow)}
 .cm-dialog .cm-modal-header{background:white;padding:17px 22px 8px;gap:10px}
 .cm-dialog .cm-modal-header h2{font-size:14px;font-weight:600;letter-spacing:0}
 .cm-dialog .cm-modal-header p{font-size:11px}
