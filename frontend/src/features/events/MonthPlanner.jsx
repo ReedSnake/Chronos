@@ -1,3 +1,4 @@
+import { CalendarEventButton, EventSymbol, EventStatus } from './CalendarEventActions';
 import { useMemo } from 'react';
 import { useLocale } from '../../i18n/LocaleProvider';
 import { TablerIcon as Icon } from '../../components/layout/TablerIcon';
@@ -70,7 +71,7 @@ export function MonthPlanner({day,today,startsOn,events,zone,calendarName,loadin
       <button className="month-tile-hit" type="button" aria-label={format(d,{dateStyle:'full'})} aria-pressed={d===day} onClick={()=>onDaySelect(d)}><span>{Number(d.slice(-2))}</span></button>
       {canEdit&&!outside&&<button className="month-tile-add" type="button" aria-label={t('calendarView.event.create')+' '+d} onClick={()=>onCreate(d)}><Icon name="plus" size={14}/></button>}
      </div>})}
-     {week.segments.filter(s=>s.lane<2).map(s=><button type="button" className={'month-event '+s.event.type+(s.event.status==='done'?' done':'')+(s.event.status==='canceled'?' canceled':'')} key={keyOf(s.event)} style={{gridColumn:(s.left+1)+' / '+(s.right+2),gridRow:s.lane+2}} onClick={()=>onSelect(s.event)} title={s.event.title+' · '+(s.start!==s.end?range(s):time(s.event))}><i/><span>{s.event.title}</span>{s.left!==s.right&&<small>{range(s)}</small>}</button>)}
+     {week.segments.filter(s=>s.lane<2).map(s=><CalendarEventButton event={s.event} placement="grid" className={'month-event '+s.event.type+(s.event.status==='done'?' done':'')+(s.event.status==='canceled'?' canceled':'')} key={keyOf(s.event)} style={{gridColumn:(s.left+1)+' / '+(s.right+2),gridRow:s.lane+2}} onClick={()=>onSelect(s.event)} title={s.event.title+' · '+(s.start!==s.end?range(s):time(s.event))}><i/><span>{s.event.title}</span>{s.left!==s.right&&<small>{range(s)}</small>}</CalendarEventButton>)}
      {week.hidden.map((n,i)=>n>0&&<button type="button" key={week.days[i]} className="month-more" style={{gridColumn:i+1,gridRow:4}} onClick={()=>onDaySelect(week.days[i])}>+{n} {uk?'ще':'more'}</button>)}
     </div>)}
    </div></div>
@@ -79,7 +80,7 @@ export function MonthPlanner({day,today,startsOn,events,zone,calendarName,loadin
    <section className="month-day-card">
     <div className="month-day-cover"><span>{format(day,{weekday:'long'})}</span><strong>{Number(day.slice(-2))}</strong><span>{format(day,{month:'long',year:'numeric'})}</span></div>
     <div className="month-day-content"><div className="month-day-heading"><h3>{uk?'План дня':'Daily agenda'}</h3><span>{count(model.selected.length)}</span></div>
-     {loading?<p>{t('common.loading')}</p>:error?<p>{error}</p>:!model.selected.length?<p>{uk?'На цей день нічого не заплановано':'Nothing planned for this day'}</p>:<div className="month-day-list">{model.selected.map(r=><button type="button" key={keyOf(r.event)} onClick={()=>onSelect(r.event)}><span className={'month-list-icon '+r.event.type}><Icon name={icon(r.event)} size={17}/></span><span><strong>{r.event.title}</strong><small>{r.start!==r.end?range(r):r.event.type==='holiday'?(uk?'Увесь день':'All day'):time(r.event)} · {r.event.calendarName}</small></span></button>)}</div>}
+     {loading?<p>{t('common.loading')}</p>:error?<p>{error}</p>:!model.selected.length?<p>{uk?'На цей день нічого не заплановано':'Nothing planned for this day'}</p>:<div className="month-day-list">{model.selected.map(r=><CalendarEventButton event={r.event} key={keyOf(r.event)} onClick={()=>onSelect(r.event)}><EventSymbol event={r.event}/><span><strong>{r.event.title}</strong><small>{r.start!==r.end?range(r):r.event.type==='holiday'?(uk?'Увесь день':'All day'):time(r.event)} · {r.event.calendarName}</small></span><EventStatus event={r.event}/></CalendarEventButton>)}</div>}
      {canEdit&&<button type="button" className="month-create" onClick={()=>onCreate(day)}><Icon name="plus" size={16}/>{t('calendarView.event.create')}</button>}
     </div>
    </section>
