@@ -105,6 +105,7 @@ export function CalendarViewPage() {
         if (!active) return;
         setCalendar(item);
         setEventView(item.defaultView === 'agenda' ? 'agenda' : 'month');
+        setFilters(current=>({...current,...monthRange(month)}));
       })
       .catch((err) => { if (active) setError(getLocalizedApiError(err, t, 'calendarView.loadError')); });
     return () => { active = false; };
@@ -131,8 +132,8 @@ export function CalendarViewPage() {
     return grouped;
   }, {}), [calendar?.timeZone, events]);
   const days = useMemo(() => daysForMonth(month), [month]);
-  const canEdit = !calendar?.isHolidayCalendar && ['owner', 'admin', 'editor'].includes(calendar?.role);
-  const eventCalendar=selection?calendars.find(c=>c.id===selection.calendarId)||calendar:calendar;
+  const canEdit = !calendar?.isArchived && !calendar?.isHolidayCalendar && ['owner', 'admin', 'editor'].includes(calendar?.role);
+  const eventCalendar=selection&&selection.calendarId&&selection.calendarId!==calendarId?calendars.find(c=>c.id===selection.calendarId):calendar;
   const eventCanEdit=!!eventCalendar&&!eventCalendar.isHolidayCalendar&&!eventCalendar.isArchived&&['owner','admin','editor'].includes(eventCalendar.role);
   const visibleCalendars = calendars.filter((item) => !item.isArchived || item.id === calendarId);
   useEffect(() => {
@@ -205,8 +206,8 @@ export function CalendarViewPage() {
   }
 
   function cancelEdit() { setEditorOpen(false); setEditing(null); }
-  function openCreate() { setSelection(null); setEditing(null); setEditorOpen(true); }
-  function selectEvent(item) { setSelection(item); setEditorOpen(false); setEditing(null); }
+  function openCreate() { setSelection(null); setEditing(null); setEventsError(''); setEditorOpen(true); }
+  function selectEvent(item) { setSelection(item); setEventsError(''); setEditorOpen(false); setEditing(null); }
   function setPlannerDate(key,view=eventView) {
     setDay(key);
     const keys=view==='week'?weekDays(key,user?.settings?.weekStartsOn):[key];
@@ -270,8 +271,9 @@ export function CalendarViewPage() {
           {eventView === 'agenda' && !eventsLoading && <div className="event-list"><h2>{t('calendarView.eventsTitle')}</h2>{events.map((item) => <button type="button" className="event-list-item event-list-button" onClick={() => selectEvent(item)} key={item.occurrenceId || item.id} style={{ borderLeftColor: item.color }}><strong>{item.title}</strong><span>{t(`calendarView.type.${item.type}`)} · {eventDateLabel(item, locale, calendar.timeZone)}</span>{item.description && <span>{item.description}</span>}</button>)}</div>}
         </section>
         {(selection||editorOpen)&&<EventDialog busy={busy} label={t('calendarView.event.details')} onClose={()=>{setSelection(null);cancelEdit()}}>
+          {eventsError&&<p role="alert" className="event-dialog-error">{eventsError}</p>}
           {selection&&!editorOpen&&<EventDetails key={selection.id} onInvite={sendInvitation} event={selection} calendar={eventCalendar} onClose={()=>setSelection(null)} onEdit={startEdit} onDelete={deleteEvent} canEdit={eventCanEdit} busy={busy}/>}
-          {editorOpen&&<EventEditor key={editing?.id||'new'} event={editing} calendar={editing?eventCalendar:calendar} saving={busy} onSave={saveEvent} onCancel={cancelEdit}/>}
+          {editorOpen&&<EventEditor key={editing?.id||'new'} event={editing} initialDay={['timeline','week'].includes(eventView)?day:null} calendar={editing?eventCalendar:calendar} saving={busy} onSave={saveEvent} onCancel={cancelEdit}/>}
         </EventDialog>}
       </>}
       {activeTab === 'info' && <section className="account-card calendar-info-panel" role="tabpanel"><h2>{t('calendarView.infoTab')}</h2><p>{calendar.description || t('calendarShare.noDescription')}</p><dl><dt>{t('calendars.color')}</dt><dd><span className="calendar-color" style={{ background: calendar.color }} />{calendar.color}</dd><dt>{t('calendarView.country')}</dt><dd>{calendar.countryCode || t('calendarView.notSet')}</dd><dt>{t('calendarView.timeZone')}</dt><dd>{calendar.timeZone}</dd><dt>{t('calendarView.defaultView')}</dt><dd>{t(`calendarView.view.${calendar.defaultView}`)}</dd><dt>{t('calendarView.defaultDuration')}</dt><dd>{t('calendarView.durationMinutes', { minutes: calendar.defaultEventDurationMinutes })}</dd><dt>{t('calendarView.createdAt')}</dt><dd>{calendar.createdAt ? new Date(calendar.createdAt).toLocaleString(locale, { timeZone: calendar.timeZone }) : t('calendarView.notSet')}</dd></dl></section>}
