@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { applicationContainer } from '../app/applicationContainer';
 import { ResendVerificationForm } from '../components/auth/ResendVerificationForm';
-import { AuthPageTemplate } from '../components/layout/PageTemplate';
+import { InteractiveAuth, PasswordField } from '../components/auth/InteractiveAuth';
 import { useAuth } from '../features/auth/AuthContext';
 import { useLocale } from '../i18n/LocaleProvider';
 import { getLocalizedApiError } from '../i18n/apiErrors';
@@ -36,17 +36,20 @@ export function LoginPage() {
   }
 
   return (
-    <AuthPageTemplate title={t('login.title')}>
+    <InteractiveAuth title={t('login.title')} error={error}>
+      {({ visible, setVisible, setFocus }) => <>
+
         <form className="auth-form" onSubmit={handleSubmit}>
           <label htmlFor="login-email">{t('common.email')}</label>
           <input id="login-email" type="email" value={email} onChange={(event) => setEmail(event.target.value)} required autoComplete="email" />
           <label htmlFor="login-password">{t('login.password')}</label>
-          <input id="login-password" type="password" value={password} onChange={(event) => setPassword(event.target.value)} required autoComplete="current-password" />
+          <PasswordField id="login-password" visible={visible} setVisible={setVisible} setFocus={setFocus} value={password} onChange={(event) => setPassword(event.target.value)} required autoComplete="current-password" />
           <button type="submit" disabled={submitting}>{submitting ? t('login.submitting') : t('login.submit')}</button>
         </form>
         {error && <p role="alert">{error}</p>}
-        <ResendVerificationForm initialEmail={email} />
+        <details><summary>{t('resendVerification.title')}</summary><ResendVerificationForm initialEmail={email} /></details>
         <p><Link to={localizedPath('/register')}>{t('login.createAccount')}</Link></p>
-    </AuthPageTemplate>
+    </>}
+    </InteractiveAuth>
   );
 }
