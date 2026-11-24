@@ -1,3 +1,4 @@
+import { BlobMascot } from '../components/auth/BlobMascot';
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { applicationContainer } from '../app/applicationContainer';
@@ -199,7 +200,7 @@ export function CalendarViewPage() {
     if (view === 'month') setFilters((current) => ({ ...current, ...monthRange(month) }));
   }
 
-  if (status === 'loading' || loading) return <PageTemplate><p role="status">{t('common.loading')}</p></PageTemplate>;
+  if (status === 'loading' || loading) return <PageTemplate><BlobMascot mood="loading" compact /><p role="status">{t('common.loading')}</p></PageTemplate>;
   if (status !== 'authenticated') return <PageTemplate><p>{t('calendarView.signInBefore')}<Link to={localizedPath('/login')}>{t('common.signIn')}</Link>{t('calendarView.signInAfter')}</p></PageTemplate>;
 
   return <section className="calendar-view-page">
@@ -237,9 +238,9 @@ export function CalendarViewPage() {
             <div className="calendar-weekdays">{['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'].map((weekday) => <span key={weekday}>{t(`calendarView.weekday.${weekday}`)}</span>)}</div>
             <div className="calendar-grid">{days.map((day, index) => day ? <div className="calendar-day" key={day.key}><strong>{day.day}</strong>{(eventsByDay[day.key] || []).map((item) => <button className="calendar-event" type="button" onClick={() => selectEvent(item)} style={{ borderLeftColor: item.color }} key={item.occurrenceId || item.id}><span>{t(`calendarView.type.${item.type}`)}</span><strong>{item.title}</strong></button>)}</div> : <div className="calendar-day calendar-day-empty" key={`empty-${index}`} />)}</div>
           </>}
-          {eventsLoading && <p role="status">{t('common.loading')}</p>}
-          {eventsError && <p role="alert">{eventsError}</p>}
-          {!eventsLoading && !eventsError && !events.length && <p>{t('calendarView.noEvents')}</p>}
+          {eventsLoading && <><BlobMascot mood="loading" compact /><p role="status">{t('common.loading')}</p></>}
+          {eventsError && <><BlobMascot mood={navigator.onLine ? "error" : "offline"} compact /><p role="alert">{eventsError}</p></>}
+          {!eventsLoading && !eventsError && !events.length && <><BlobMascot mood="empty" compact /><p>{t('calendarView.noEvents')}</p></>}
           {eventView === 'agenda' && !eventsLoading && <div className="event-list"><h2>{t('calendarView.eventsTitle')}</h2>{events.map((item) => <button type="button" className="event-list-item event-list-button" onClick={() => selectEvent(item)} key={item.occurrenceId || item.id} style={{ borderLeftColor: item.color }}><strong>{item.title}</strong><span>{t(`calendarView.type.${item.type}`)} · {eventDateLabel(item, locale, calendar.timeZone)}</span>{item.description && <span>{item.description}</span>}</button>)}</div>}
         </section>
         {selection && !editorOpen && <EventDetails key={selection.id} onInvite={sendInvitation} event={selection} calendar={calendar} onClose={() => setSelection(null)} onEdit={startEdit} onDelete={deleteEvent} canEdit={canEdit} busy={busy} />}
