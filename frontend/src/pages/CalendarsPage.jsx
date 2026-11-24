@@ -19,7 +19,7 @@ export function CalendarsPage() {
   const [calendars, setCalendars] = useState([]);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
-  const [color, setColor] = useState('#3B82F6');
+  const [color, setColor] = useState('#F5BC5A');
   const [countryCode, setCountryCode] = useState('');
   const [timeZone, setTimeZone] = useState(Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC');
   const [defaultView, setDefaultView] = useState('month');
