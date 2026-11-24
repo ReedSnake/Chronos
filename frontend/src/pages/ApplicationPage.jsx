@@ -14,11 +14,12 @@ export function ApplicationPage() {
   const { status } = useAuth();
   const { locale, t, localizedPath, locationForLocale } = useLocale();
   const signedIn = status === 'authenticated';
+  const isPublicHome = status === 'anonymous' && pathname.replace(/\/$/, '') === localizedPath('/').replace(/\/$/, '');
   const authResolved = status !== 'loading';
   return (
-    <main className={isAuthScreen ? "page auth-screen" : "page"}>
+    <main className={isPublicHome ? "page public-home" : isAuthScreen ? "page auth-screen" : "page"}>
       <section className="application-shell">
-        <header className="application-header">
+        {!isPublicHome && <header className="application-header">
           <Link className="brand" to={localizedPath('/')}>Chronos</Link>
           {!isAuthScreen && <nav aria-label={t('navigation.label')} className="navigation">
             <NavLink className={getNavigationClass} to={localizedPath('/')} end>{t('navigation.home')}</NavLink>
@@ -37,7 +38,7 @@ export function ApplicationPage() {
               ))}
             </select>
           </label>
-        </header>
+        </header>}
         <Outlet />
       </section>
     </main>
