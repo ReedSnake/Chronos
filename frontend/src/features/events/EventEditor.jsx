@@ -4,13 +4,14 @@ import './event-surface.css';
 import { useLocale } from '../../i18n/LocaleProvider';
 import { buildEventPayload, defaultEventDraft, draftFromEvent, EVENT_TYPES, RECURRENCE_INTERVALS } from './eventForm';
 
-export function EventEditor({ event = null, calendar, saving, onSave, onCancel, initialType = 'arrangement', initialDay = null }) {
+export function EventEditor({ event = null, calendar, saving, onSave, onCancel, initialType = 'arrangement', initialDay = null, initialStatus = 'todo' }) {
   const { t, locale } = useLocale();
   const uk = locale === 'uk';
   const [tab, setTab] = useState('info');
   const timeZone = calendar.timeZone || 'UTC';
   function makeDraft(type) {
     const value=defaultEventDraft(type,timeZone,calendar.defaultEventDurationMinutes);
+    if(type==='task'&&['todo','in_progress','done'].includes(initialStatus))value.status=initialStatus;
     value.color=/^#[0-9a-f]{6}$/i.test(calendar.color||'')?calendar.color.toUpperCase():'#F5BC5A';
     if(initialDay){
       const delta=Math.round((Date.parse(initialDay+'T00:00:00Z')-Date.parse(value.date+'T00:00:00Z'))/86400000);
