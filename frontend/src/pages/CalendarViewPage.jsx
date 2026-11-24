@@ -11,13 +11,13 @@ import { EventDetails } from '../features/events/EventDetails';
 import { EventDialog } from '../features/events/EventDialog';
 import { DayPlanner } from '../features/events/DayPlanner';
 import { MonthPlanner } from '../features/events/MonthPlanner';
-import { CalendarEventActionsProvider, CalendarEventButton, EventSymbol } from '../features/events/CalendarEventActions';
+import { CalendarEventActionsProvider, CalendarEventButton, EventSymbol, EventStatus } from '../features/events/CalendarEventActions';
 import { CalendarOverview } from '../features/events/CalendarOverview';
 import { PlannerGrid, shiftDay, weekDays } from '../features/events/PlannerGrid';
 import { TablerIcon as Icon } from '../components/layout/TablerIcon';
 import '../styles/calendar-workspace.css';
 import '../styles/calendar-fit.css';
-import { EVENT_TYPES, eventDayKey, eventDateLabel, fromCalendarInput } from '../features/events/eventForm';
+import { EVENT_TYPES, eventDayKey, eventDateLabel, fromCalendarInput, toCalendarInput } from '../features/events/eventForm';
 
 function calendarRoleLabel(t, role) {
   const key = `calendarRoles.${role}`;
@@ -85,7 +85,7 @@ function FittedAgenda({eventsByDay,locale,t,zone,onSelect,typeName,loading}) {
   return <div className="fitted-agenda">
     <div className="fitted-agenda-list" ref={listRef}>
       {!loading&&!entries.length&&<p className="chrono-empty">{t('calendarView.noEvents')}</p>}
-      {entries.slice(current*capacity,(current+1)*capacity).map(({date,event:e})=><CalendarEventButton event={e} key={e.calendarId+':'+(e.occurrenceId||e.id)} className="chrono-agenda-event" onClick={()=>onSelect(e)}><EventSymbol event={e}/><span><strong>{e.title}</strong><small>{e.calendarName} · {typeName(e.type)}</small></span><small>{eventDateLabel(e,locale,zone)||date}</small><Icon name="chevron-right" size={16}/></CalendarEventButton>)}
+      {entries.slice(current*capacity,(current+1)*capacity).map(({date,event:e})=><CalendarEventButton event={e} key={e.calendarId+':'+(e.occurrenceId||e.id)} className="chrono-agenda-event" onClick={()=>onSelect(e)}><span className="agenda-clock"><strong>{e.type==='holiday'?(locale==='uk'?'День':'All day'):toCalendarInput(e.deadline||e.remindAt||e.startsAt,zone).slice(11,16)}</strong><small>{new Date(date+'T12:00:00Z').toLocaleDateString(locale,{day:'numeric',month:'short',timeZone:'UTC'})}</small></span><span className={'agenda-track '+e.type+(e.status==='done'?' done':'')}><i/></span><EventSymbol event={e}/><span className="agenda-description"><strong>{e.title}</strong><small>{e.calendarName} · {typeName(e.type)}</small></span><EventStatus event={e}/></CalendarEventButton>)}
     </div>
     <div className="fitted-agenda-pages"><button type="button" disabled={current===0} aria-label={locale==='uk'?'Попередня сторінка':'Previous page'} onClick={()=>setPage(current-1)}><Icon name="chevron-left" size={16}/></button><span>{current+1} / {pages}</span><button type="button" disabled={current+1>=pages} aria-label={locale==='uk'?'Наступна сторінка':'Next page'} onClick={()=>setPage(current+1)}><Icon name="chevron-right" size={16}/></button></div>
   </div>;
