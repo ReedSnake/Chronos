@@ -1,4 +1,4 @@
-.page.auth-screen { background: #f2f1e9; color: #25303a; display: block; min-height: 100vh; padding: 28px clamp(20px, 5vw, 64px); }
+.page.auth-screen { background: #ffc8df; color: #25303a; display: block; min-height: 100vh; padding: 28px clamp(20px, 5vw, 64px); }
 .auth-screen .application-shell { width: 100%; min-height: calc(100vh - 56px); display: flex; flex-direction: column; }
 .auth-screen .application-header { margin: 0; align-items: center; flex-direction: row; }
 .auth-screen .brand { font-size: 22px; letter-spacing: -.06em; }
