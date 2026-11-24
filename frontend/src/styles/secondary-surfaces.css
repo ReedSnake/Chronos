@@ -1,10 +1,4 @@
 /* Shared presentation for secondary flows. Keep workspace and auth layouts independent. */
-:root {
-  --chronos-radius-field: 9px;
-  --chronos-radius-surface: 20px;
-  --chronos-focus: #956719;
-  --chronos-subtle: #f5f8fb;
-}
 .support-screen { min-height:100dvh; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:76px 22px 34px; position:relative; }
 .support-screen .application-shell { width:min(100%, 520px); }
 .support-screen.shared-screen .application-shell { width:min(100%, 960px); }
@@ -66,7 +60,6 @@
 :is(.workspace,.support-screen) :is(button,a,input,select,textarea,summary):focus-visible { outline:2px solid var(--chronos-focus); outline-offset:2px; }
 .workspace-mobile-language { display:none; }
 @media(max-width:540px) {
-  .workspace .workspace-nav { grid-template-columns:repeat(6,minmax(0,1fr)); gap:2px; }
   .workspace .workspace-nav-link { min-height:44px; padding:8px 2px; }
   .workspace-mobile-language { display:flex; justify-content:flex-end; margin:0 0 10px; }
   .workspace-mobile-language select { max-width:100%; width:auto; background:#fff; border-radius:9px; padding:7px 10px; }
@@ -78,4 +71,15 @@
 }
 @media(prefers-reduced-motion:reduce) {
   .flow-surface *, .public-profile * { animation-duration:.01ms!important; transition-duration:.01ms!important; }
+}
+
+/* Keep the mobile toolbar visible without sacrificing the usable calendar area. */
+@media(max-width:540px) {
+  .workspace { padding-bottom:calc(64px + env(safe-area-inset-bottom)); }
+  .workspace .as-page { min-height:0; }
+  .workspace .tb-page { min-height:0; }
+  .flow-surface .calendar-filter-grid { grid-template-columns:minmax(0,1fr); }
+  .flow-surface .button-row { align-items:stretch; }
+  .public-profile .profile-photo { width:76px; height:76px; }
+  .public-profile .profile-identity { margin-top:-50px; }
 }
