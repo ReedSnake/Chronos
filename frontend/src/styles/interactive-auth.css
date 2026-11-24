@@ -30,3 +30,5 @@
 .interactive-auth details[open] .auth-form { margin-top: 12px; }
 @media (max-width: 480px) { .page.auth-screen { padding: 18px 20px; } .auth-screen .application-shell { min-height: calc(100dvh - 36px); } .chronos-mascot { width: 160px; height: 136px; } }
 @media (prefers-reduced-motion: reduce) { .mascot-body { animation: none; } .mascot-hand, .mascot-eyes { transition: none; } }
+
+.chronos-canvas { cursor: pointer; touch-action: pan-y; max-width: 100%; object-fit: contain; }
