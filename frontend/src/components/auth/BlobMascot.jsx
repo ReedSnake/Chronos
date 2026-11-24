@@ -1,15 +1,16 @@
 import { useEffect, useId, useRef, useState } from 'react';
+import { CarrotArt } from './CarrotArt';
 
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 const ease = (a, b, dt, ms) => a + (b - a) * (1 - Math.exp(-dt / ms));
-const initial = { yaw: 0, x: 0, lift: 0, lean: 0, squash: 0, pet: 0, eye: 1, gx: 0, gy: 0, ear: 0, step: 0 };
+const initial = { yaw: 0, x: 0, lift: 0, lean: 0, squash: 0, pet: 0, eye: 1, gx: 0, gy: 0, ear: 0, step: 0, chew: 0, food: 0, foodProgress: 0 };
 const smoothstep = v => { const t = clamp(v,0,1); return t*t*(3-2*t); };
 const isPrivate = mood => mood === 'private' || mood === 'peek';
 
 function RabbitArt({ pose, compact }) {
   const id = useId();
   const paint = name => `url(#${id}-${name})`;
-  const { yaw, x, lift, lean, squash, pet, eye, gx, gy, ear, step } = pose;
+  const { yaw, x, lift, lean, squash, pet, eye, gx, gy, ear, step, chew, food, foodProgress } = pose;
   const side = Math.sin(yaw);
   const front = Math.cos(yaw);
   const cx = 180;
@@ -18,7 +19,7 @@ function RabbitArt({ pose, compact }) {
   const hx = cx + 38 * side;
   const bx = cx - 14 * side;
   const hw = 66 - 12 * profile;
-  const hy = 5 * pet;
+  const hy = 5 * pet + chew * 1.5;
   const faceOpacity = smoothstep((front + .06) / .62);
   const faceX = hx + 34 * side;
   const faceScale = Math.max(.12, Math.abs(front));
@@ -137,17 +138,21 @@ function RabbitArt({ pose, compact }) {
             <path d="M -7 2 Q 0 -6 7 2" fill="none" stroke="#33264b" strokeWidth="2.4" strokeLinecap="round" opacity={closed} />
           </g>)}
           <path d="M -6 7 Q -7 3 -3.8 3 Q 0 2 3.8 3 Q 7 3 6 7 Q 4 11 0 11 Q -4 11 -6 7Z" fill={paint('nose')} />
+          <ellipse cx="0" cy="17" rx={3.2+chew*2.2} ry={1.1+chew*3.4} fill="#70446a" opacity={food*chew} />
+          <g transform={`translate(0 18) scale(1 ${1+chew*.16}) translate(0 -18)`}>
           <path d={`M 0 11 V 14 M ${-9-pet} ${15-pet} Q ${-4-pet} ${20+pet} 0 15 Q ${4+pet} ${20+pet} ${9+pet} ${15-pet}`} stroke="#4a3156" strokeWidth="1.7" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+          </g>
+          {food > .001 && <g opacity={food} transform={`translate(${-5-chew*1.5} ${20+chew}) rotate(66) scale(.68) translate(0 ${-(24+54*(1-foodProgress))})`}><CarrotArt progress={foodProgress} /></g>}
         </g>
       </g>
     </svg>
   );
 }
 
-export function BlobMascot({ mood = 'idle', compact = false, caret = null }) {
+export function BlobMascot({ mood = 'idle', compact = false, caret = null, feeding = null, dragging = false }) {
   const stage = useRef(null);
-  const current = useRef({ mood, caret });
-  current.current = { mood, caret };
+  const current = useRef({ mood, caret, feeding, dragging });
+  current.current = { mood, caret, feeding, dragging };
   const [pose, setPose] = useState(() => ({ ...initial, yaw: isPrivate(mood) ? Math.PI : 0 }));
   const [activity, setActivity] = useState('idle');
 
@@ -188,7 +193,7 @@ export function BlobMascot({ mood = 'idle', compact = false, caret = null }) {
       const dt = Math.min(65, now-last);
       last=lastPaint=now;
       const reduced = motion.matches;
-      const { mood: nextMode, caret: cursor } = current.current;
+      const { mood: nextMode, caret: cursor, feeding: meal, dragging: carrotHeld } = current.current;
       const privacy = isPrivate(nextMode);
       if (nextMode !== mode) {
         if (privacy !== isPrivate(mode)) {
@@ -199,25 +204,27 @@ export function BlobMascot({ mood = 'idle', compact = false, caret = null }) {
           const to = privacy ? turnDirection*Math.PI : 0;
           // A finite timeline makes the rotation visible from beginning to end.
           // Interruptions continue from the actual current angle.
-          transition = { from:p.yaw, to, start:now, duration:Math.max(480, 1350*Math.abs(to-p.yaw)/Math.PI) };
+          transition = { from:p.yaw, to, start:now, duration:Math.max(800, 2400*Math.abs(to-p.yaw)/Math.PI) };
           pointer.onHead = false;
         }
         mode=nextMode; modeAt=now;
       }
       if (cursor !== oldCaret) { oldCaret=cursor; caretAt=now; }
       const turning = privacy || transition !== null;
-      const petting = !turning && pointer.onHead && now-pointer.since>260;
-      const reading = !turning && !petting && mode==='reading' && caretAt>pointer.at && now-caretAt<1800;
-      const following = !turning && !petting && !reading && now-pointer.at<3800 && mode!=='loading';
-      const targetX = privacy ? 0 : petting ? p.x : following ? pointer.x*48 : reading ? ((cursor??.5)-.5)*23 : 0;
+      const eating = !turning && meal !== null && now-meal.startedAt < 3000;
+      const mealAge = eating ? Math.max(0, now-meal.startedAt) : 0;
+      const petting = !turning && !eating && !carrotHeld && pointer.onHead && now-pointer.since>260;
+      const reading = !turning && !eating && !petting && mode==='reading' && caretAt>pointer.at && now-caretAt<1800;
+      const following = !turning && !eating && !petting && !reading && now-pointer.at<3800 && mode!=='loading';
+      const targetX = privacy || eating ? 0 : petting ? p.x : following ? pointer.x*48 : reading ? ((cursor??.5)-.5)*23 : 0;
       const distance = targetX-p.x;
-      const moving = !turning && !petting && !reduced && Math.abs(distance)>3;
+      const moving = !turning && !eating && !petting && !reduced && Math.abs(distance)>3;
       if (moving) phase+=dt/840*Math.PI*2;
       else phase=0;
       const hop = moving ? Math.max(0,Math.sin(phase))*7 : 0;
       const age=now-modeAt;
-      const celebrate = !turning && mode==='success' && age<1400 ? Math.abs(Math.sin(age/1400*Math.PI*2))*12 : 0;
-      const surprise = !turning && now-clickAt<650 ? Math.sin((now-clickAt)/650*Math.PI)*10 : 0;
+      const celebrate = !turning && !eating && mode==='success' && age<1400 ? Math.abs(Math.sin(age/1400*Math.PI*2))*12 : 0;
+      const surprise = !turning && !eating && now-clickAt<650 ? Math.sin((now-clickAt)/650*Math.PI)*10 : 0;
       const k=(a,b,ms)=>reduced ? b : ease(a,b,dt,ms);
       let turningStep = 0, turnLift = 0, turnLean = 0;
       if (transition) {
@@ -230,23 +237,27 @@ export function BlobMascot({ mood = 'idle', compact = false, caret = null }) {
         turnLean = Math.sign(transition.to-transition.from)*Math.sin(Math.PI*progress)*2.8;
         if (progress>=1) transition=null;
       } else {
-        const targetYaw = privacy ? turnDirection*Math.PI : petting ? 0 : following ? pointer.x*.53 : 0;
+        const targetYaw = privacy ? turnDirection*Math.PI : eating || petting ? 0 : following ? pointer.x*.53 : 0;
         p.yaw=k(p.yaw,targetYaw,240);
       }
       p.step=k(p.step,reduced?0:turning?turningStep:moving?Math.sin(phase)*.75:0,85);
       p.x=k(p.x,targetX,turning?250:320);
       p.lift=k(p.lift,reduced?0:turning?turnLift:-hop-celebrate-surprise,115);
-      p.pet=k(p.pet,petting?1:0,380);
+      p.pet=k(p.pet,petting?1:eating?.22:0,380);
+      p.food=privacy?0:k(p.food,eating?1:0,100);
+      p.foodProgress=eating?clamp(mealAge/3000,0,1):p.food>0.01?p.foodProgress:0;
+      const chewWave=eating&&!reduced ? (.5-.5*Math.cos(mealAge/370*Math.PI*2)) : 0;
+      p.chew=k(p.chew,chewWave,45);
       p.lean=k(p.lean,reduced?0:turning?turnLean:moving?clamp(distance*.085,-5,5):petting?pointer.x*3:following?pointer.x*2.5:0,230);
-      p.squash=k(p.squash,p.pet*.06+(reduced?0:moving?Math.cos(phase)*.015:Math.sin(now/1050)*.006),170);
+      p.squash=k(p.squash,p.pet*.06+p.chew*.012+(reduced?0:moving?Math.cos(phase)*.015:Math.sin(now/1050)*.006),170);
       p.ear=k(p.ear,reduced||turning?0:moving?Math.sin(phase)*.8:Math.sin(now/1300)*.12,200);
       if(now>=blinkAt){blinkStart=now;blinkAt=now+3500+Math.random()*3200;}
       const blinkAge=(now-blinkStart)/300;
       const blink= !reduced&&blinkAge>=0&&blinkAge<=1 ? 1-.95*Math.sin(blinkAge*Math.PI):1;
-      p.eye=k(p.eye,petting?.04:blink,petting?140:75);
-      p.gx=k(p.gx,turning?0:reading?((cursor??.5)-.5)*7:pointer.x*3.5,150);
-      p.gy=k(p.gy,turning?0:reading?3:pointer.y*2.4,150);
-      const nextActivity=privacy?(transition?'turning':'away'):transition?'returning':petting?'petting':moving?'running':mode;
+      p.eye=k(p.eye,petting?.04:eating?.35+.25*(1-p.chew):blink,petting||eating?140:75);
+      p.gx=k(p.gx,turning||eating?0:reading?((cursor??.5)-.5)*7:pointer.x*3.5,150);
+      p.gy=k(p.gy,turning?0:eating?2:reading?3:pointer.y*2.4,150);
+      const nextActivity=privacy?(transition?'turning':'away'):transition?'returning':eating?'eating':petting?'petting':moving?'running':mode;
       if(nextActivity!==lastActivity){lastActivity=nextActivity;setActivity(nextActivity);}
       setPose({...p});
     }
