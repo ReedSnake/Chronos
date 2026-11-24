@@ -1,0 +1,86 @@
+/* Calendar management shares the Chronos workspace palette and dialog vocabulary. */
+.cm-page,.cm-dialog{color:#303030;min-width:0}
+.cm-page{display:grid;gap:20px;align-content:start}
+.cm-page *,.cm-dialog *{box-sizing:border-box}
+.cm-page h1,.cm-page h2,.cm-page p,.cm-dialog h2,.cm-dialog p{margin:0}
+.cm-page button,.cm-dialog button{cursor:pointer;font:inherit}
+.cm-page button:disabled,.cm-dialog button:disabled{opacity:.5;cursor:not-allowed}
+.cm-heading{display:flex;justify-content:space-between;align-items:center;gap:16px}
+.cm-heading h1{font-size:clamp(27px,3vw,36px);font-weight:620;letter-spacing:-.045em;line-height:1.15}
+.cm-heading p{font-size:13px;color:#30303099;margin-top:7px}
+.cm-page .cm-primary,.cm-dialog .cm-primary{display:inline-flex;align-items:center;justify-content:center;gap:7px;background:#F5BC5A;border:0;border-radius:11px;color:#303030;padding:12px 16px;font-size:13px;font-weight:600;white-space:nowrap}
+.cm-toolbar{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.cm-filters{display:flex;gap:3px;padding:4px;background:#fff;border-radius:99px}
+.cm-filters button{display:flex;align-items:center;gap:7px;border:0;background:transparent;color:#303030;border-radius:99px;padding:8px 13px;font-size:12px}
+.cm-filters button[aria-pressed=true]{background:#303030;color:#fff}
+.cm-filters small{font-size:10px;opacity:.7;font-variant-numeric:tabular-nums}
+.cm-search{height:38px;display:flex;align-items:center;gap:8px;padding:0 12px;background:#ffffffc9;border:1px solid #30303010;border-radius:11px;color:#30303090;min-width:0;width:min(270px,100%)}
+.cm-search input{width:0;flex:1;min-width:0;background:none;border:0;color:#303030;padding:0;outline:none;font-size:12px}
+.cm-search:focus-within{outline:2px solid #b7832d}
+.cm-search button,.cm-icon-button{display:grid;place-items:center;border:0;border-radius:9px;background:transparent;color:inherit;padding:5px;flex:none}
+.cm-icon-button{height:32px;width:32px;color:#303030a0;background:#E8EFF6}
+.cm-icon-button:hover{background:#dce6ef}
+.cm-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,260px),1fr));gap:14px;align-items:stretch}
+.cm-card{background:#fff;border:1px solid #3030300b;border-radius:18px;padding:18px;display:flex;flex-direction:column;gap:13px;min-width:0;min-height:205px;box-shadow:0 2px 6px #30303003}
+.cm-card-head{display:flex;align-items:center;gap:9px;min-width:0}
+.cm-calendar-icon{width:45px;height:45px;display:grid;place-items:center;flex:none;border-radius:13px;background:color-mix(in srgb,var(--calendar-color,#F5BC5A) 19%,white);color:color-mix(in srgb,var(--calendar-color,#F5BC5A) 62%,#303030)}
+.cm-badges{display:flex;flex:1;justify-content:flex-end;align-items:center;gap:5px;flex-wrap:wrap;min-width:0}
+.cm-badges span{background:#E8EFF6;color:#303030b0;border-radius:99px;padding:4px 8px;font-size:10px}
+.cm-badges .cm-main-badge{background:#F5BC5A45;color:#74501b}
+.cm-card-title{display:grid;gap:5px}
+.cm-card-title h2{font-size:18px;font-weight:620;letter-spacing:-.025em;overflow-wrap:anywhere}
+.cm-card-title p,.cm-description{font-size:12px;color:#30303099;line-height:1.45;overflow-wrap:anywhere}
+.cm-description{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.cm-card-meta{display:flex;flex-wrap:wrap;align-items:center;gap:9px;min-width:0;margin-top:auto}
+.cm-card-meta>span{display:flex;align-items:center;gap:5px;font-size:11px;color:#303030a0;overflow-wrap:anywhere}
+.cm-card-meta svg{flex:none}
+.cm-card-actions{display:flex;align-items:center;gap:8px;padding-top:11px;border-top:1px solid #3030300c;flex-wrap:wrap}
+.cm-card-actions .cm-open{display:flex;align-items:center;justify-content:space-between;gap:8px;flex:1;min-width:0;padding:9px 10px;border-radius:9px;background:#303030;color:#fff;font-size:12px;font-weight:550}
+.cm-card-actions .cm-open svg{flex:none}
+.cm-page .cm-secondary,.cm-dialog .cm-secondary{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:0;border-radius:9px;background:#E8EFF6;color:#303030;padding:9px 11px;font-size:12px}
+.cm-empty{grid-column:1/-1;display:grid;justify-items:center;gap:12px;padding:45px 16px;background:#ffffffb8;border:1px dashed #30303020;border-radius:18px;text-align:center;font-size:13px}
+.cm-error{background:#fff0ee;color:#9c3434;padding:11px 14px;border-radius:10px;font-size:12px;overflow-wrap:anywhere}
+.cm-error button{background:transparent;border:0;color:inherit;text-decoration:underline;font-size:12px}
+.cm-skeleton span,.cm-skeleton i{display:block;background:#E8EFF6;border-radius:8px;animation:cm-pulse 1.4s ease-in-out infinite alternate}
+.cm-skeleton span{width:45px;height:45px}.cm-skeleton i{height:13px;width:65%}.cm-skeleton i:last-child{width:42%}
+@keyframes cm-pulse{from{opacity:.45}to{opacity:1}}
+@media(prefers-reduced-motion:reduce){.cm-skeleton span,.cm-skeleton i{animation:none}}
+.event-dialog:has(.cm-dialog){width:min(590px,calc(100% - 24px));max-height:92dvh;border-radius:22px}
+.cm-dialog{background:white}
+.cm-dialog [hidden]{display:none!important}
+.cm-modal-header{display:flex;align-items:center;gap:13px;padding:22px 24px;background:linear-gradient(115deg,#E8EFF6,#f5bc5a26)}
+.cm-modal-header>div{flex:1;min-width:0}
+.cm-modal-header h2{font-size:21px;font-weight:620;letter-spacing:-.025em;overflow-wrap:anywhere}
+.cm-modal-header p{font-size:12px;color:#30303099;margin-top:5px}
+.cm-modal-header .cm-icon-button{background:#ffffffa0}
+.cm-tabs{display:flex;gap:5px;padding:8px 20px;border-bottom:1px solid #30303010;flex-wrap:wrap}
+.cm-tabs button{display:flex;align-items:center;gap:5px;background:none;border:0;border-radius:8px;padding:8px 10px;color:#30303099;font-size:12px}
+.cm-tabs button[aria-pressed=true]{background:#E8EFF6;color:#303030;font-weight:600}
+.cm-dialog>.cm-error{margin:10px 20px 0}
+.cm-form-body,.cm-collaboration{padding:20px 24px;display:grid;gap:16px}
+.cm-form-body label,.cm-color-field,.cm-collaboration label{display:grid;gap:7px;font-size:12px;color:#303030a0}
+.cm-form-body input:not([type=checkbox]),.cm-form-body select,.cm-form-body textarea,.cm-collaboration input:not([type=checkbox]),.cm-collaboration textarea,.cm-collaboration select{width:100%;min-width:0;background:#fff;border:1px solid #30303020;border-radius:9px;padding:10px 11px;font:inherit;font-size:13px;color:#303030;box-sizing:border-box}
+.cm-form-body textarea,.cm-collaboration textarea{resize:vertical;min-height:72px}
+.cm-form-body input:focus-visible,.cm-form-body select:focus-visible,.cm-form-body textarea:focus-visible,.cm-collaboration input:focus-visible,.cm-collaboration select:focus-visible,.cm-collaboration textarea:focus-visible,.cm-page button:focus-visible,.cm-dialog button:focus-visible,.cm-page a:focus-visible{outline:2px solid #b7832d;outline-offset:2px}
+.cm-field-pair{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.cm-color-options{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.cm-color-options button{display:grid;place-items:center;width:29px;height:29px;border:0;border-radius:50%;color:#fff}
+.cm-color-options button[aria-pressed=true]{outline:2px solid #303030;outline-offset:2px}
+.cm-form-body .cm-color-options input[type=color]{width:34px;height:30px;padding:3px;cursor:pointer}
+.cm-form-body .cm-archive-check{display:flex;align-items:center;gap:8px;color:#303030}
+.cm-archive-check input{accent-color:#303030}
+.cm-modal-footer{display:flex;justify-content:flex-end;gap:8px;padding:14px 24px;border-top:1px solid #30303010;background:white}
+.cm-modal-footer button{background:#E8EFF6;border:0;border-radius:9px;color:#303030;font-size:13px;padding:11px 15px}
+.cm-danger{padding:0 24px 17px}
+.cm-danger button{background:none;border:0;color:#9c3434;font-size:12px;padding:5px 0;text-decoration:underline}
+.cm-collaboration .account-form{display:grid;gap:9px;margin:0;padding:0;border:0;background:transparent;min-width:0}
+.cm-collaboration .account-form>.button-row{display:flex;gap:7px;flex-wrap:wrap;align-items:center}
+.cm-collaboration .button-row>select{flex:1 1 100px;width:auto}
+.cm-collaboration .account-card{padding:12px;border:0;background:#E8EFF6;border-radius:10px;min-width:0;margin:0;display:grid;gap:8px}
+.cm-collaboration h3{font-size:13px;margin:0}
+.cm-collaboration p,.cm-collaboration .button-row>span{font-size:12px;line-height:1.5;overflow-wrap:anywhere}
+.cm-collaboration p[role=alert]{color:#9c3434}
+.cm-collaboration button{background:#E8EFF6;border:0;color:#303030;border-radius:8px;padding:9px 11px;font-size:12px;max-width:100%;white-space:normal}
+.cm-collaboration .account-form>button:first-of-type,.cm-collaboration .account-form>.button-row:first-of-type>button:first-child{background:#F5BC5A;font-weight:550}
+.cm-collaboration .danger-button{color:#9c3434;background:#fff0ee}
+@media(max-width:600px){.cm-page{gap:14px}.cm-heading{align-items:flex-start;flex-wrap:wrap}.cm-heading p{font-size:12px}.cm-toolbar{gap:9px}.cm-search{width:100%}.cm-card{padding:15px}.cm-modal-header,.cm-form-body,.cm-collaboration,.cm-modal-footer{padding:16px}.cm-tabs{padding:6px 12px}.cm-tabs button{padding:7px;font-size:11px}.cm-field-pair{grid-template-columns:1fr}.cm-danger{padding:0 16px 14px}}
