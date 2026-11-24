@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { BlobMascot } from './BlobMascot';
+import { RabbitPlayground } from './RabbitPlayground';
 import { useLocale } from '../../i18n/LocaleProvider';
 import '../../styles/interactive-auth.css';
 
@@ -24,7 +24,7 @@ export function InteractiveAuth({ title, children, error, success, submitting })
   return (
     <section className="interactive-auth" onInput={readCaret} onSelect={readCaret} onKeyUp={readCaret} onFocusCapture={event => { setFocus(focusKind(event.target)); if (focusKind(event.target) === 'reading') readCaret(event); }}
       onBlurCapture={event => setFocus(event.currentTarget.contains(event.relatedTarget) ? focusKind(event.relatedTarget) : '')}>
-      <BlobMascot mood={mood} caret={caret} />
+      <RabbitPlayground mood={mood} caret={caret} />
       <h1>{title}</h1>
       {children({ visible, setVisible, setFocus })}
     </section>
