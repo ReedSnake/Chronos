@@ -27,15 +27,36 @@ function calendarRoleLabel(t, role) {
 function CalendarForm({ draft, setDraft, calendar, busy, onSave, onClose }) {
   const { t, locale } = useLocale();
   const uk = locale === 'uk';
+  const [countries, setCountries] = useState([]);
+  const [zones, setZones] = useState([]);
+  useEffect(() => {
+    let active = true;
+    applicationContainer.countryService.getAvailableCountries().then(items => { if (active) setCountries(items); }).catch(() => {});
+    applicationContainer.timeZoneService.getAvailableTimeZones().then(items => { if (active) setZones(items); }).catch(() => {});
+    return () => { active = false; };
+  }, []);
   const set = (field, value) => setDraft(old => ({ ...old, [field]: value }));
-  return <form className="cm-form" onSubmit={onSave}>
+  const row = (icon, label, control) => <label className="cm-property"><span><Icon name={icon} size={17}/>{label}</span>{control}</label>;
+  return <form className="cm-form cm-inspector" onSubmit={onSave}>
     <div className="cm-form-body">
-      <label>{t('calendars.name')}<input value={draft.name} onChange={e => set('name', e.target.value)} maxLength={120} required placeholder={uk ? 'Наприклад, Робота' : 'e.g. Work'}/></label>
-      <label>{t('calendars.description')}<textarea value={draft.description} onChange={e => set('description', e.target.value)} maxLength={2000} rows={3}/></label>
-      <div className="cm-color-field"><span>{t('calendars.color')}</span><div className="cm-color-options">{palette.map(color => <button type="button" key={color} style={{ background: color }} aria-label={color} aria-pressed={draft.color.toUpperCase() === color} onClick={() => set('color', color)}>{draft.color.toUpperCase() === color && <Icon name="check" size={16}/>}</button>)}<input type="color" aria-label={t('calendars.color')} value={draft.color} onChange={e => set('color', e.target.value.toUpperCase())}/></div></div>
-      <div className="cm-field-pair"><label>{t('calendars.countryCode')}<input value={draft.countryCode} maxLength={2} placeholder="UA" onChange={e => set('countryCode', e.target.value.toUpperCase())}/></label><label>{t('calendars.timeZone')}<input value={draft.timeZone} maxLength={100} required onChange={e => set('timeZone', e.target.value)}/></label></div>
-      <div className="cm-field-pair"><label>{t('calendars.defaultView')}<select value={draft.defaultView} onChange={e => set('defaultView', e.target.value)}><option value="month">{t('calendars.viewMonth')}</option><option value="agenda">{t('calendars.viewAgenda')}</option></select></label><label>{t('calendars.defaultDuration')}<input type="number" min="5" max="1440" required value={draft.defaultEventDurationMinutes} onChange={e => set('defaultEventDurationMinutes', Number(e.target.value))}/></label></div>
-      {calendar && !calendar.isMain && <label className="cm-archive-check"><input type="checkbox" checked={!!draft.isArchived} onChange={e => set('isArchived', e.target.checked)}/>{t('calendars.archived')}</label>}
+      <div className="cm-identity" style={{ '--calendar-color': draft.color }}>
+        <span className="cm-calendar-icon"><Icon name="calendar" size={28}/></span>
+        <div className="cm-identity-fields">
+          <input className="cm-name" aria-label={t('calendars.name')} autoFocus value={draft.name} onChange={e => set('name', e.target.value)} maxLength={120} required placeholder={uk ? 'Назва календаря' : 'Calendar name'}/>
+          <textarea className="cm-description-input" aria-label={t('calendars.description')} value={draft.description} onChange={e => set('description', e.target.value)} maxLength={2000} rows={2} placeholder={uk ? 'Додати опис…' : 'Add a description…'}/>
+        </div>
+      </div>
+      <div className="cm-color-options" role="group" aria-label={t('calendars.color')}>{palette.map(color => <button type="button" key={color} style={{ background: color }} aria-label={color} aria-pressed={draft.color.toUpperCase() === color} onClick={() => set('color', color)}>{draft.color.toUpperCase() === color && <Icon name="check" size={15}/>}</button>)}<input type="color" aria-label={t('calendars.color')} value={draft.color} onChange={e => set('color', e.target.value.toUpperCase())}/></div>
+      <div className="cm-properties">
+        {row('world', t('calendars.countryCode'), <input list="cm-country-list" value={draft.countryCode} maxLength={2} placeholder={uk ? 'Не вибрано' : 'Not set'} onChange={e => set('countryCode', e.target.value.toUpperCase())}/>)}
+        <datalist id="cm-country-list">{countries.map(c => <option key={c.countryCode} value={c.countryCode}>{c.name}</option>)}</datalist>
+        {row('clock', t('calendars.timeZone'), <input list="cm-zone-list" value={draft.timeZone} maxLength={100} required onChange={e => set('timeZone', e.target.value)}/>)}
+        <datalist id="cm-zone-list">{[...new Set(['UTC', draft.timeZone, ...zones])].filter(Boolean).map(zone => <option key={zone} value={zone}/>)}</datalist>
+        {row('layout-dashboard', t('calendars.defaultView'), <select value={draft.defaultView} onChange={e => set('defaultView', e.target.value)}><option value="month">{t('calendars.viewMonth')}</option><option value="agenda">{t('calendars.viewAgenda')}</option></select>)}
+        {row('clock', t('calendars.defaultDuration'), <span className="cm-duration"><input type="number" min="5" max="1440" required value={draft.defaultEventDurationMinutes} onChange={e => set('defaultEventDurationMinutes', Number(e.target.value))}/><span>{uk ? 'хв' : 'min'}</span></span>)}
+        {calendar && !calendar.isMain && <label className="cm-archive-check"><input type="checkbox" checked={!!draft.isArchived} onChange={e => set('isArchived', e.target.checked)}/>{t('calendars.archived')}</label>}
+      </div>
+      {!calendar && <div className="cm-private-note"><Icon name="lock" size={17}/><div><strong>{uk ? 'Приватний календар' : 'Private calendar'}</strong><p>{uk ? 'Налаштуйте спільний доступ після створення' : 'Share access after creation'}</p></div></div>}
     </div>
     <footer className="cm-modal-footer"><button type="button" disabled={busy} onClick={onClose}>{t('calendarView.event.cancel')}</button><button className="cm-primary" type="submit" disabled={busy || !draft.name.trim()}>{busy ? t('common.loading') : t(calendar ? 'calendars.save' : 'calendars.create')}</button></footer>
   </form>;
@@ -152,7 +173,7 @@ export function CalendarsPage() {
     </div>}
     {modal && (createMode || selected) && <EventDialog label={createMode ? t('calendars.createTitle') : nameOf(selected)} onClose={close} busy={busy}>
       <div className="cm-dialog" style={{ '--calendar-color': safeColor(createMode ? draft.color : selected.color) }}>
-        <header className="cm-modal-header"><span className="cm-calendar-icon"><Icon name={createMode ? 'plus' : 'calendar'} size={24}/></span><div><h2>{createMode ? t('calendars.createTitle') : nameOf(selected)}</h2>{!createMode && <p>{calendarRoleLabel(t, selected.role)}</p>}</div><button type="button" className="cm-icon-button" disabled={busy} onClick={close} aria-label={t('calendarView.event.cancel')}><Icon name="x" size={20}/></button></header>
+        <header className="cm-modal-header"><div><h2>{createMode ? (uk ? 'Новий календар' : 'New calendar') : (uk ? 'Керування календарем' : 'Manage calendar')}</h2>{!createMode && <p>{calendarRoleLabel(t, selected.role)}</p>}</div><button type="button" className="cm-icon-button" disabled={busy} onClick={close} aria-label={t('calendarView.event.cancel')}><Icon name="x" size={20}/></button></header>
         {!createMode && <nav className="cm-tabs" aria-label={uk ? 'Керування календарем' : 'Calendar management'}>{tabs.map(([id,icon,label]) => <button key={id} type="button" aria-pressed={modal.section === id} disabled={busy} onClick={() => switchSection(id)}><Icon name={icon} size={15}/>{label}</button>)}</nav>}
         {modalError && <p className="cm-error" role="alert">{modalError}</p>}
         {(createMode || modal.section === 'settings') && <CalendarForm draft={draft} setDraft={setDraft} calendar={selected} busy={busy} onSave={save} onClose={close}/>}
