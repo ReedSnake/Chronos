@@ -32,7 +32,8 @@ export function RabbitPlayground({ mood, caret }) {
   const unavailable = blocked || Boolean(feed);
 
   function startFeeding(id) {
-    if (blocked || activeFeed.current || eaten.includes(id)) return;
+    const pose = area.current?.querySelector('.rabbit-stage')?.dataset.pose;
+    if (blocked || activeFeed.current || eaten.includes(id) || ['away', 'turning', 'returning'].includes(pose)) return;
     const next = { id, startedAt: performance.now() };
     activeFeed.current = next;
     setFeed(next);
@@ -100,13 +101,12 @@ export function RabbitPlayground({ mood, caret }) {
           <button key={carrot.id} type="button" className={`rabbit-carrot${held?' is-held':''}`}
             style={style} disabled={unavailable} aria-label={isUk ? 'Дати кролику моркву' : 'Feed the rabbit a carrot'}
             onPointerDown={event => onDown(event, carrot)} onPointerMove={onMove}
-            onPointerUp={onEndPointer} onPointerCancel={event => onEnd(event, true)}
+            onPointerUp={event => onEnd(event)} onPointerCancel={event => onEnd(event, true)}
             onLostPointerCapture={event => onEnd(event, true)}
             onClick={event => { if (event.detail === 0) startFeeding(carrot.id); }}>
             <svg viewBox="-25 -5 50 86" width="100%" height="100%" aria-hidden="true"><CarrotArt /></svg>
           </button>
         );
-        function onEndPointer(event) { onEnd(event); }
       })}
       <span className="rabbit-feed-status" role="status">{feed && (isUk ? 'Кролик їсть моркву' : 'The rabbit is eating a carrot')}</span>
     </div>
