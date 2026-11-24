@@ -5,17 +5,7 @@
 .as-page h1,.as-page h2,.as-page p{margin:0}
 .as-page button{cursor:pointer}
 .as-page button:disabled{opacity:.45;cursor:not-allowed}
-.as-header{padding:22px 27px 0;background:#f8fafc;border-bottom:1px solid #3030300d}
-.as-header h1{font-size:25px;line-height:1.2;font-weight:650;letter-spacing:-.035em}
-.as-header nav{display:flex;gap:27px;align-items:center;margin-top:14px;font-size:13px;color:#30303091}
-.as-header nav>*{position:relative;display:block;padding:7px 2px 13px;white-space:nowrap}
-.as-header nav>[aria-current=page]{color:#303030;font-weight:600}
-.as-header nav>[aria-current=page]:after{content:'';position:absolute;bottom:0;left:0;right:0;height:3px;background:#F5BC5A;border-radius:3px 3px 0 0}
 .as-content{padding:17px 24px 30px}
-.as-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 0 19px}
-.as-crumb{display:flex;gap:10px;align-items:center;font-size:12px;color:#30303083}
-.as-crumb span{color:#303030;font-weight:500}
-.as-crumb a{display:grid;place-items:center}
 .as-actions{display:flex;gap:8px;align-items:center}
 .as-page .as-actions button{border:1px solid #30303016;background:#fff;color:#303030;border-radius:8px;padding:9px 13px;font-size:12px;font-weight:550;white-space:nowrap}
 .as-page .as-actions .as-save{background:#303030;color:#fff;border-color:#303030}
@@ -62,4 +52,6 @@
 .as-error{background:#fff0ee;color:#9c3434}
 .as-loading{text-align:center;padding:35px 0;color:#30303099;font-size:13px}
 .as-page :is(button,a,summary):focus-visible{outline:2px solid #b7832d;outline-offset:2px}
-@media(max-width:650px){.workspace-main:has(>.as-page){padding:12px}.as-page{min-height:calc(100dvh - 24px);border-radius:15px}.as-header{padding:17px 15px 0}.as-header nav{gap:15px;font-size:12px}.as-content{padding:12px 13px 24px}.as-toolbar{flex-wrap:wrap;gap:9px;margin-bottom:12px}.as-crumb{gap:6px}.as-cover{height:120px;border-radius:12px}.as-column{gap:19px}.as-row{grid-template-columns:minmax(80px,.8fr) minmax(0,1.2fr);gap:5px}.as-avatar-edit{opacity:1}.as-identity h2{font-size:21px}.as-page .as-actions button{padding:8px 10px}}
+@media(max-width:650px){.workspace-main:has(>.as-page){padding:12px}.as-page{min-height:calc(100dvh - 24px);border-radius:15px}.as-content{padding:12px 13px 24px}.as-cover{height:120px;border-radius:12px}.as-column{gap:19px}.as-row{grid-template-columns:minmax(80px,.8fr) minmax(0,1.2fr);gap:5px}.as-avatar-edit{opacity:1}.as-identity h2{font-size:21px}.as-page .as-actions button{padding:8px 10px}}
+
+.as-save-row{display:flex;justify-content:flex-end;border-top:1px solid #30303013;padding-top:12px}
