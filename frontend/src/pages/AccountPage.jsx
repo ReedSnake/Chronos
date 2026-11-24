@@ -203,14 +203,7 @@ export function AccountPage() {
 
   return (
     <section className="as-page" aria-busy={loading || busy}>
-      <header className="as-header"><h1>{uk ? 'Налаштування' : 'Settings'}</h1>
-        <nav aria-label={uk ? 'Розділи налаштувань' : 'Settings sections'}><span aria-current="page">{t('account.title')}</span><Link to={localizedPath('/calendars')}>{uk ? 'Календарі' : 'Calendars'}</Link><Link to={localizedPath('/integrations')}>{uk ? 'Інтеграції' : 'Integrations'}</Link></nav>
-      </header>
-      <form className="as-content" onSubmit={saveAll}>
-        <div className="as-toolbar">
-          <div className="as-crumb"><Link to={localizedPath('/')} aria-label={uk ? 'Головна' : 'Dashboard'}><Icon name="layout-dashboard" size={15}/></Link><Icon name="chevron-right" size={12}/><Icon name="settings" size={15}/><Icon name="chevron-right" size={12}/><span>{t('account.title')}</span></div>
-          {user && <div className="as-actions"><button type="button" disabled={busy || !dirty} onClick={discard}>{uk ? 'Скасувати' : 'Discard'}</button><button type="submit" className="as-save" disabled={busy || !dirty || !profile.name.trim()}>{busy ? t('common.loading') : uk ? 'Зберегти зміни' : 'Save changes'}</button></div>}
-        </div>
+      <form className="as-content" onSubmit={saveAll} aria-label={uk ? 'Налаштування' : 'Settings'}>
         {error && <p className="as-message as-error" role="alert">{error}</p>}
         {status && <p className="as-message" role="status">{status === 'saved' ? (uk ? 'Зміни збережено' : 'Changes saved') : t(status)}</p>}
         <div className="as-cover" aria-hidden="true"/>
@@ -247,6 +240,7 @@ export function AccountPage() {
             <label className="as-row"><span>{t('account.preferences.weekStartsOn')}</span><select value={settings.weekStartsOn} onChange={event => setSettings(old => ({ ...old, weekStartsOn: event.target.value }))}><option value="monday">{t('account.preferences.monday')}</option><option value="sunday">{t('account.preferences.sunday')}</option></select></label>
             <label className="as-row"><span>{t('account.preferences.timeFormat')}</span><select value={settings.timeFormat} onChange={event => setSettings(old => ({ ...old, timeFormat: event.target.value }))}><option value="24h">{t('account.preferences.format24')}</option><option value="12h">{t('account.preferences.format12')}</option></select></label>
           </fieldset>
+          <div className="as-save-row"><div className="as-actions"><button type="button" disabled={busy || !dirty} onClick={discard}>{uk ? 'Скасувати' : 'Discard'}</button><button type="submit" className="as-save" disabled={busy || !dirty || !profile.name.trim()}>{busy ? t('common.loading') : uk ? 'Зберегти зміни' : 'Save changes'}</button></div></div>
           <details className="as-security">
             <summary>{t('account.actions.title')}<Icon name="chevron-down" size={15}/></summary>
             <div className="as-row"><span>{t('account.id')}</span><code>{user.id}</code></div>
