@@ -1,3 +1,5 @@
+import { useAuth } from '../auth/AuthContext';
+import { formatEventTime } from './timeDisplay';
 import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useLocale } from '../../i18n/LocaleProvider';
@@ -9,6 +11,8 @@ import './event-preview.css';
 // in fitted calendar grids, Kanban columns and independently scrolling panels.
 export function EventPreviewButton({ event, zone = 'UTC', children, title: _nativeTitle, onClick, onDragStart, onContextMenu, ...props }) {
   const { locale, t } = useLocale();
+  const {user}=useAuth();
+  const format=user?.settings?.timeFormat||'24h';
   const uk = locale === 'uk';
   const id = useId();
   const anchor = useRef(null);
@@ -66,10 +70,10 @@ export function EventPreviewButton({ event, zone = 'UTC', children, title: _nati
   }, [open]);
 
   const task = event.type === 'task';
-  const date = eventDateLabel(event, locale, zone);
+  const date = eventDateLabel(event, locale, zone, format);
   const end = event.type === 'arrangement' && event.endsAt ? toCalendarInput(event.endsAt, zone) : '';
   const start = event.type === 'arrangement' ? toCalendarInput(event.startsAt, zone) : '';
-  const finish = end && start && end.slice(0,10) === start.slice(0,10) ? end.slice(11) : '';
+  const finish = end && start && end.slice(0,10) === start.slice(0,10) ? formatEventTime(event.endsAt,locale,zone,format) : '';
   const type = t('calendarView.type.' + event.type);
   const status = event.status ? t('statuses.' + event.status) : '';
   const icon = task ? event.status === 'done' ? 'check' : 'checkbox' : event.type === 'reminder' ? 'bell' : 'calendar-event';
