@@ -2,7 +2,6 @@ import { WorkspaceErrorBoundary } from '../components/layout/WorkspaceErrorBound
 import { IconTooltips } from '../features/ui/IconTooltips';
 import '../styles/ux-final.css';
 import { ActivityCenter } from '../features/ui/ActivityCenter';
-import { CommandMenu } from '../features/ui/CommandMenu';
 import { useLocalPreference } from '../features/ui/useLocalPreference';
 import '../styles/ux-polish.css';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
@@ -32,8 +31,8 @@ export function ApplicationPage() {
   const [accountExitState, setAccountExitState] = useState({ dirty: false, busy: false });
   const signOutLock = useRef(false);
   const [collapsed,setCollapsed]=useLocalPreference(user?.id?'sidebar:'+user.id:null,false);
-  const [command,setCommand]=useState(false),[activity,setActivity]=useState(false);
-  useEffect(()=>{if(status!=='authenticated'){setCommand(false);setActivity(false);return;}const listener=e=>{if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==='k'&&!document.querySelector('dialog[open]')&&!/\/account(?:\/|$)/.test(pathname)){e.preventDefault();setCommand(true);}};window.addEventListener('keydown',listener);return()=>window.removeEventListener('keydown',listener);},[status,pathname]);
+  const [activity,setActivity]=useState(false);
+  useEffect(()=>{if(status!=='authenticated')setActivity(false);},[status]);
   const signedIn = status === 'authenticated';
   const isPublicHome = status === 'anonymous' && pathname.replace(/\/$/, '') === localizedPath('/').replace(/\/$/, '');
   const authResolved = status !== 'loading';
@@ -104,14 +103,13 @@ export function ApplicationPage() {
         </div>
       </aside>
       <div ref={mainRef} className={'workspace-main'+(showTopbar?' has-topbar':'')}>
-        {showTopbar&&<header className="workspace-topbar"><div className="workspace-topbar-actions"><button className="workspace-global-search" type="button" onClick={()=>setCommand(true)} aria-label={t('workspace.globalSearch')}><TablerIcon name="search" size={18}/><span>{t('workspace.search')}</span><kbd>⌘ K / Ctrl K</kbd></button><button className="workspace-notifications" type="button" onClick={()=>setActivity(true)} title={t('workspace.activity')} aria-label={t('workspace.activity')}><TablerIcon name="bell" size={21}/></button></div></header>}
+        {showTopbar&&<header className="workspace-topbar"><div className="workspace-topbar-actions"><button className="workspace-notifications" type="button" onClick={()=>setActivity(true)} title={t('workspace.activity')} aria-label={t('workspace.activity')}><TablerIcon name="bell" size={21}/></button></div></header>}
         <div className="workspace-mobile-actions"><label className="workspace-language workspace-mobile-language"><span className="visually-hidden">{t('languageSwitcher.label')}</span><select value={locale} aria-label={t('languageSwitcher.label')} onChange={event=>navigate(locationForLocale(event.target.value),{replace:true})}>{SUPPORTED_LOCALES.map(lang=><option key={lang} value={lang}>{t(`languageSwitcher.${lang}`)}</option>)}</select></label>{signOutButton}</div>
         {signOutError && <p className="workspace-sign-out-error" role="alert">{signOutError}</p>}
         <WorkspaceErrorBoundary key={pathname} title={t('workspace.pageError')} description={t('workspace.pageErrorDescription')} retry={t('common.retry')}>
           <Outlet context={{ setAccountExitState, signOutPending }}/>
         </WorkspaceErrorBoundary>
       </div>
-      {command&&<CommandMenu user={user} items={items} onClose={()=>setCommand(false)}/>}
       {activity&&<ActivityCenter user={user} onClose={()=>setActivity(false)}/>}
       <IconTooltips/>
     </main>;
