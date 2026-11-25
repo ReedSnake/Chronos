@@ -52,3 +52,10 @@ export function overdueWindow(today, zone) {
 export function countdownMinutes(event, now) {
   return Math.max(0, Math.ceil((Date.parse(event.startsAt)-Number(now))/60000));
 }
+
+export function selectedInterval(anchor, target, first, last) {
+  const min = first*60, max = last*60;
+  const start = Math.max(min,Math.min(max-15,Math.min(anchor,target)));
+  const end = Math.min(max,Math.max(start+15,Math.max(anchor,target)+15));
+  return { start, duration: end-start };
+}
