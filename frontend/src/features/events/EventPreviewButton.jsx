@@ -7,7 +7,7 @@ import './event-preview.css';
 
 // Preserve the original button and its grid positioning. A portal avoids clipping
 // in fitted calendar grids, Kanban columns and independently scrolling panels.
-export function EventPreviewButton({ event, zone = 'UTC', children, title, onClick, ...props }) {
+export function EventPreviewButton({ event, zone = 'UTC', children, title: _nativeTitle, onClick, ...props }) {
   const { locale, t } = useLocale();
   const uk = locale === 'uk';
   const id = useId();
@@ -33,7 +33,9 @@ export function EventPreviewButton({ event, zone = 'UTC', children, title, onCli
     timer.current = setTimeout(() => { timer.current = null; setOpen(true); }, 280);
   }
   function leave() {
-    if (!focused.current) hide();
+    if (focused.current) return;
+    clearTimer();
+    if (open) timer.current=setTimeout(hide,140);
   }
 
   useEffect(() => () => clearTimer(), []);
@@ -74,13 +76,13 @@ export function EventPreviewButton({ event, zone = 'UTC', children, title, onCli
   return <>
     <button type="button" {...props} ref={anchor}
       aria-describedby={open ? [props['aria-describedby'], id].filter(Boolean).join(' ') : props['aria-describedby']}
-      onPointerEnter={e=>{if(e.pointerType==='mouse'){hovered.current=true;show();}}}
+      onPointerEnter={e=>{if(e.pointerType==='mouse'){hovered.current=true;if(open)clearTimer();else show();}}}
       onPointerLeave={()=>{hovered.current=false;leave();}}
       onPointerDown={()=>{focused.current=false;hide();}}
       onFocus={e=>{if(e.currentTarget.matches(':focus-visible')){focused.current=true;show();}}}
       onBlur={()=>{focused.current=false;if(!hovered.current)hide();}}
       onClick={e=>{hide();onClick?.(e);}}>{children}</button>
-    {open && createPortal(<div ref={card} id={id} role="tooltip" className="event-preview" style={position || {left:0,top:0,visibility:'hidden'}}>
+    {open && createPortal(<div ref={card} id={id} role="tooltip" className="event-preview" onPointerEnter={clearTimer} onPointerLeave={leave} onClick={e=>e.stopPropagation()} style={position || {left:0,top:0,visibility:'hidden'}}>
       <div className="event-preview-heading"><span className={'event-preview-symbol '+event.type}><Icon name={icon} size={17}/></span><div><strong>{event.title}</strong><small>{type}{event.calendarName ? ' · '+event.calendarName : ''}</small></div></div>
       {date&&<div className="event-preview-meta"><Icon name="clock" size={15}/><span>{task?(uk?'Термін: ':'Due: '):''}{date}{finish?' – '+finish:''}</span></div>}
       {status&&<div className="event-preview-meta"><Icon name="checkbox" size={15}/><span>{status}</span></div>}
