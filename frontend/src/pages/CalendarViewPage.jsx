@@ -130,10 +130,11 @@ function CalendarViewContent() {
   const [partial, setPartial] = useState(false);
   const { search: locationSearch } = useLocation();
   const [day, setDay] = useState(()=>{const requested=new URLSearchParams(locationSearch).get('date');return isCalendarDay(requested)?requested:eventDayKey({startsAt:new Date()},user?.settings?.timeZone||'UTC');});
-  const [eventView, setEventView] = useState(() => readCalendarView(user?.id));
+  const [eventView, setEventView] = useState(() => new URLSearchParams(locationSearch).has('event')?'day':readCalendarView(user?.id));
   const [month, setMonth] = useState(() => new Date(Number(day.slice(0,4)), Number(day.slice(5,7))-1, 1));
   const [filters, setFilters] = useState(() => ({ ...viewRange(day, eventView, user?.settings?.weekStartsOn), types: [], categories: [] }));
   const [categoryInput, setCategoryInput] = useState('');
+  const consumedSearch=useRef(null);
   const [savedFilters,setSavedFilters]=useLocalPreference(user?.id?'calendar-filters:'+user.id:null,{types:[],categories:[]});
   const [fullDay,setFullDay]=useLocalPreference(user?.id?'full-day:'+user.id:null,false);
   const [weekGrid,setWeekGrid]=useLocalPreference(user?.id?'week-grid:'+user.id:null,false);
@@ -209,6 +210,21 @@ function CalendarViewContent() {
     return grouped;
   }, {}), [calendar?.timeZone, events]);
   const startsOn=user?.settings?.weekStartsOn||'monday';
+  useEffect(()=>{
+    const params=new URLSearchParams(locationSearch),date=params.get('date'),id=params.get('event');
+    if(!calendar||calendar.id!==calendarId||!isCalendarDay(date))return;
+    const key=calendarId+locationSearch;if(consumedSearch.current===key)return;
+    if(date!==day||(id&&eventView!=='day')){
+      if(id){setHiddenCalendars(old=>old.filter(x=>x!==calendarId));setCategoryInput('');setFilters(old=>({...old,types:[],categories:[]}));setSearch('');switchView('day',date);}
+      else setPlannerDate(date);
+      return;
+    }
+    if(id){
+      const item=allEvents.find(e=>e.calendarId===calendarId&&(e.occurrenceId||e.id)===id);
+      if(item){consumedSearch.current=key;selectEvent(item);}
+      else if(hiddenCalendars.includes(calendarId)||filters.types.length||filters.categories.length){setHiddenCalendars(old=>old.filter(x=>x!==calendarId));setCategoryInput('');setFilters(old=>({...old,types:[],categories:[]}));setSearch('');}
+    }else consumedSearch.current=key;
+  },[calendar,calendarId,locationSearch,day,eventView,allEvents,hiddenCalendars,filters.types,filters.categories]);
   const days = useMemo(() => daysForMonth(month,startsOn), [month,startsOn]);
   const weekdayKeys=startsOn==='sunday'?['sun','mon','tue','wed','thu','fri','sat']:['mon','tue','wed','thu','fri','sat','sun'];
   const canEdit = !calendar?.isArchived && !calendar?.isHolidayCalendar && ['owner', 'admin', 'editor'].includes(calendar?.role);
