@@ -502,5 +502,19 @@
     "accepted": "You accepted the invitation",
     "declined": "You declined the invitation",
     "series": "Your response applies to the entire event series"
+  },
+  "workspace": {
+    "dashboard": "Dashboard",
+    "schedule": "Schedule",
+    "tasks": "Tasks",
+    "settings": "Settings",
+    "search": "Search…",
+    "globalSearch": "Global search",
+    "activity": "Reminders and requests",
+    "collapse": "Collapse sidebar",
+    "expand": "Expand sidebar",
+    "discard": "Leave without saving changes?",
+    "pageError": "This page could not be displayed",
+    "pageErrorDescription": "Try opening it again. You can also switch to another section."
   }
 }
