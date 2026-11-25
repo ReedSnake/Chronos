@@ -58,3 +58,11 @@
 .dash-deadline:last-child { border-bottom:0; }
 .dash-deadline strong { font-weight:550; }
 .dash-deadline small { font-size:10px; color:inherit; opacity:.75; }
+
+.workspace-page-error {
+  display:grid; justify-items:start; gap:var(--chronos-space-md); padding:var(--chronos-space-xl);
+  border-radius:var(--chronos-dialog-radius); background:var(--chronos-surface);
+}
+.workspace-page-error h1 {margin:0;font-size:20px;font-weight:600}
+.workspace-page-error p {margin:0;color:var(--chronos-muted);font-size:var(--chronos-font-body)}
+.workspace-page-error button {border:0;border-radius:var(--chronos-radius-field);background:var(--chronos-accent);color:var(--chronos-ink);font:inherit;font-size:var(--chronos-font-small);padding:10px 14px;cursor:pointer}
