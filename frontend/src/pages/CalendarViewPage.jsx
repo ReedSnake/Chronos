@@ -1,3 +1,7 @@
+import { EventQuickMenu } from '../features/events/EventQuickMenu';
+import { canMoveEvent, moveEventPatch, resizeEventPatch, overlappingMeetings, duplicateEventPayload, eventIdentity } from '../features/events/eventQuickModel';
+import { useLocalPreference } from '../features/ui/useLocalPreference';
+import { Notice, useNotice } from '../features/ui/useNotice';
 import { Fragment } from 'react';
 import { isCalendarDay, matchesEvent, weekRowNumber } from '../features/events/calendarInteractions';
 import { BlobMascot } from '../components/auth/BlobMascot';
@@ -130,10 +134,11 @@ function CalendarViewContent() {
   const [month, setMonth] = useState(() => new Date(Number(day.slice(0,4)), Number(day.slice(5,7))-1, 1));
   const [filters, setFilters] = useState(() => ({ ...viewRange(day, eventView, user?.settings?.weekStartsOn), types: [], categories: [] }));
   const [categoryInput, setCategoryInput] = useState('');
-  const [fullDay,setFullDay]=useState(false);
-  const [weekGrid,setWeekGrid]=useState(false);
+  const [savedFilters,setSavedFilters]=useLocalPreference(user?.id?'calendar-filters:'+user.id:null,{types:[],categories:[]});
+  const [fullDay,setFullDay]=useLocalPreference(user?.id?'full-day:'+user.id:null,false);
+  const [weekGrid,setWeekGrid]=useLocalPreference(user?.id?'week-grid:'+user.id:null,false);
   const [timelineCalendars,setTimelineCalendars]=useState([]);
-  const [hiddenCalendars,setHiddenCalendars]=useState([]);
+  const [hiddenCalendars,setHiddenCalendars]=useLocalPreference(user?.id?'calendar-hidden:'+user.id:null,[]);
   const [loading, setLoading] = useState(true);
   const [eventsLoading, setEventsLoading] = useState(false);
   const [error, setError] = useState('');
@@ -144,6 +149,14 @@ function CalendarViewContent() {
   const [createSlot, setCreateSlot] = useState(null);
   const [busy, setBusy] = useState(false);
   const [refresh, setRefresh] = useState(0);
+  const [quickMenu,setQuickMenu]=useState(null);
+  const [dragging,setDragging]=useState(null);
+  const dragRef=useRef(null), clipboard=useRef(null), quickLock=useRef(false), swipe=useRef(null);
+  const [hasCopy,setHasCopy]=useState(false);
+  const [notice,notify,dismissNotice]=useNotice();
+  useEffect(()=>{setFilters(old=>({...old,types:savedFilters.types||[],categories:savedFilters.categories||[]}));setCategoryInput((savedFilters.categories||[]).join(', '));},[]);
+  useEffect(()=>{const timer=setTimeout(()=>{const categories=categoryInput.split(',').map(item=>item.trim().toLowerCase()).filter(Boolean);setFilters(old=>JSON.stringify(old.categories)===JSON.stringify(categories)?old:{...old,categories});},350);return()=>clearTimeout(timer);},[categoryInput]);
+  useEffect(()=>{setSavedFilters({types:filters.types,categories:filters.categories});},[filters.types,filters.categories]);
 
   useEffect(() => {
     if (status !== 'authenticated') { if (status !== 'loading') setLoading(false); return; }
@@ -220,7 +233,7 @@ function CalendarViewContent() {
   }
   function updateCategories(value) {
     setCategoryInput(value);
-    setFilters((current) => ({ ...current, categories: value.split(',').map((item) => item.trim().toLowerCase()).filter(Boolean) }));
+
   }
 
   async function startEdit() {
@@ -234,11 +247,16 @@ function CalendarViewContent() {
   }
 
   async function saveEvent(values) {
+    if(values.type==='arrangement'||editing?.type==='arrangement'){
+      const candidate={...editing,...values,type:'arrangement',calendarId:editing?eventCalendar.id:calendarId};
+      if(overlappingMeetings(candidate,allEvents).length&&!window.confirm(locale==='uk'?'Зустріч перетинається з подією у завантаженому розкладі. Зберегти?':'This overlaps a meeting in the loaded schedule. Save anyway?'))throw Error(locale==='uk'?'Збереження скасовано':'Save canceled');
+    }
     setBusy(true); setEventsError('');
     try {
       if (editing) await applicationContainer.calendarService.updateEvent(eventCalendar.id, editing.id, values);
       else await applicationContainer.calendarService.createEvent(calendarId, values);
       setEditing(null); setEditorOpen(false); setSelection(null);
+      notify(locale==='uk'?'Подію збережено':'Event saved');
       setRefresh((current) => current + 1);
     } catch (err) {
       throw new Error(getLocalizedApiError(err, t, 'calendarView.event.saveError'));
@@ -270,6 +288,85 @@ function CalendarViewContent() {
     setRefresh((current) => current + 1);
   }
 
+  function canEditEvent(item) {
+    const source=calendars.find(c=>c.id===(item.calendarId||calendarId));
+    return !!source&&!source.isArchived&&!source.isHolidayCalendar&&['owner','admin','editor'].includes(source.role);
+  }
+  function confirmConflict(candidate){
+    return !overlappingMeetings(candidate,allEvents).length||window.confirm(locale==='uk'?'Є перетин із зустріччю у завантаженому розкладі. Продовжити?':'Overlaps a meeting in the loaded schedule. Continue?');
+  }
+  async function patchEvent(item,patch,{undo=false}={}){
+    if(busy||eventsLoading||quickLock.current||!canEditEvent(item)||item.isRecurring)return;
+    const source=item.calendarId||calendarId;
+    const previous=Object.fromEntries(Object.keys(patch).map(k=>[k,item[k]]));
+    const candidate={...item,...patch};
+    if(!undo&&!confirmConflict(candidate))return;
+    quickLock.current=true;setBusy(true);setEventsError('');
+    const identity=e=>e.id===item.id&&(e.calendarId||calendarId)===source;
+    const update=e=>identity(e)?{...e,...patch}:e;
+    const rollback=e=>identity(e)?{...e,...previous}:e;
+    setEvents(old=>old.map(update));setSelection(old=>old?update(old):null);
+    try{
+      await applicationContainer.calendarService.updateEvent(source,item.id,patch);
+      setQuickMenu(null);setRefresh(n=>n+1);
+      notify(locale==='uk'?'Зміни збережено':'Changes saved',undo?null:async()=>{
+        if(quickLock.current)return;
+        try{
+          const {event:latest}=await applicationContainer.calendarService.getEvent(source,item.id);
+          if(Object.keys(patch).some(k=>String(latest[k])!==String(patch[k])))throw Error('Event changed');
+          // Recheck permissions against the actual API. Do not recreate deleted events.
+          await applicationContainer.calendarService.updateEvent(source,item.id,previous);
+          setRefresh(n=>n+1);notify(locale==='uk'?'Зміни скасовано':'Change undone');
+        }catch(err){notify(locale==='uk'?'Не вдалося скасувати зміни':'Could not undo change');}
+      });
+    }catch(err){setEvents(old=>old.map(rollback));setSelection(old=>old?rollback(old):null);setEventsError(getLocalizedApiError(err,t,'calendarView.event.saveError'));notify(locale==='uk'?'Зміни не збережено':'Changes not saved');}
+    finally{quickLock.current=false;setBusy(false);}
+  }
+  function startDrag(item,mode,e){
+    if(!canMoveEvent(item)||!canEditEvent(item)||busy){e.preventDefault();return;}
+    const next={item,mode};dragRef.current=next;setDragging(next);
+    e.dataTransfer.setData('application/x-chronos-event',eventIdentity(item));e.dataTransfer.effectAllowed='move';
+  }
+  function endDrag(){dragRef.current=null;setDragging(null);}
+  function dropEvent(date,minute){
+    const drag=dragRef.current;endDrag();if(!drag)return;
+    try{const patch=drag.mode==='resize'?resizeEventPatch(drag.item,date,minute,calendar.timeZone):moveEventPatch(drag.item,date,minute,calendar.timeZone);void patchEvent(drag.item,patch);}
+    catch(err){notify(locale==='uk'?'Неприпустимий час або тривалість':'Invalid time or duration');}
+  }
+  function quickEdit(item,{title,time,duration}){
+    if(!title)return;
+    try{
+      const patch={title};
+      if(canMoveEvent(item)){
+        const [date,clock]=time.split('T'),[h,m]=clock.split(':').map(Number);
+        Object.assign(patch,moveEventPatch(item,date,h*60+m,calendar.timeZone));
+        if(item.type==='arrangement')patch.endsAt=new Date(Date.parse(patch.startsAt)+duration*60000).toISOString();
+      }
+      void patchEvent(item,patch);
+    }catch{notify(locale==='uk'?'Перевірте дату й час':'Check date and time');}
+  }
+  async function duplicate(item,date=null){
+    if(busy||quickLock.current||!canEditEvent(item))return;
+    const target=date?calendarId:item.calendarId||calendarId;
+    if(date&&!canEdit)return;
+    quickLock.current=true;setBusy(true);
+    try{
+      const values=duplicateEventPayload(item);
+      if(date&&item.type!=='holiday')Object.assign(values,moveEventPatch({...item,isRecurring:false},date,null,calendar.timeZone));
+      else if(date)values.date=date;
+      if(!confirmConflict({...values,calendarId:target}))return;
+      await applicationContainer.calendarService.createEvent(target,values);
+      setQuickMenu(null);setRefresh(n=>n+1);notify(locale==='uk'?'Копію створено':'Copy created');
+    }catch(err){notify(getLocalizedApiError(err,t,'calendarView.event.saveError'));}
+    finally{quickLock.current=false;setBusy(false);}
+  }
+  async function quickDelete(item){
+    if(busy||quickLock.current||!canEditEvent(item)||!window.confirm(t(item.isRecurring?'calendarView.event.confirmDeleteSeries':'calendarView.event.confirmDelete')))return;
+    quickLock.current=true;setBusy(true);
+    try{await applicationContainer.calendarService.deleteEvent(item.calendarId||calendarId,item.id);setQuickMenu(null);setRefresh(n=>n+1);notify(locale==='uk'?'Подію видалено':'Event deleted');}
+    catch(err){notify(getLocalizedApiError(err,t,'calendarView.event.deleteError'));}
+    finally{quickLock.current=false;setBusy(false);}
+  }
   const taskMutation=useRef(false);
   function canChangeTask(item){
     const source=calendars.find(c=>c.id===(item.calendarId||calendarId));
@@ -283,11 +380,12 @@ function CalendarViewContent() {
     const sourceId=item.calendarId||calendarId;
     const nextStatus=item.status==='done'?'todo':'done';
     try{
-      await applicationContainer.calendarService.updateEvent(sourceId,item.id,{status:nextStatus});
       const change=e=>e.id===item.id&&(e.calendarId||calendarId)===sourceId?{...e,status:nextStatus}:e;
       setEvents(old=>old.map(change));
       setSelection(old=>old?change(old):null);
-    }catch(err){setEventsError(getLocalizedApiError(err,t,'calendarView.event.saveError'));}
+      await applicationContainer.calendarService.updateEvent(sourceId,item.id,{status:nextStatus});
+      notify(locale==='uk'?'Статус оновлено':'Status updated');
+    }catch(err){const rollback=e=>e.id===item.id&&(e.calendarId||calendarId)===sourceId?{...e,status:item.status}:e;setEvents(old=>old.map(rollback));setSelection(old=>old?rollback(old):null);setEventsError(getLocalizedApiError(err,t,'calendarView.event.saveError'));}
     finally{taskMutation.current=false;setBusy(false);}
   }
 
@@ -314,6 +412,16 @@ function CalendarViewContent() {
   const plannerLabel=plannerDays.map(d=>new Date(d+'T12:00:00Z').toLocaleDateString(locale,{month:'short',day:'numeric',timeZone:'UTC'}));
   const viewLabels={overview:locale==='uk'?'Огляд':'Overview',day:locale==='uk'?'День':'Day',week:locale==='uk'?'Тиждень':'Week',month:t('calendarView.view.month'),year:t('calendarView.view.year'),agenda:t('calendarView.view.agenda')};
 
+  useEffect(()=>{
+    if(!calendar||loading||status!=='authenticated')return;
+    const key=e=>{
+      if(e.defaultPrevented||e.metaKey||e.ctrlKey||e.altKey||e.repeat||e.target.closest?.('input,textarea,select,[contenteditable=true]')||document.querySelector('dialog[open]'))return;
+      if(e.key.toLowerCase()==='n'&&canEdit){e.preventDefault();openCreate();}
+      else if(e.key.toLowerCase()==='t'){e.preventDefault();setPlannerDate(eventDayKey({startsAt:new Date()},calendar.timeZone||'UTC'));}
+      else if(['1','2','3','4','5','6'].includes(e.key)){e.preventDefault();switchView(CALENDAR_VIEWS[Number(e.key)-1]);}
+    };
+    window.addEventListener('keydown',key);return()=>window.removeEventListener('keydown',key);
+  },[calendar,loading,status,day,eventView,canEdit,startsOn]);
   if (status === 'loading' || loading) return <PageTemplate><BlobMascot mood="loading" compact /><p role="status">{t('common.loading')}</p></PageTemplate>;
   if (status !== 'authenticated') return <PageTemplate><p>{t('calendarView.signInBefore')}<Link to={localizedPath('/login')}>{t('common.signIn')}</Link>{t('calendarView.signInAfter')}</p></PageTemplate>;
 
@@ -332,13 +440,14 @@ function CalendarViewContent() {
   function createOn(key, minute = null){if(!canEdit||!isCalendarDay(key))return;setSelection(null);setEditing(null);setEventsError('');setCreateSlot({day:key,minute});setPlannerDate(key);setEditorOpen(true);}
   const horizontal=eventView==='day'||eventView==='week'&&!weekGrid;
   const rangeLabel = eventView==='week'||eventView==='overview' ? (uk?'Тиждень ':'Week ')+weekRowNumber(plannerDays[0],startsOn) : null;
-  return <CalendarEventActionsProvider value={{canChange:canChangeTask,toggle:toggleTask,busy:busy||eventsLoading,zone:calendar?.timeZone||'UTC'}}><section className={'chrono-calendar chrono-mode-'+eventView+(horizontal?' chrono-mode-horizontal':'')}>
+  return <CalendarEventActionsProvider value={{canChange:canChangeTask,toggle:toggleTask,busy:busy||eventsLoading,zone:calendar?.timeZone||'UTC',canEditEvent,context:setQuickMenu,dragging,startDrag,endDrag,drop:dropEvent,resizeEnabled:horizontal||eventView==='week'}}><section className={'chrono-calendar chrono-mode-'+eventView+(horizontal?' chrono-mode-horizontal':'')+(dragging?' ux-dragging':'')}>
     <header className="chrono-heading">
       <div><h1>{uk?'Календар':'Calendar'}</h1><p>{calendar?.timeZone||user?.settings?.timeZone||'UTC'}</p></div>
       <div className="chrono-heading-actions">
         <div className="chrono-segments" role="group" aria-label={t('calendarView.event.viewSwitch')}>
           {CALENDAR_VIEWS.map(view=><button key={view} type="button" aria-pressed={eventView===view} onClick={()=>switchView(view)}>{viewLabels[view]}</button>)}
         </div>
+        {hasCopy&&canEdit&&<button type="button" className="ux-paste" disabled={busy} onClick={()=>clipboard.current&&void duplicate(clipboard.current,day)}>{uk?"Вставити":"Paste event"}</button>}
         {canEdit&&<button className="chrono-primary" type="button" onClick={openCreatePage}><Icon name="plus" size={18}/>{t('calendarView.event.create')}</button>}
       </div>
     </header>
@@ -369,7 +478,7 @@ function CalendarViewContent() {
         {eventsError&&<p role="alert" className="chrono-notice">{eventsError}<button type="button" onClick={()=>setRefresh(n=>n+1)}>{t('common.retry')}</button></p>}
         {search.trim()&&!eventsLoading&&!eventsError&&!events.length&&<p className="chrono-search-empty" role="status">{uk?'Немає подій за цим запитом у вибраному періоді':'No matching events in the selected period'}</p>}
         {partial&&<p role="status" className="chrono-notice">{uk?'Деякі календарі не завантажилися':'Some calendars could not be loaded'}</p>}
-        <div className="chrono-view" aria-busy={eventsLoading}>
+        <div className="chrono-view" aria-busy={eventsLoading} onTouchStart={e=>{if(e.touches.length===1&&!e.target.closest("button,input,select,textarea"))swipe.current={x:e.touches[0].clientX,y:e.touches[0].clientY};else swipe.current=null;}} onTouchEnd={e=>{const start=swipe.current;swipe.current=null;if(!start||!["day","week","overview"].includes(eventView))return;const p=e.changedTouches[0];const dx=p.clientX-start.x,dy=p.clientY-start.y;if(Math.abs(dx)>85&&Math.abs(dx)>Math.abs(dy)*1.8)navigatePeriod(dx<0?1:-1);}}>
           {eventsLoading&&<div className="chrono-loading" role="status">{t('common.loading')}</div>}
           {eventView==='overview'&&<CalendarOverview events={events} days={plannerDays} day={day} today={today} zone={calendar.timeZone||'UTC'} loading={eventsLoading} error={eventsError} partial={partial} onSelect={selectEvent} onDaySelect={setPlannerDate} onView={switchView} onCreate={openCreate} canEdit={canEdit}/>}
           {horizontal&&<DayPlanner view={eventView} days={plannerDays} events={events} calendars={timelineCalendars} day={day} zone={calendar.timeZone||'UTC'} fullDay={fullDay} loading={eventsLoading} error={eventsError} partial={partial} onSelect={selectEvent} onCreate={openCreate} onCreateAt={createOn} canEdit={canEdit} onDaySelect={setPlannerDate}/>}
@@ -386,5 +495,7 @@ function CalendarViewContent() {
       {selection&&!editorOpen&&eventCalendar&&<EventDetails key={eventKey(selection)} onInvite={sendInvitation} event={selection} calendar={eventCalendar} onClose={()=>setSelection(null)} onEdit={startEdit} onDelete={deleteEvent} canEdit={eventCanEdit} busy={busy}/>}
       {editorOpen&&<div className="calendar-editor-shell"><EventEditor key={editing?.id||'new'} event={editing} initialDay={editing?day:createSlot?.day||day} initialMinute={editing?null:createSlot?.minute} calendar={editing?eventCalendar:calendar} saving={busy} onSave={saveEvent} onCancel={cancelEdit}/></div>}
     </EventDialog>}
+    {quickMenu&&<EventQuickMenu key={eventIdentity(quickMenu)} event={quickMenu} zone={calendar?.timeZone||'UTC'} busy={busy} onClose={()=>setQuickMenu(null)} onOpen={()=>{const item=quickMenu;setQuickMenu(null);selectEvent(item);}} onPatch={values=>quickEdit(quickMenu,values)} onCopy={()=>{clipboard.current=quickMenu;setHasCopy(true);setQuickMenu(null);notify(uk?'Подію скопійовано. Виберіть дату та натисніть «Вставити»':'Copied. Select a date and press Paste event');}} onDuplicate={()=>void duplicate(quickMenu)} onDelete={()=>void quickDelete(quickMenu)}/>}
+    <Notice notice={notice} onDismiss={dismissNotice} undoLabel={uk?'Скасувати':'Undo'} closeLabel={uk?'Закрити':'Dismiss'}/>
   </section></CalendarEventActionsProvider>;
 }
