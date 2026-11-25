@@ -11,7 +11,8 @@ import { TablerIcon as Icon } from '../components/layout/TablerIcon';
 
 export function CreateEventPage() {
   const { calendarId } = useParams();
-  const { status } = useAuth();
+  const { status,user } = useAuth();
+  const zone=user?.settings?.timeZone||'UTC';
   const { localizedPath, locale, t } = useLocale();
   const navigate = useNavigate();
   const { search } = useLocation();
@@ -34,14 +35,14 @@ export function CreateEventPage() {
   }, [calendarId,status,t]);
   const canEdit = calendar && !calendar.isArchived && !calendar.isHolidayCalendar && ['owner','admin','editor'].includes(calendar.role);
   const requested = new URLSearchParams(search).get('date');
-  const initialDay = isCalendarDay(requested) ? requested : eventDayKey({startsAt:new Date()},calendar?.timeZone || 'UTC');
+  const initialDay = isCalendarDay(requested) ? requested : eventDayKey({startsAt:new Date()},zone);
   function close() { if (!lock.current) navigate(back + '?date=' + encodeURIComponent(initialDay)); }
   async function save(values) {
     if (!canEdit || lock.current) return;
     lock.current=true;setSaving(true);
     try {
       await applicationContainer.calendarService.createEvent(calendarId,values);
-      const savedDay=eventDayKey(values,calendar.timeZone||'UTC') || initialDay;
+      const savedDay=eventDayKey(values,zone) || initialDay;
       navigate(back + '?date=' + encodeURIComponent(savedDay),{replace:true});
     } catch(err) {
       throw new Error(getLocalizedApiError(err,t,'calendarView.event.saveError'));
