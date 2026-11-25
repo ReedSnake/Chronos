@@ -1,3 +1,5 @@
+import { useRefreshOnFocus } from '../features/ui/useRefreshOnFocus';
+import { overdueTasks } from '../features/events/planningPreferences';
 import { SkeletonRows, EmptyState } from '../features/ui/Feedback';
 import { useLocalPreference } from '../features/ui/useLocalPreference';
 import { Notice,useNotice } from '../features/ui/useNotice';
@@ -43,6 +45,7 @@ export function TasksPage() {
   const [busy, setBusy] = useState(false), [drag, setDrag] = useState(null);
   const lock = useRef(false);
   const { from, to } = boardRange;
+  useRefreshOnFocus(()=>setReload(n=>n+1),status==='authenticated'&&!busy&&!mode);
   useEffect(() => {
     if (status !== 'authenticated') return;
     let alive = true;
@@ -135,6 +138,15 @@ export function TasksPage() {
     catch(err){setError(getLocalizedApiError(err,t,'calendarView.event.saveError'));}
   }
   const selectedTasks=tasks.filter(e=>picked.includes(taskKey(e))&&canChange(e)&&!e.isRecurring);
+  async function moveOverdueToToday(){
+    const items=overdueTasks(tasks,Date.now()).filter(e=>canChange(e)&&!e.isRecurring);
+    if(lock.current||loading||data.failed||!items.length||!window.confirm(uk?'Перенести '+items.length+' видимих прострочених завдань на сьогодні?':'Move '+items.length+' visible overdue tasks to today?'))return;
+    await mutate(async()=>{
+      let updated=0,failed=0;
+      for(const task of items){try{await service.updateEvent(task.calendarId,task.id,{deadline:fromCalendarInput(today+'T23:59',zone)});updated++;}catch{failed++;}}
+      setReload(n=>n+1);notify((uk?'Перенесено: ':'Moved: ')+updated+(failed?(uk?' · Помилки: ':' · Failed: ')+failed:''));
+    });
+  }
   async function applyBulk(kind){
     if(lock.current||loading||!selectedTasks.length||(kind==='date'&&!bulkDate))return;
     await mutate(async()=>{
@@ -164,7 +176,7 @@ export function TasksPage() {
             <label>{uk ? 'До' : 'To'}<input type="date" value={to} min={from} onChange={e => { if (e.target.value && e.target.value >= from) setBoardRange(r => ({ ...r, to: e.target.value, from: r.from<shiftDate(e.target.value,-365)?shiftDate(e.target.value,-365):r.from })); }}/></label>
             <button type="button" onClick={() => { setSearch(''); setCategory(''); setHidden([]); setStatusFilter(''); setOverdue(false); setHideDone(false); setBoardRange({ from: shiftDate(today, -30), to: shiftDate(today, 60) }); }}>{uk ? 'Скинути фільтри' : 'Reset filters'}</button>
           </div></details>
-          <div className="ux-task-tools"><button type="button" aria-pressed={overdue} onClick={toggleOverdue}>{uk?'Прострочені':'Overdue'}</button><button type="button" aria-pressed={hideDone} onClick={()=>setHideDone(v=>!v)}>{uk?'Приховати виконані':'Hide completed'}</button><select aria-label={uk?'Сортування':'Sort'} value={sort} onChange={e=>setSort(e.target.value)}><option value="due">{uk?'За дедлайном':'Due date'}</option><option value="latest">{uk?'За новизною':'Newest'}</option><option value="title">{uk?'За назвою':'Name'}</option></select><button type="button" aria-pressed={bulk} onClick={()=>{setBulk(v=>!v);setPicked([]);}}>{uk?'Вибрати':'Select'}</button></div>
+          <div className="ux-task-tools"><button type="button" aria-pressed={overdue} onClick={toggleOverdue}>{uk?'Прострочені':'Overdue'}</button>{overdue&&<button type="button" disabled={busy||loading||!!data.failed||!overdueTasks(tasks,Date.now()).some(e=>canChange(e)&&!e.isRecurring)} onClick={()=>void moveOverdueToToday()}>{uk?'Перенести видимі на сьогодні':'Move visible to today'}</button>}<button type="button" aria-pressed={hideDone} onClick={()=>setHideDone(v=>!v)}>{uk?'Приховати виконані':'Hide completed'}</button><select aria-label={uk?'Сортування':'Sort'} value={sort} onChange={e=>setSort(e.target.value)}><option value="due">{uk?'За дедлайном':'Due date'}</option><option value="latest">{uk?'За новизною':'Newest'}</option><option value="title">{uk?'За назвою':'Name'}</option></select><button type="button" aria-pressed={bulk} onClick={()=>{setBulk(v=>!v);setPicked([]);}}>{uk?'Вибрати':'Select'}</button></div>
           <span className="tb-period-label">{format(from, { day: 'numeric', month: 'short' })} – {format(to, { day: 'numeric', month: 'short' })}</span>
         </div>
         {bulk&&<div className="ux-bulk"><strong>{selectedTasks.length} {uk?'вибрано':'selected'}</strong><button type="button" onClick={()=>setPicked(tasks.filter(e=>canChange(e)&&!e.isRecurring).map(taskKey))}>{uk?'Вибрати всі':'Select all'}</button><select value={bulkStatus} aria-label={uk?'Новий статус':'New status'} onChange={e=>setBulkStatus(e.target.value)}>{TASK_STATES.map(s=><option key={s} value={s}>{t('statuses.'+s)}</option>)}</select><button type="button" disabled={busy||!selectedTasks.length} onClick={()=>void applyBulk('status')}>{uk?'Змінити статус':'Apply status'}</button><input type="date" aria-label={uk?'Нова дата':'New date'} value={bulkDate} onChange={e=>setBulkDate(e.target.value)}/><button type="button" disabled={busy||!bulkDate||!selectedTasks.length} onClick={()=>void applyBulk('date')}>{uk?'Перенести':'Move'}</button></div>}
