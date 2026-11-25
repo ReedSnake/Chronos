@@ -1,6 +1,6 @@
 import { useLocalPreference } from '../ui/useLocalPreference';
 import { Notice,useNotice } from '../ui/useNotice';
-import { moveWidget,unbookedMinutes } from './dashboardUxModel';
+import { moveWidget,unbookedMinutes,freeIntervals } from './dashboardUxModel';
 import { EventPreviewButton } from '../events/EventPreviewButton';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
@@ -136,7 +136,7 @@ export function Dashboard({ user }) {
   const widgets={
     next:<>{!upcomingReady?<p>—</p>:nextMeeting?<><button type="button" className="ux-widget-link ux-widget-value" onClick={()=>openEvent(nextMeeting)}>{nextMeeting.title}</button><p>{shortDay(eventDayKey(nextMeeting,zone))} · {formatTime(nextMeeting)} · {uk?'через':'in'} {Math.ceil((Date.parse(nextMeeting.startsAt)-now.getTime())/60000)} {uk?'хв':'min'}</p></>:<p>{uk?'Немає зустрічей на найближчі 7 днів':'No meetings in the next 7 days'}</p>}</>,
     progress:<><strong className="ux-widget-value">{upcomingReady?todayDone+' / '+todayTasks.length:'—'}</strong><div className="dash-task-progress" aria-hidden="true"><span style={{width:upcomingReady&&todayTasks.length?todayDone/todayTasks.length*100+'%':'0%'}}/></div><p>{uk?'Завдання на сьогодні':'Tasks due today'}</p></>,
-    free:<><strong className="ux-widget-value">{upcomingReady?(()=>{const n=unbookedMinutes(upcoming.events.filter(e=>!hidden.includes(e.calendarId)),actualToday,zone);return Math.floor(n/60)+(uk?' год ':'h ')+n%60+(uk?' хв':'m');})():'—'}</strong><p>{uk?'Без зустрічей · сьогодні, 09:00–18:00':'Without meetings · today, 09:00–18:00'}</p></>,
+    free:<><strong className="ux-widget-value">{upcomingReady?(()=>{const n=unbookedMinutes(upcoming.events.filter(e=>!hidden.includes(e.calendarId)),actualToday,zone);return Math.floor(n/60)+(uk?' год ':'h ')+n%60+(uk?' хв':'m');})():'—'}</strong><p>{uk?'Без зустрічей · сьогодні, 09:00–18:00':'Without meetings · today, 09:00–18:00'}</p>{upcomingReady&&freeIntervals(upcoming.events.filter(e=>!hidden.includes(e.calendarId)),actualToday,zone).slice(0,3).map(([a,b])=><p key={a}>{formatTime({startsAt:new Date(a).toISOString()})} – {formatTime({startsAt:new Date(b).toISOString()})}</p>)}</>,
     deadlines:<>{!upcomingReady?<p>—</p>:nextDue.length?nextDue.map(e=><button type="button" key={eventKey(e)} className="ux-widget-link" onClick={()=>openEvent(e)}>{e.title} · {shortDay(eventDayKey(e,zone))}</button>):<p>{uk?'Немає найближчих термінів':'No upcoming deadlines'}</p>}</>,
     notes:<><textarea aria-label={names.notes} rows={3} maxLength={4000} value={notes} onChange={e=>setNotes(e.target.value)} placeholder={uk?'Запишіть думку…':'Write something…'}/><p>{uk?'Збережено на цьому пристрої':'Saved on this device'}</p></>,
   };
