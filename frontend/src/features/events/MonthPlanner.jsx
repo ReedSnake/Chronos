@@ -1,3 +1,4 @@
+import { weekRowNumber } from './calendarInteractions';
 import { CalendarEventButton, EventSymbol, EventStatus } from './CalendarEventActions';
 import { useMemo } from 'react';
 import { useLocale } from '../../i18n/LocaleProvider';
@@ -65,14 +66,14 @@ export function MonthPlanner({day,today,startsOn,events,zone,calendarName,loadin
     </div>
    </div>
    <div className="month-grid-scroll"><div className="month-grid">
-    <div className="month-weekdays">{model.weeks[0].days.map(d=><span key={d} className={weekend(d)?'weekend':''}>{format(d,{weekday:'short'})}</span>)}</div>
-    {model.weeks.map(week=><div className="month-week-row" key={week.days[0]}>
-     {week.days.map((d,i)=>{const outside=d.slice(0,7)!==day.slice(0,7);return <div key={d} className={'month-tile'+(outside?' outside':'')+(weekend(d)?' weekend':'')+(d===day?' selected':'')+(d===today?' today':'')} style={{gridColumn:i+1,gridRow:'1 / 5'}}>
-      <button className="month-tile-hit" type="button" aria-label={format(d,{dateStyle:'full'})} aria-pressed={d===day} onClick={()=>onDaySelect(d)}><span>{Number(d.slice(-2))}</span></button>
+    <div className="month-weekdays"><span className="month-week-number" title="ISO 8601">#</span>{model.weeks[0].days.map(d=><span key={d} className={weekend(d)?'weekend':''}>{format(d,{weekday:'short'})}</span>)}</div>
+    {model.weeks.map(week=><div className="month-week-row" key={week.days[0]}><span className="month-week-number" style={{gridColumn:1,gridRow:"1 / 5"}}>{weekRowNumber(week.days[0],startsOn)}</span>
+     {week.days.map((d,i)=>{const outside=d.slice(0,7)!==day.slice(0,7);return <div key={d} className={'month-tile'+(outside?' outside':'')+(weekend(d)?' weekend':'')+(d===day?' selected':'')+(d===today?' today':'')} style={{gridColumn:i+2,gridRow:'1 / 5'}} onClick={e=>{if(canEdit&&!outside&&!e.target.closest('button'))onCreate(d);}}>
+      <button className="month-tile-hit" type="button" aria-label={format(d,{dateStyle:'full'})} aria-pressed={d===day} onClick={()=>canEdit&&!outside?onCreate(d):onDaySelect(d)}><span>{Number(d.slice(-2))}</span></button>
       {canEdit&&!outside&&<button className="month-tile-add" type="button" aria-label={t('calendarView.event.create')+' '+d} onClick={()=>onCreate(d)}><Icon name="plus" size={14}/></button>}
      </div>})}
-     {week.segments.filter(s=>s.lane<2).map(s=><CalendarEventButton event={s.event} placement="grid" className={'month-event '+s.event.type+(s.event.status==='done'?' done':'')+(s.event.status==='canceled'?' canceled':'')} key={keyOf(s.event)} style={{gridColumn:(s.left+1)+' / '+(s.right+2),gridRow:s.lane+2}} onClick={()=>onSelect(s.event)} title={s.event.title+' · '+(s.start!==s.end?range(s):time(s.event))}><i/><span>{s.event.title}</span>{s.left!==s.right&&<small>{range(s)}</small>}</CalendarEventButton>)}
-     {week.hidden.map((n,i)=>n>0&&<button type="button" key={week.days[i]} className="month-more" style={{gridColumn:i+1,gridRow:4}} onClick={()=>onDaySelect(week.days[i])}>+{n} {uk?'ще':'more'}</button>)}
+     {week.segments.filter(s=>s.lane<2).map(s=><CalendarEventButton event={s.event} placement="grid" className={'month-event '+s.event.type+(s.event.status==='done'?' done':'')+(s.event.status==='canceled'?' canceled':'')} key={keyOf(s.event)} style={{gridColumn:(s.left+2)+' / '+(s.right+3),gridRow:s.lane+2}} onClick={()=>onSelect(s.event)} title={s.event.title+' · '+(s.start!==s.end?range(s):time(s.event))}><i/><span>{s.event.title}</span>{s.left!==s.right&&<small>{range(s)}</small>}</CalendarEventButton>)}
+     {week.hidden.map((n,i)=>n>0&&<button type="button" key={week.days[i]} className="month-more" style={{gridColumn:i+2,gridRow:4}} onClick={()=>onDaySelect(week.days[i])}>+{n} {uk?'ще':'more'}</button>)}
     </div>)}
    </div></div>
   </section>
