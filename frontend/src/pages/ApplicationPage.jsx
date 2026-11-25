@@ -1,3 +1,5 @@
+import { IconTooltips } from '../features/ui/IconTooltips';
+import '../styles/ux-final.css';
 import { ActivityCenter } from '../features/ui/ActivityCenter';
 import { CommandMenu } from '../features/ui/CommandMenu';
 import { useLocalPreference } from '../features/ui/useLocalPreference';
@@ -93,6 +95,7 @@ export function ApplicationPage() {
       </div>
       {command&&<CommandMenu user={user} items={items} onClose={()=>setCommand(false)}/>}
       {activity&&<ActivityCenter user={user} onClose={()=>setActivity(false)}/>}
+      <IconTooltips/>
     </main>;
   }
   return (
