@@ -1,3 +1,4 @@
+import { EventPreviewButton } from './EventPreviewButton';
 import { createContext, useContext } from 'react';
 import { useLocale } from '../../i18n/LocaleProvider';
 import { TablerIcon as Icon } from '../../components/layout/TablerIcon';
@@ -27,9 +28,9 @@ export function TaskCompletion({event,large=false}){
 // Separate sibling buttons keep the event opener and completion control keyboard accessible.
 export function CalendarEventButton({event,placement='list',className='',style,children,...props}){
  const actions=useContext(ActionsContext);
- if(event.type!=='task'||!actions?.canChange(event))return <button type="button" className={className||undefined} style={style} {...props}>{children}</button>;
+ if(event.type!=='task'||!actions?.canChange(event))return <EventPreviewButton event={event} zone={actions?.zone} className={className||undefined} style={style} {...props}>{children}</EventPreviewButton>;
  return <div className={'calendar-event-wrap calendar-event-'+placement+' '+(event.status==='done'?'is-done':'')} style={placement==='list'?undefined:style}>
-  <button type="button" className={(className?className+' ':'')+'calendar-event-open'} style={placement==='list'?style:undefined} {...props}>{children}</button>
+  <EventPreviewButton event={event} zone={actions?.zone} className={(className?className+' ':'')+'calendar-event-open'} style={placement==='list'?style:undefined} {...props}>{children}</EventPreviewButton>
   <TaskCompletion event={event}/>
  </div>;
 }
