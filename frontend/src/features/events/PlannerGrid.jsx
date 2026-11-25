@@ -1,3 +1,4 @@
+import { planningWindow } from './planningPreferences';
 import { formatMinute } from './timeDisplay';
 import { slotMinute } from './calendarInteractions';
 import { CalendarEventButton, useCalendarDrop } from './CalendarEventActions';
@@ -34,13 +35,8 @@ const keyOf=e=>e.calendarId+':'+(e.occurrenceId||e.id);
 const timeLabel=n=>String(Math.floor(n/60)).padStart(2,'0')+':'+String(n%60).padStart(2,'0');
 function useClock(){const [now,setNow]=useState(()=>new Date());useEffect(()=>{const timer=setInterval(()=>setNow(new Date()),30000);return()=>clearInterval(timer)},[]);return now}
 
-export function visibleHours(blocks,fullDay=false){
- if(fullDay)return {first:0,last:24};
- const first=Math.min(8,...blocks.map(b=>Math.floor(b.start/60)));
- const last=Math.min(24,Math.max(20,...blocks.map(b=>Math.ceil(Math.max(b.end,b.start+35)/60))));
- return {first,last};
-}
-export function PlannerGrid({view,days,events,calendars,zone,timeFormat,onSelect,selectedDay,onDaySelect,fullDay=false,canEdit=false,onCreateAt}){
+export function visibleHours(blocks,fullDay=false,workHours){return planningWindow(blocks,fullDay,workHours);}
+export function PlannerGrid({view,days,events,calendars,zone,timeFormat,onSelect,selectedDay,onDaySelect,fullDay=false,workHours,canEdit=false,onCreateAt}){
  const {locale}=useLocale(),now=useClock();
  const timeLabel=n=>formatMinute(n,locale,timeFormat);
  const drop=useCalendarDrop();
@@ -48,7 +44,7 @@ export function PlannerGrid({view,days,events,calendars,zone,timeFormat,onSelect
  const today=eventDayKey({startsAt:now},zone),nowMinute=minute(now,zone);
  const dateKey=days[0];
  const allBlocks=days.flatMap(day=>dayBlocks(events,day,zone).blocks);
- const {first,last}=visibleHours(allBlocks,fullDay);
+ const {first,last}=visibleHours(allBlocks,fullDay,workHours);
  const span=(last-first)*60;
  const position=n=>(n-first*60)/span*100;
  const y=n=>position(n);
