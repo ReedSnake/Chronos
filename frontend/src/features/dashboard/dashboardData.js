@@ -35,23 +35,36 @@ export async function loadDashboard(service, range) {
 }
 
 export function summarizeDashboard(events, range, timeZone) {
-  const days = range.days.map(key => ({ key, events: [], minutes: 0 }));
-  const byKey = new Map(days.map(day => [day.key, day]));
-  for (const event of events) {
-    if (event.status === 'canceled') continue;
-    const key = eventDayKey(event, timeZone);
-    const day = byKey.get(key);
-    if (!day) continue;
-    day.events.push(event);
-    if (event.type === 'arrangement' && event.startsAt && event.endsAt) {
-      const minutes = (Date.parse(event.endsAt) - Date.parse(event.startsAt)) / 60000;
-      if (Number.isFinite(minutes) && minutes > 0) day.minutes += minutes;
+  const days=range.days.map(key=>{
+    const following=new Date(key+'T12:00:00Z');following.setUTCDate(following.getUTCDate()+1);
+    return {key,events:[],minutes:0,start:Date.parse(fromCalendarInput(key+'T00:00',timeZone)),end:Date.parse(fromCalendarInput(keyOf(following)+'T00:00',timeZone))};
+  });
+  const byKey=new Map(days.map(day=>[day.key,day]));
+  const visible=[];
+  const seen=new Set();
+  for(const event of events){
+    if(event.status==='canceled')continue;
+    const identity=event.id?String(event.calendarId)+':'+(event.occurrenceId||event.id):event;
+    if(seen.has(identity))continue;
+    seen.add(identity);
+    let included=false;
+    if(event.type==='arrangement'){
+      const start=Date.parse(event.startsAt),end=Date.parse(event.endsAt);
+      if(Number.isFinite(start)&&Number.isFinite(end)&&end>start){
+        for(const day of days){
+          const overlap=Math.min(end,day.end)-Math.max(start,day.start);
+          if(overlap>0){day.events.push(event);day.minutes+=overlap/60000;included=true;}
+        }
+      }
+    }else{
+      const day=byKey.get(eventDayKey(event,timeZone));
+      if(day){day.events.push(event);included=true;}
     }
+    if(included)visible.push(event);
   }
-  const visible = days.flatMap(day => day.events);
-  const tasks = visible.filter(event => event.type === 'task').sort((a,b) => Number(a.status === 'done') - Number(b.status === 'done') || Date.parse(a.deadline) - Date.parse(b.deadline));
-  const done = tasks.filter(event => event.status === 'done').length;
-  const meetings = visible.filter(event => event.type === 'arrangement');
-  const reminders = visible.filter(event => event.type === 'reminder');
-  return { days, tasks, done, meetings, reminders, minutes: days.reduce((sum, day) => sum + day.minutes, 0), today: byKey.get(range.today)?.events || [] };
+  const tasks=visible.filter(e=>e.type==='task').sort((a,b)=>Number(a.status==='done')-Number(b.status==='done')||Date.parse(a.deadline)-Date.parse(b.deadline));
+  const done=tasks.filter(e=>e.status==='done').length;
+  const meetings=visible.filter(e=>e.type==='arrangement'),reminders=visible.filter(e=>e.type==='reminder');
+  const cleanDays=days.map(({key,events,minutes})=>({key,events,minutes}));
+  return {days:cleanDays,tasks,done,meetings,reminders,minutes:cleanDays.reduce((sum,day)=>sum+day.minutes,0),today:byKey.get(range.today)?.events||[]};
 }
