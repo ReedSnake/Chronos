@@ -17,6 +17,18 @@
   --chronos-dialog-backdrop: #30303040;
   --chronos-focus: #956719;
   --chronos-subtle: #f5f8fb;
+  --chronos-space-xs: 4px;
+  --chronos-space-sm: 8px;
+  --chronos-space-md: 12px;
+  --chronos-space-lg: 16px;
+  --chronos-space-xl: 24px;
+  --chronos-motion-fast: 160ms;
+  --chronos-motion-normal: 240ms;
+  --chronos-motion-page: 320ms;
+  --chronos-motion-ease: cubic-bezier(.22,1,.36,1);
+  --chronos-font-small: 12px;
+  --chronos-font-body: 14px;
+  --chronos-font-section: 16px;
   color-scheme: light;
   color: var(--chronos-ink);
   background: var(--chronos-background);
