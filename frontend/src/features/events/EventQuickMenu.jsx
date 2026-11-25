@@ -11,11 +11,13 @@ export function EventQuickMenu({event,zone,busy,onClose,onOpen,onPatch,onCopy,on
   const [time,setTime]=useState(canMoveEvent(event)?toCalendarInput(event[eventTimeField(event)],zone):'');
   const [duration,setDuration]=useState(event.type==='arrangement'?Math.round((Date.parse(event.endsAt)-Date.parse(event.startsAt))/60000):60);
   const [quick,setQuick]=useState(false);
+  const [status,setStatus]=useState(event.status||'todo');
   return <EventDialog label={event.title} onClose={onClose} busy={busy}>
     <div className="ux-quick-menu">
       <header><strong>{event.title}</strong><button type="button" aria-label={uk?'Закрити':'Close'} onClick={onClose} disabled={busy}><Icon name="x" size={17}/></button></header>
-      {quick?<form onSubmit={e=>{e.preventDefault();onPatch({title:title.trim(),time,duration:Number(duration)});}}>
+      {quick?<form onSubmit={e=>{e.preventDefault();onPatch({title:title.trim(),time,duration:Number(duration),status});}}>
         <label>{uk?'Назва':'Title'}<input value={title} onChange={e=>setTitle(e.target.value)} required maxLength={200}/></label>
+        {event.type==='task'&&<label>{t('calendarView.event.status')}<select value={status} onChange={e=>setStatus(e.target.value)}>{['todo','in_progress','done'].map(s=><option key={s} value={s}>{t('statuses.'+s)}</option>)}</select></label>}
         {canMoveEvent(event)&&<label>{uk?'Дата й час':'Date and time'}<input type="datetime-local" value={time} onChange={e=>setTime(e.target.value)} required/></label>}
         {canMoveEvent(event)&&event.type==='arrangement'&&<label>{uk?'Тривалість (хв)':'Duration (min)'}<input type="number" min="15" max="10080" value={duration} onChange={e=>setDuration(e.target.value)} required/></label>}
         <button className="ux-primary" type="submit" disabled={busy||!title.trim()}>{uk?'Зберегти':'Save'}</button>
