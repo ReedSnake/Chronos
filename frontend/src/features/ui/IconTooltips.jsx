@@ -8,11 +8,11 @@ export function IconTooltips(){
     function dismiss(){clearTimeout(timer.current);target.current=null;setTip(null);}
     function show(node){
       const button=node?.closest?.('button[aria-label],a[aria-label]');
-      if(!button||button.disabled||button.closest('.event-preview')||button.getAttribute('aria-describedby')||!button.querySelector('svg'))return;
+      if(!button||button.disabled||button.hasAttribute('title')||button.closest('.event-preview')||button.getAttribute('aria-describedby')||!button.querySelector('svg'))return;
       // Restrict to icon-only controls, including labels hidden by a collapsed sidebar.
       const visibleText=[...button.childNodes].some(n=>n.nodeType===3&&n.textContent.trim())||[...button.querySelectorAll('span,strong,small')].some(n=>n.textContent.trim()&&n.getClientRects().length&&getComputedStyle(n).visibility!=='hidden'&&!n.classList.contains('visually-hidden'));
       if(visibleText)return;
-      const label=button.getAttribute('aria-label');if(!label)return;
+      const label=button.getAttribute('aria-label');if(!label||target.current===button)return;
       dismiss();target.current=button;
       timer.current=setTimeout(()=>{
         if(!button.isConnected)return;
