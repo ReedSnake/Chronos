@@ -1,5 +1,5 @@
 import { slotMinute } from './calendarInteractions';
-import { CalendarEventButton, EventSymbol, EventStatus } from './CalendarEventActions';
+import { CalendarEventButton, EventSymbol, EventStatus, useCalendarDrop } from './CalendarEventActions';
 import { useEffect, useRef, useState } from 'react';
 import { useLocale } from '../../i18n/LocaleProvider';
 import { TablerIcon as Icon } from '../../components/layout/TablerIcon';
@@ -47,6 +47,7 @@ export function plannerRows(events,calendars,day,zone,view,days=[day]){
 
 export function DayPlanner({events,calendars,day,zone,fullDay,loading,error,partial,onSelect,onCreate,onCreateAt,canEdit,view='day',days=[day],onDaySelect}){
  const {locale,t}=useLocale(),uk=locale==='uk';
+ const drop=useCalendarDrop();
  const [now,setNow]=useState(()=>new Date());
  useEffect(()=>{const timer=setInterval(()=>setNow(new Date()),30000);return()=>clearInterval(timer)},[]);
  const model=dailyPlannerModel(events,calendars,day,zone);
@@ -94,7 +95,7 @@ export function DayPlanner({events,calendars,day,zone,fullDay,loading,error,part
      <div className="day-axis">{hours.filter((h,i)=>i%labelStep===0).map(h=><span key={h} style={{left:pos(h*60)+'%'}}>{clock(h*60)}</span>)}{showNow&&<strong className="day-now-tag" style={{left:pos(minute)+'%'}}>{clock(minute)}</strong>}</div>
      {fittedRows.map(row=>{const {blocks,lanes,holidays}=row;const slots=lanes+holidays.length;return <div className="day-row" key={row.id}>
       <div className={'day-row-name'+(view==='week'&&row.date===day?' selected':'')}>{view==='week'?<button className="day-row-select" type="button" onClick={()=>onDaySelect?.(row.date)}><strong>{rowName(row)}</strong><small>{count(blocks.length+holidays.length)} {uk?'подій':'events'}</small></button>:<div><strong>{rowName(row)}</strong><small>{count(blocks.length+holidays.length)} {uk?'подій':'events'}</small></div>}</div>
-      <div className={'day-row-lane'+(canEdit?' calendar-create-lane':'')} onClick={e=>{if(!canEdit||e.target.closest('button'))return;const rect=e.currentTarget.getBoundingClientRect();onCreateAt?.(row.date||day,slotMinute((e.clientX-rect.left)/rect.width,first,last));}} style={{"--slot-height":100/slots+"%"}}>
+      <div {...drop(row.date||day,e=>{const rect=e.currentTarget.getBoundingClientRect();return slotMinute((e.clientX-rect.left)/rect.width,first,last);})} className={'day-row-lane'+(canEdit?' calendar-create-lane':'')} onClick={e=>{if(!canEdit||e.target.closest('button'))return;const rect=e.currentTarget.getBoundingClientRect();onCreateAt?.(row.date||day,slotMinute((e.clientX-rect.left)/rect.width,first,last));}} style={{"--slot-height":100/slots+"%"}}>
        {holidays.map((e,i)=><button type="button" key={keyOf(e)} className="day-holiday" style={{top:(i+.5)/slots*100+'%'}} onClick={()=>onSelect(e)}>{e.title}</button>)}
        {blocks.map(b=>{const e=b.event;return <CalendarEventButton event={e} placement="positioned" key={keyOf(e)} className={'day-event '+(b.point?'instant ':'meeting ')+(e.status==='done'?'done ':e.status==='canceled'?'canceled ':'')+e.type} title={e.title+' · '+clock(b.start)+(b.point?'':'–'+clock(b.end))} style={{left:b.left+'%',top:(holidays.length+b.lane+.5)/slots*100+'%',width:b.width+'%'}} onClick={()=>onSelect(e)}><span className="day-event-text"><strong>{e.title}</strong><small>{clock(b.start)}{!b.point?'–'+clock(b.end):''}</small></span></CalendarEventButton>})}
        {showNow&&row.date===todayKey&&<i className="day-now-line" style={{left:pos(minute)+'%'}}/>}
