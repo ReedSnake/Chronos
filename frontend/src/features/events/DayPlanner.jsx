@@ -1,3 +1,4 @@
+import { formatMinute } from './timeDisplay';
 import { slotMinute } from './calendarInteractions';
 import { CalendarEventButton, EventSymbol, EventStatus, useCalendarDrop } from './CalendarEventActions';
 import { useEffect, useRef, useState } from 'react';
@@ -45,8 +46,9 @@ export function plannerRows(events,calendars,day,zone,view,days=[day]){
  }));
 }
 
-export function DayPlanner({events,calendars,day,zone,fullDay,loading,error,partial,onSelect,onCreate,onCreateAt,canEdit,view='day',days=[day],onDaySelect}){
+export function DayPlanner({events,calendars,day,zone,timeFormat,fullDay,loading,error,partial,onSelect,onCreate,onCreateAt,canEdit,view='day',days=[day],onDaySelect}){
  const {locale,t}=useLocale(),uk=locale==='uk';
+ const clock=n=>formatMinute(n,locale,timeFormat);
  const drop=useCalendarDrop();
  const [now,setNow]=useState(()=>new Date());
  useEffect(()=>{const timer=setInterval(()=>setNow(new Date()),30000);return()=>clearInterval(timer)},[]);
