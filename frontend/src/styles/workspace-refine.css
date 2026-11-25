@@ -4,10 +4,6 @@
 .workspace-topbar-actions { display:flex; align-items:center; justify-content:flex-end; gap:10px; min-width:0; }
 .workspace-topbar button,.workspace-collapse { display:flex; align-items:center; justify-content:center; gap:9px; border:1px solid #3030300d; border-radius:10px; background:var(--chronos-surface); color:var(--chronos-ink); font:inherit; cursor:pointer; transition:background-color var(--chronos-motion-normal) ease,box-shadow var(--chronos-motion-normal) ease; }
 .workspace-topbar button:hover,.workspace-collapse:hover { background:#f7f9fc; box-shadow:0 2px 7px #3030300a; }
-.workspace-topbar .workspace-global-search { justify-content:flex-start; min-height:42px; width:min(290px,42vw); padding:9px 12px; text-align:left; font-size:13px; color:#303030a6; }
-.workspace-global-search svg { flex:none; color:var(--chronos-ink); }
-.workspace-global-search span { flex:1; }
-.workspace-global-search kbd { flex:none; font-size:10px; font-family:inherit; padding:3px 5px; border-radius:4px; background:var(--chronos-background); color:#30303080; }
 .workspace-topbar .workspace-notifications { width:42px; height:42px; flex:none; }
 .workspace-collapse-row { display:flex; justify-content:flex-end; margin-block:-30px -26px; }
 .workspace-collapse { width:30px; height:30px; background:transparent; border:0; }
@@ -48,7 +44,7 @@
 @media(max-width:1100px) { .dash-focus-grid { grid-template-columns:minmax(0,1.55fr) minmax(210px,1fr); gap:12px; } .dash-focused .dash-card { padding:14px; } }
 @media(max-width:850px) { .workspace-collapse-row { display:none; } .dash-focus-grid { grid-template-columns:minmax(0,1fr); } .dash-focus-main,.dash-focus-side { gap:12px; } .dash-focused .dash-side-widgets { grid-template-columns:minmax(0,1fr); } .workspace-main.has-topbar>.tb-page { height:auto; min-height:0; } }
 @media(max-width:700px) { .workspace-main.has-topbar>.chrono-calendar { height:auto; min-height:0; } }
-@media(max-width:540px) { .workspace-main.has-topbar { display:flex; flex-direction:column; } .workspace-main.has-topbar>.workspace-mobile-actions { order:0; } .workspace-main.has-topbar>.workspace-topbar { order:-1; } .workspace-topbar { margin-bottom:12px; } .workspace-topbar-actions { width:100%; } .workspace-topbar .workspace-global-search { flex:1; width:auto; min-width:0; } .workspace-global-search kbd { display:none; } .dash-focused .dash-side-widgets { grid-template-columns:minmax(0,1fr); } .dash-focused .dash-event-list,.dash-focused .dash-task-list { max-height:none; } }
+@media(max-width:540px) { .workspace-main.has-topbar { display:flex; flex-direction:column; } .workspace-main.has-topbar>.workspace-mobile-actions { order:0; } .workspace-main.has-topbar>.workspace-topbar { order:-1; } .workspace-topbar { margin-bottom:12px; } .workspace-topbar-actions { width:100%; } .dash-focused .dash-side-widgets { grid-template-columns:minmax(0,1fr); } .dash-focused .dash-event-list,.dash-focused .dash-task-list { max-height:none; } }
 @media(prefers-reduced-motion:reduce) { .workspace .workspace-nav-link,.workspace-topbar button,.workspace-collapse { transition:none; } }
 
 .dash-task-header-actions { display:flex; align-items:center; gap:10px; flex-wrap:wrap; justify-content:flex-end; }
@@ -68,7 +64,9 @@
 .workspace-page-error button {border:0;border-radius:var(--chronos-radius-field);background:var(--chronos-accent);color:var(--chronos-ink);font:inherit;font-size:var(--chronos-font-small);padding:10px 14px;cursor:pointer}
 
 /* Dashboard placement; card styling is shared with Calendar Overview. */
-.workspace .dashboard-home{max-width:1280px;gap:14px;container-type:inline-size}
+.workspace .dashboard-home{width:100%;max-width:1280px;grid-template-columns:minmax(0,1fr);gap:14px;container-type:inline-size;align-items:start}
+.dashboard-home>.dash-calendar-disclosure{grid-column:1;grid-row:auto}
+.dashboard-home>.dash-header,.dashboard-home>.dashboard-overview{grid-column:1;min-width:0}
 .dashboard-home .dash-header{padding:2px 0 6px}
 .dashboard-home .dash-header h1{font-size:clamp(26px,2.6vw,36px);text-transform:capitalize}
 .dashboard-overview{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1.25fr) minmax(0,1fr);grid-template-rows:minmax(128px,auto) minmax(112px,auto) minmax(230px,1fr);grid-template-areas:"schedule tasks week" "schedule tasks actions" "schedule upcoming completion";gap:10px;min-height:540px}
