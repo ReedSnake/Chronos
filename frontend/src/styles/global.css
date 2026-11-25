@@ -235,3 +235,7 @@ body {
 .page:not(.public-home):not(.auth-screen) .auth-form button[type="submit"] { background:var(--chronos-accent); color:var(--chronos-ink); border-color:var(--chronos-accent); font-weight:600; }
 :where(button,input,textarea,select,a,summary):focus-visible { outline:2px solid var(--chronos-ink); outline-offset:3px; }
 input[type="checkbox"],input[type="radio"] { accent-color:var(--chronos-ink); }
+
+/* Hide scrollbar chrome throughout the app; never disable scrolling. */
+*, *::before, *::after { scrollbar-width:none !important; -ms-overflow-style:none; }
+*::-webkit-scrollbar { display:none !important; width:0 !important; height:0 !important; }
