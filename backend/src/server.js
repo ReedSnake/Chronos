@@ -5,6 +5,9 @@ const logger = require('./config/logger');
 const { closeDatabase, connectDatabase } = require('./database/connection');
 const { initializeDatabase } = require('./database/lifecycle');
 
+const { startNotificationWorker } = require('./services/notificationService');
+
+let stopNotificationWorker;
 let isShuttingDown = false;
 let databaseInitializationPromise;
 
@@ -58,6 +61,7 @@ function startServer() {
           logger.warn('HTTP server remains available while MongoDB reconnects');
         });
 
+      stopNotificationWorker = startNotificationWorker();
       resolve(server);
     });
   });
@@ -83,6 +87,7 @@ async function gracefulShutdown(server, signal, exitCode = 0) {
 
   try {
     await closeHttpServer(server);
+    if (stopNotificationWorker) await stopNotificationWorker();
     await closeDatabase();
     logger.info('Graceful shutdown completed');
   } catch (error) {

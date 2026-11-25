@@ -48,6 +48,7 @@ test('registration stores verification hash, bcrypt hash and only reports succes
   assert.equal(created.passwordHash, 'bcrypt-hash');
   assert.equal(created.country, undefined);
   assert.equal(created.emailVerifiedAt, null);
+  assert.equal(created.welcomeNotificationEnabled, true);
   assert.equal(created.emailVerification.tokenHash,
     createHash('sha256').update(sent.token).digest('hex'));
   assert.notEqual(created.emailVerification.tokenHash, sent.token);

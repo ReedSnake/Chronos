@@ -2,6 +2,9 @@ import { WorkspaceErrorBoundary } from '../components/layout/WorkspaceErrorBound
 import { IconTooltips } from '../features/ui/IconTooltips';
 import '../styles/ux-final.css';
 import { ActivityCenter } from '../features/ui/ActivityCenter';
+import { useNotifications } from '../features/ui/useNotifications';
+import { NotificationToast } from '../features/ui/NotificationToast';
+import '../styles/notifications.css';
 import { useLocalPreference } from '../features/ui/useLocalPreference';
 import '../styles/ux-polish.css';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
@@ -34,6 +37,7 @@ export function ApplicationPage() {
   const [activity,setActivity]=useState(false);
   useEffect(()=>{if(status!=='authenticated')setActivity(false);},[status]);
   const signedIn = status === 'authenticated';
+  const notifications = useNotifications(signedIn ? user?.id : null);
   const isPublicHome = status === 'anonymous' && pathname.replace(/\/$/, '') === localizedPath('/').replace(/\/$/, '');
   const authResolved = status !== 'loading';
   const workspaceRoute = pathname.replace(/^\/[^/]+/, '').replace(/\/$/, '');
@@ -104,14 +108,15 @@ export function ApplicationPage() {
         </div>
       </aside>
       <div ref={mainRef} className={'workspace-main'+(showTopbar?' has-topbar':'')}>
-        {showTopbar&&<header className="workspace-topbar"><div className="workspace-topbar-actions"><button className="workspace-notifications" type="button" onClick={()=>setActivity(true)} title={t('workspace.activity')} aria-label={t('workspace.activity')}><TablerIcon name="bell" size={21}/></button></div></header>}
+        {showTopbar&&<header className="workspace-topbar"><div className="workspace-topbar-actions"><button className="workspace-notifications" type="button" onClick={()=>{notifications.dismissToast();setActivity(true);}} title={t('workspace.activity')} aria-label={`${t('workspace.activity')}${notifications.unreadCount ? ` (${notifications.unreadCount})` : ''}`}><TablerIcon name="bell" size={21}/>{notifications.unreadCount>0&&<span className="notification-count" aria-hidden="true">{notifications.unreadCount>99?'99+':notifications.unreadCount}</span>}</button></div></header>}
         <div className="workspace-mobile-actions"><label className="workspace-language workspace-mobile-language"><span className="visually-hidden">{t('languageSwitcher.label')}</span><select value={locale} aria-label={t('languageSwitcher.label')} onChange={event=>navigate(locationForLocale(event.target.value),{replace:true})}>{SUPPORTED_LOCALES.map(lang=><option key={lang} value={lang}>{t(`languageSwitcher.${lang}`)}</option>)}</select></label>{signOutButton}</div>
         {signOutError && <p className="workspace-sign-out-error" role="alert">{signOutError}</p>}
         <WorkspaceErrorBoundary key={pathname} title={t('workspace.pageError')} description={t('workspace.pageErrorDescription')} retry={t('common.retry')}>
           <Outlet context={{ setAccountExitState, signOutPending }}/>
         </WorkspaceErrorBoundary>
       </div>
-      {activity&&<ActivityCenter user={user} onClose={()=>setActivity(false)}/>}
+      {activity&&<ActivityCenter user={user} notifications={notifications} onClose={()=>setActivity(false)}/>}
+      {!activity&&<NotificationToast notification={notifications.toast} onOpen={()=>{notifications.dismissToast();setActivity(true);}} onDismiss={notifications.dismissToast}/>}
       <IconTooltips/>
     </main>;
   }

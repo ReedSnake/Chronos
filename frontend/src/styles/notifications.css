@@ -1,0 +1,26 @@
+.workspace-notifications { position:relative; }
+.notification-count { position:absolute; top:-5px; right:-5px; min-width:19px; height:19px; padding:0 4px; display:grid; place-items:center; border:2px solid #fff; border-radius:20px; background:#F5BC5A; color:#303030; font-size:10px; font-weight:700; line-height:1; }
+.notification-inbox-heading { display:flex; justify-content:space-between; align-items:center; gap:10px; }
+.notification-inbox-heading h3 { margin:0; }
+.notification-inbox-heading button { color:#8a6122; font-size:11px; padding:6px 8px; }
+.notification-inbox-heading button:hover { background:#fff3dc; }
+.notification-inbox-list { display:grid; gap:6px; max-height: min(38dvh,300px); overflow-y:auto; scrollbar-width:none; }
+.notification-inbox-list::-webkit-scrollbar { display:none; }
+.ux-activity .notification-inbox-item { background:#f5f7fa; align-items:flex-start; padding:11px; }
+.ux-activity .notification-inbox-item.is-unread { background:#fff5e3; }
+.ux-activity .notification-inbox-item:hover { background:#e8eff6; }
+.notification-inbox-item>svg { flex-shrink:0; margin-top:2px; }
+.notification-inbox-item small { line-height:1.45; }
+.notification-unread-dot { width:7px; height:7px; flex:none; border-radius:50%; background:#e7ab46; margin-top:5px; }
+.notification-toast { position:fixed; z-index:120; right:24px; bottom:24px; width:min(360px,calc(100vw - 32px)); border:1px solid #30303012; border-radius:16px; padding:15px; display:flex; align-items:flex-start; gap:12px; color:#303030; background:#fff; box-shadow:0 8px 32px #30303020; }
+.notification-toast-icon { flex:none; display:grid; place-items:center; background:#fff1d6; width:38px; height:38px; border-radius:11px; }
+.notification-toast-content { min-width:0; flex:1; }
+.notification-toast-content strong { font-size:14px; font-weight:650; }
+.notification-toast-content p { font-size:12px; line-height:1.5; margin:4px 0 8px; overflow-wrap:anywhere; color:#303030b3; }
+.notification-toast button { border:0; border-radius:6px; background:transparent; color:#303030; font:inherit; font-size:11px; cursor:pointer; padding:4px; }
+.notification-toast-content button { color:#936516; padding-left:0; }
+.notification-toast button:hover { background:#e8eff6; }
+.notification-toast-close { flex:none; display:grid; place-items:center; }
+@media(max-width:540px) { .notification-toast { right:16px; bottom:calc(80px + env(safe-area-inset-bottom)); } }
+.event-dialog:has(.ux-activity) { scrollbar-width:none; }
+.event-dialog:has(.ux-activity)::-webkit-scrollbar { display:none; }

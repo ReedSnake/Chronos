@@ -6,6 +6,7 @@ const CalendarMember = require('../models/CalendarMember');
 const CalendarShareLink = require('../models/CalendarShareLink');
 const CalendarInvitation = require('../models/CalendarInvitation');
 const Event = require('../models/Event');
+const Notification = require('../models/Notification');
 const Integration = require('../models/Integration');
 const ApiKey = require('../models/ApiKey');
 const IntegrationAccessGrant = require('../models/IntegrationAccessGrant');
@@ -123,6 +124,7 @@ async function removeCalendarData(userId, email) {
   await CalendarMember.deleteMany({ calendarId: { $in: ownedCalendarIds } });
   await CalendarShareLink.deleteMany({ calendarId: { $in: ownedCalendarIds } });
   await CalendarInvitation.deleteMany({ calendarId: { $in: ownedCalendarIds } });
+  await Notification.deleteMany({ calendarId: { $in: ownedCalendarIds } });
   await Event.deleteMany({ calendarId: { $in: ownedCalendarIds } });
   await Calendar.deleteMany({ _id: { $in: ownedCalendarIds } });
 }
@@ -150,6 +152,7 @@ async function deleteAccount(userId, req, res) {
   await sessionService.revokeSession(req, res);
   await AuthSession.deleteMany({ userId });
   await Avatar.deleteOne({ userId });
+  await Notification.deleteMany({ userId });
   await removeCalendarData(userId, user.email);
   await removeIntegrationData(userId, user.email);
   const deleted = await User.deleteOne({ _id: userId });

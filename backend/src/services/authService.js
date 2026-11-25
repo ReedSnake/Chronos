@@ -55,6 +55,7 @@ async function register({ name, email, password }, locale = 'en') {
       email,
       passwordHash,
       emailVerifiedAt: null,
+      welcomeNotificationEnabled: true,
       emailVerification: {
         tokenHash: verification.tokenHash,
         expiresAt: verification.expiresAt,

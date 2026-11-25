@@ -35,6 +35,7 @@ const userSchema = new Schema({
     timeFormat: { type: String, enum: ['12h', '24h'], default: '24h' },
   },
   emailVerifiedAt: { type: Date, default: null },
+  welcomeNotificationEnabled: { type: Boolean, default: false },
   emailVerification: {
     tokenHash: { type: String, select: false, index: true, sparse: true },
     expiresAt: { type: Date },

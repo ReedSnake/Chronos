@@ -31,6 +31,7 @@ const options = {
       { name: 'System', description: 'Server and database status endpoints.' },
       { name: 'Auth', description: 'Email registration, verification and cookie sessions.' },
       { name: 'Users', description: 'Profile and account management.' },
+      { name: 'Notifications', description: 'Persistent in-app notification inbox.' },
       { name: 'Calendars', description: 'Personal and shared calendar management.' },
       { name: 'Events', description: 'Event CRUD, recurring occurrences and attendee email records.' },
       { name: 'Integrations', description: 'Session-managed integrations and revocable API keys.' },
@@ -58,6 +59,15 @@ const options = {
       },
     },
     paths: {
+      '/api/notifications': {
+        get: { tags: ['Notifications'], summary: 'List the current user’s notifications and unread count', responses: { 200: { description: 'Notification inbox' }, 401: { description: 'Authentication required' } } },
+      },
+      '/api/notifications/read-all': {
+        patch: { tags: ['Notifications'], summary: 'Mark all accessible notifications as read', responses: { 200: { description: 'Updated' }, 401: { description: 'Authentication required' } } },
+      },
+      '/api/notifications/{id}/read': {
+        patch: { tags: ['Notifications'], summary: 'Mark one notification as read', parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }], responses: { 200: { description: 'Updated' }, 401: { description: 'Authentication required' } } },
+      },
       '/api/health': {
         get: {
           tags: ['System'],

@@ -6,6 +6,7 @@ import { TimeZoneService } from '../services/TimeZoneService';
 import { UserService } from '../services/UserService';
 import { CalendarService } from '../services/CalendarService';
 import { IntegrationService } from '../services/IntegrationService';
+import { NotificationService } from '../services/NotificationService';
 
 const httpClient = new HttpClient({
   baseUrl: runtimeConfigValues.apiBaseUrl,
@@ -19,4 +20,5 @@ export const applicationContainer = Object.freeze({
   timeZoneService: new TimeZoneService(),
   integrationService: new IntegrationService(httpClient),
   userService: new UserService(httpClient),
+  notificationService: new NotificationService(httpClient),
 });

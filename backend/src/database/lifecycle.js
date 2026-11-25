@@ -5,6 +5,7 @@ const User = require('../models/User');
 const AuthSession = require('../models/AuthSession');
 const Avatar = require('../models/Avatar');
 const Event = require('../models/Event');
+const Notification = require('../models/Notification');
 const Calendar = require('../models/Calendar');
 const CalendarMember = require('../models/CalendarMember');
 const Integration = require('../models/Integration');
@@ -22,6 +23,7 @@ async function initializeDatabase({ seed = true } = {}) {
   await Avatar.createIndexes();
   await Calendar.createIndexes();
   await Event.createIndexes();
+  await Notification.createIndexes();
   await CalendarMember.createIndexes();
   await Integration.createIndexes();
   await ApiKey.createIndexes();

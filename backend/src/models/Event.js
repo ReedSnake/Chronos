@@ -148,6 +148,7 @@ eventSchema.pre('validate', function validateTypeSpecificFields() {
 });
 
 eventSchema.index({ calendarId: 1, startsAt: 1 });
+eventSchema.index({ type: 1, isRecurring: 1, startsAt: 1 });
 eventSchema.index({ calendarId: 1, categories: 1, startsAt: 1 });
 
 module.exports = model('Event', eventSchema);

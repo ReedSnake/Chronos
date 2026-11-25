@@ -10,6 +10,7 @@ function loadWithMocks(relativePath, replacements) {
   const loaded = new Module(filename, module);
   loaded.filename = filename;
   loaded.paths = Module._nodeModulePaths(path.dirname(filename));
+  replacements = { '../models/Notification': { deleteMany: async () => {} }, ...replacements };
   const prior = Module._load;
   Module._load = function mocked(request, parent, isMain) {
     if (parent?.filename === filename && Object.hasOwn(replacements, request)) return replacements[request];
@@ -339,6 +340,7 @@ test('account deletion clears owned records and external references to the delet
     '../models/CalendarShareLink': { deleteMany: capture('links') },
     '../models/CalendarInvitation': { deleteMany: capture('invitations') },
     '../models/Event': { updateMany: capture('attendeeReferences'), deleteMany: capture('events') },
+    '../models/Notification': { deleteMany: capture('notifications') },
     '../models/ApiKey': { deleteMany: capture('keys') },
     '../models/Integration': {
       find: () => ({ select: () => ({ lean: async () => [{ _id: integrationId }] }) }),
@@ -358,6 +360,7 @@ test('account deletion clears owned records and external references to the delet
     filter: { 'attendees.email': email }, update: { $pull: { attendees: { email } } },
   });
   assert.deepEqual(queries.events[0].filter, { calendarId: { $in: [calendarId] } });
+  assert.deepEqual(queries.notifications.map(({ filter }) => filter), [{ userId }, { calendarId: { $in: [calendarId] } }]);
   assert.deepEqual(queries.pairings[0].filter, { $or: [
     { targetUserId: userId }, { targetEmail: email }, { integrationId: { $in: [integrationId] } },
   ] });

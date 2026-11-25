@@ -157,6 +157,7 @@ test('calendar deletion removes its event records with other calendar data', asy
     '../models/CalendarShareLink': { deleteMany: async () => {} },
     '../models/CalendarInvitation': { deleteMany: async () => {} },
     '../models/Event': { deleteMany: async (filter) => { deletedEvents = filter; } },
+    '../models/Notification': { deleteMany: async () => {} },
   });
   await service.deleteCalendarForUser('owner-id', 'calendar-id');
   assert.deepEqual(deletedEvents, { calendarId: 'calendar-id' });

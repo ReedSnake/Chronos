@@ -64,6 +64,7 @@ app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 app.use('/api/health', healthRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/notifications', require('./routes/notificationRoutes'));
 app.use('/api/calendars', calendarRoutes);
 app.use('/api/integrations', integrationRoutes);
 app.use('/api/me', integrationAccessRoutes);

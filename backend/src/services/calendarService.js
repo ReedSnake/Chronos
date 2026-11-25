@@ -3,6 +3,7 @@ const CalendarMember = require('../models/CalendarMember');
 const CalendarShareLink = require('../models/CalendarShareLink');
 const CalendarInvitation = require('../models/CalendarInvitation');
 const Event = require('../models/Event');
+const Notification = require('../models/Notification');
 const { ensurePersonalCalendars } = require('./personalCalendarService');
 const AppError = require('../utils/AppError');
 const { hasCalendarRole } = require('../constants/calendarRoles');
@@ -120,6 +121,7 @@ async function removeCalendarData(calendarId) {
   await CalendarMember.deleteMany({ calendarId });
   await CalendarShareLink.deleteMany({ calendarId });
   await CalendarInvitation.deleteMany({ calendarId });
+  await Notification.deleteMany({ calendarId });
   await Event.deleteMany({ calendarId });
   const deleted = await Calendar.deleteOne({ _id: calendarId });
   if (!deleted.deletedCount) throw calendarNotFound();
