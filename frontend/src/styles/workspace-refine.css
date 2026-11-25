@@ -121,3 +121,5 @@
 .dashboard-overview .overview-card{padding:15px;border-radius:18px}
 .dashboard-overview .overview-table,.dashboard-overview .overview-meeting-list,.dashboard-overview .overview-schedule-list{max-height:340px}
 }
+
+.dashboard-overview .home-next-countdown {display:grid;gap:4px;text-align:left;padding:9px 10px;border:1px solid #ffffff24;border-radius:8px;background:#ffffff0c;color:white;min-width:0}.home-next-countdown small{font-size:10px;color:#ffffffb9}.home-next-countdown strong{font-size:19px;color:var(--chronos-accent);font-variant-numeric:tabular-nums}.home-next-countdown span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.dashboard-overview .dash-task-controls .dash-filters{flex-wrap:wrap;gap:2px}.dashboard-overview .dash-task-controls .dash-filters button{white-space:normal}
