@@ -19,11 +19,6 @@ export function slotMinute(fraction, first, last) {
   if (!Number.isFinite(fraction)) return first * 60;
   return Math.max(first*60, Math.min(last*60-15, Math.floor((first*60+fraction*(last-first)*60)/15)*15));
 }
-export function matchesEvent(event, query) {
-  const tokens = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
-  const text = [event.title, event.description].filter(Boolean).join(' ').toLowerCase();
-  return tokens.every(token => text.includes(token));
-}
 export function seedEventTime(draft, day, minute, duration = 60) {
   if (!isCalendarDay(day) || !Number.isFinite(minute)) return draft;
   const start = new Date(day + 'T00:00:00Z');

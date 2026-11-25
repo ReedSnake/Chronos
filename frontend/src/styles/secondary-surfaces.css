@@ -43,7 +43,10 @@
 .support-screen .not-found-card { margin:auto; width:100%; box-shadow:none; border:0; border-radius:var(--chronos-radius-surface); text-align:center; justify-items:center; padding:30px; }
 .support-screen .not-found-card .back-link { background:var(--chronos-accent); padding:11px 16px; }
 .public-profile { min-height:0; background:var(--chronos-surface); border-radius:var(--chronos-radius-surface); padding:clamp(14px,2vw,24px); display:grid; gap:16px; }
-.public-profile .profile-cover { height:clamp(115px,18vw,200px); border-radius:15px; background:radial-gradient(ellipse at 0 5%,#f5bc5a99,transparent 52%),radial-gradient(ellipse at 100% 100%,#9ebbd8,transparent 62%),var(--chronos-background); }
+.public-profile .profile-cover { height:clamp(115px,18vw,200px); border-radius:15px; position:relative; overflow:hidden; isolation:isolate; background:linear-gradient(90deg,#7398ef 0%,#d7e4f7 18%,#f4f6f8 49%,#f7eee1 67%,#ffc55f 87%,#ff7b2f 100%); }
+.public-profile .profile-cover::before,.public-profile .profile-cover::after { content:''; position:absolute; inset:0; pointer-events:none; }
+.public-profile .profile-cover::before { background:repeating-linear-gradient(90deg,rgba(255,255,255,.22) 0 1px,rgba(255,255,255,0) 1px 12px),linear-gradient(180deg,rgba(255,255,255,.26),rgba(255,255,255,.04) 48%,rgba(255,255,255,.18) 100%); mix-blend-mode:screen; opacity:.7; }
+.public-profile .profile-cover::after { background:radial-gradient(circle at 14% 22%,rgba(255,255,255,.62) 0,rgba(255,255,255,.32) 15%,rgba(255,255,255,0) 34%),radial-gradient(circle at 48% 50%,rgba(255,255,255,.42) 0,rgba(255,255,255,.18) 18%,rgba(255,255,255,0) 34%),radial-gradient(circle at 88% 72%,rgba(255,214,120,.58) 0,rgba(255,194,90,.26) 19%,rgba(255,194,90,0) 37%),linear-gradient(90deg,rgba(97,136,223,.16),rgba(255,255,255,0) 30%,rgba(255,187,72,.16) 86%); filter:blur(1px); }
 .public-profile .profile-content { width:min(100%,520px); margin:0 auto; display:grid; gap:20px; }
 .public-profile .profile-identity { margin-top:-58px; position:relative; display:grid; gap:8px; justify-items:center; text-align:center; }
 .public-profile .profile-photo { position:relative; display:grid; place-items:center; width:88px; height:88px; border:4px solid white; border-radius:50%; overflow:hidden; background:var(--chronos-accent); font-size:30px; font-weight:650; }

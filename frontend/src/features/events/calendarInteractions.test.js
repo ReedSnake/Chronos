@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { isoWeek, weekRowNumber, isCalendarDay, slotMinute, matchesEvent, seedEventTime } from './calendarInteractions.js';
+import { isoWeek, weekRowNumber, isCalendarDay, slotMinute, seedEventTime } from './calendarInteractions.js';
 
 test('ISO weeks handle year boundaries', () => {
   assert.equal(isoWeek('2021-01-01'), 53);
@@ -20,13 +20,6 @@ test('click positions snap down to a valid quarter hour', () => {
   assert.equal(slotMinute(0.5, 8, 20), 840);
   assert.equal(slotMinute(1, 0, 24), 1425);
   assert.equal(slotMinute(-1, 8, 20), 480);
-});
-test('event search covers title and description, ignoring case', () => {
-  const event = {title:'Design Review', description:'Навчання React'};
-  assert.equal(matchesEvent(event,'design react'), true);
-  assert.equal(matchesEvent(event,'НАВЧАННЯ'), true);
-  assert.equal(matchesEvent(event,'missing'), false);
-  assert.equal(matchesEvent(event,''), true);
 });
 test('quick creation seeds date and time for all supported event types', () => {
   const draft = {title:'Example'};

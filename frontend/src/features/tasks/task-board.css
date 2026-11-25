@@ -11,10 +11,6 @@
 .tb-page .tb-primary{display:flex;align-items:center;justify-content:center;gap:7px;background:#F5BC5A;color:#303030;border:0;border-radius:10px;padding:11px 16px;font-size:13px;font-weight:600;white-space:nowrap}
 .tb-main{background:#ffffffd9;border:1px solid #3030300b;border-radius:18px;display:flex;flex-direction:column;min-height:0;min-width:0;flex:1}
 .tb-toolbar{display:flex;align-items:center;gap:9px;flex-wrap:wrap;padding:13px 18px;flex:none;border-bottom:1px solid #3030300d}
-.tb-search{display:flex;align-items:center;gap:8px;min-width:0;flex:0 1 280px;border:1px solid #30303016;border-radius:8px;padding:0 10px;color:#30303099;height:35px;background:white}
-.tb-page .tb-search input{width:0;flex:1;min-width:0;border:0;background:none;color:#303030;padding:0;font-size:12px;outline:none}
-.tb-page .tb-search button{display:grid;place-items:center;background:none;border:0;padding:2px;color:inherit}
-.tb-search:focus-within{outline:2px solid #F5BC5A}
 .tb-period-label{margin-left:auto;font-size:11px;color:#30303099;white-space:nowrap}
 .tb-filter{position:relative;z-index:7}
 .tb-filter[open]{z-index:8}
@@ -75,4 +71,4 @@
 .tb-dialog .event-editor-refined .event-surface-footer{padding:12px 22px}
 @media(max-width:1200px){.workspace-main:has(>.tb-page){padding:20px 16px}.tb-page{height:calc(100dvh - 40px)}.tb-column>header{padding:13px 10px 10px}.tb-column-body{padding:4px 10px 12px}.tb-card{padding:10px 8px;gap:9px}.tb-card-icon{width:29px;height:29px}.tb-card-open{gap:7px!important}}
 @media(max-width:850px){.tb-page{height:auto;min-height:calc(100dvh - 40px)}.tb-board{min-height:420px}.tb-column-body{max-height:65dvh}.tb-toolbar{padding:10px}.tb-period-label{margin-left:0}.tb-card-main{flex-wrap:nowrap}}
-@media(max-width:600px){.tb-heading h1{font-size:26px}.tb-board{grid-template-columns:1fr;overflow:visible}.tb-column{border-right:0;border-bottom:1px solid #30303010}.tb-column-body{max-height:52dvh}.tb-search{flex:1 1 100%}.tb-filter-pop{left:auto;right:0}.tb-card-icon{width:34px;height:34px}.tb-main{flex:none}.tb-page{gap:12px}}
+@media(max-width:600px){.tb-heading h1{font-size:26px}.tb-board{grid-template-columns:1fr;overflow:visible}.tb-column{border-right:0;border-bottom:1px solid #30303010}.tb-column-body{max-height:52dvh}.tb-filter-pop{left:auto;right:0}.tb-card-icon{width:34px;height:34px}.tb-main{flex:none}.tb-page{gap:12px}}

@@ -33,11 +33,9 @@ export function apiRange(range, zone) {
   if (!range.from || !range.to || range.from > range.to) throw new Error('Invalid date range');
   return { from: fromCalendarInput(range.from + 'T00:00', zone), to: new Date(Date.parse(fromCalendarInput(shiftDate(range.to, 1) + 'T00:00', zone)) - 1).toISOString(), types: ['task'] };
 }
-export function filterTasks(events, { hidden = [], category = '', status = '', search = '' } = {}) {
-  const query = search.trim().toLowerCase();
+export function filterTasks(events, { hidden = [], category = '', status = '' } = {}) {
   return events.filter(e => e.type === 'task' && !hidden.includes(e.calendarId) &&
-    (!status || e.status === status) && (!category || (e.categories || []).includes(category)) &&
-    (!query || [e.title, e.description, e.calendarName, ...(e.categories || []), ...(e.attendees || []).map(a => a.email)].some(v => String(v || '').toLowerCase().includes(query))))
+    (!status || e.status === status) && (!category || (e.categories || []).includes(category)))
     .sort((a, b) => String(a.deadline).localeCompare(String(b.deadline)) || taskKey(a).localeCompare(taskKey(b)));
 }
 export function groupTasks(tasks, zone) {

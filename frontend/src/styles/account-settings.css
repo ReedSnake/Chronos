@@ -9,10 +9,10 @@
 .as-actions{display:flex;gap:8px;align-items:center}
 .as-page .as-actions button{border:1px solid #30303016;background:#fff;color:#303030;border-radius:8px;padding:9px 13px;font-size:12px;font-weight:550;white-space:nowrap}
 .as-page .as-actions .as-save{background:#303030;color:#fff;border-color:#303030}
-.as-cover{height:clamp(125px,16vw,190px);border-radius:17px;overflow:hidden;position:relative;isolation:isolate;background:radial-gradient(ellipse at 48% 48%,#e8eff6 0%,#dce8f5 58%,#afc5dd 100%)}
-.as-cover:before,.as-cover:after{content:'';position:absolute;pointer-events:none;z-index:-1}
-.as-cover:before{width:74%;height:330%;left:-35%;top:-218%;transform:rotate(-21deg);border-radius:43% 57% 55% 45%;background:radial-gradient(ellipse at 48% 70%,#d5e1f0 15%,#fff2db 46%,#f5bc5a 60%,#b9cce2 73%,#f8fafc 82%);box-shadow:inset -2px -2px 4px #fff9,0 2px 4px #fff9,0 18px 42px #9caecb55}
-.as-cover:after{width:76%;height:310%;right:-30%;bottom:-214%;transform:rotate(-24deg);border-radius:51% 49% 48% 52%;background:radial-gradient(ellipse at 45% 25%,#fdf9f1 7%,#f5bc5a 21%,#fbefda 30%,#b5c9df 47%,#92acc7 59%,#e8eff6 73%);box-shadow:inset 0 2px 3px #fff,0 -2px 5px #fff9,0 -14px 40px #9daecb55}
+.as-cover{height:clamp(125px,16vw,190px);border-radius:17px;overflow:hidden;position:relative;isolation:isolate;background:linear-gradient(90deg,#7398ef 0%,#d7e4f7 18%,#f4f6f8 49%,#f7eee1 67%,#ffc55f 87%,#ff7b2f 100%)}
+.as-cover:before,.as-cover:after{content:'';position:absolute;inset:0;pointer-events:none}
+.as-cover:before{background:repeating-linear-gradient(90deg,rgba(255,255,255,.22) 0 1px,rgba(255,255,255,0) 1px 12px),linear-gradient(180deg,rgba(255,255,255,.26),rgba(255,255,255,.04) 48%,rgba(255,255,255,.18) 100%);mix-blend-mode:screen;opacity:.7}
+.as-cover:after{background:radial-gradient(circle at 14% 22%,rgba(255,255,255,.62) 0,rgba(255,255,255,.32) 15%,rgba(255,255,255,0) 34%),radial-gradient(circle at 48% 50%,rgba(255,255,255,.42) 0,rgba(255,255,255,.18) 18%,rgba(255,255,255,0) 34%),radial-gradient(circle at 88% 72%,rgba(255,214,120,.58) 0,rgba(255,194,90,.26) 19%,rgba(255,194,90,0) 37%),linear-gradient(90deg,rgba(97,136,223,.16),rgba(255,255,255,0) 30%,rgba(255,187,72,.16) 86%);filter:blur(1px)}
 .as-column{width:min(100%,550px);margin:0 auto;position:relative;display:grid;gap:22px}
 .as-identity{display:grid;justify-items:center;text-align:center;gap:6px;margin-top:-39px;position:relative}
 .as-avatar-wrap{position:relative;margin-bottom:3px}

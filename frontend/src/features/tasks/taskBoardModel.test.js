@@ -29,10 +29,12 @@ test('API range includes the entire final local day', () => {
   assert.deepEqual(apiRange({from:day,to:day},'Europe/Kyiv'),{from:'2026-11-23T22:00:00.000Z',to:'2026-11-24T21:59:59.999Z',types:['task']});
   assert.throws(()=>apiRange({from:'2026-11-25',to:day},'UTC'));
 });
-test('filters combine search, status, calendar and category', () => {
+test('filters combine status, calendar and category', () => {
   assert.deepEqual(filterTasks(tasks).map(e=>e.id),['2','1']);
-  assert.deepEqual(filterTasks(tasks,{search:'PERSON@EXAMPLE',category:'work',status:'todo',hidden:['b']}).map(e=>e.id),['1']);
-  assert.equal(filterTasks(tasks,{search:'layout',hidden:['a']}).length,0);
+  assert.deepEqual(filterTasks(tasks,{category:'work',status:'todo',hidden:['b']}).map(e=>e.id),['1']);
+  assert.equal(filterTasks(tasks,{category:'work',hidden:['a']}).length,0);
+  assert.deepEqual(filterTasks(tasks,{status:'done'}).map(e=>e.id),['2']);
+  assert.equal(filterTasks(tasks,{category:'study',status:'todo'}).length,0);
 });
 test('deadline grouping uses display time zone', () => {
   const groups = groupTasks(filterTasks(tasks),'Europe/Kyiv');

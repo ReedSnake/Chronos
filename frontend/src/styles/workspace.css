@@ -76,3 +76,6 @@
   .workspace-mobile-actions .workspace-mobile-language { margin:0; }
   .workspace-mobile-actions .workspace-sign-out { width:auto; min-height:44px; background:#fff; padding:8px 10px; }
 }
+
+.workspace .workspace-mobile-profile { display:none; }
+@media(max-width:540px) { .workspace .workspace-mobile-profile { display:flex; } }
