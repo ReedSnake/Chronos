@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 
 function validPreference(value, fallback) {
-  if (Array.isArray(fallback)) return Array.isArray(value);
+  if (Array.isArray(fallback)) return Array.isArray(value) && value.every(item => typeof item === 'string');
+  if (fallback === null) return value === null;
   if (fallback !== null && typeof fallback === 'object') {
     return value !== null && typeof value === 'object' && !Array.isArray(value)
       && Object.entries(fallback).every(([key, item]) => validPreference(value[key], item));
