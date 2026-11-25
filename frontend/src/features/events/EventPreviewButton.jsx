@@ -9,9 +9,10 @@ import './event-preview.css';
 
 // Preserve the original button and its grid positioning. A portal avoids clipping
 // in fitted calendar grids, Kanban columns and independently scrolling panels.
-export function EventPreviewButton({ event, zone = 'UTC', children, title: _nativeTitle, onClick, onDragStart, onContextMenu, ...props }) {
+export function EventPreviewButton({ event, zone: suppliedZone, children, title: _nativeTitle, onClick, onDragStart, onContextMenu, ...props }) {
   const { locale, t } = useLocale();
   const {user}=useAuth();
+  const zone=suppliedZone||user?.settings?.timeZone||'UTC';
   const format=user?.settings?.timeFormat||'24h';
   const uk = locale === 'uk';
   const id = useId();
