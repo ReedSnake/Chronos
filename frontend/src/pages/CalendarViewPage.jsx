@@ -332,7 +332,7 @@ function CalendarViewContent() {
   function createOn(key, minute = null){if(!canEdit||!isCalendarDay(key))return;setSelection(null);setEditing(null);setEventsError('');setCreateSlot({day:key,minute});setPlannerDate(key);setEditorOpen(true);}
   const horizontal=eventView==='day'||eventView==='week'&&!weekGrid;
   const rangeLabel = eventView==='week'||eventView==='overview' ? (uk?'Тиждень ':'Week ')+weekRowNumber(plannerDays[0],startsOn) : null;
-  return <CalendarEventActionsProvider value={{canChange:canChangeTask,toggle:toggleTask,busy:busy||eventsLoading}}><section className={'chrono-calendar chrono-mode-'+eventView+(horizontal?' chrono-mode-horizontal':'')}>
+  return <CalendarEventActionsProvider value={{canChange:canChangeTask,toggle:toggleTask,busy:busy||eventsLoading,zone:calendar?.timeZone||'UTC'}}><section className={'chrono-calendar chrono-mode-'+eventView+(horizontal?' chrono-mode-horizontal':'')}>
     <header className="chrono-heading">
       <div><h1>{uk?'Календар':'Calendar'}</h1><p>{calendar?.timeZone||user?.settings?.timeZone||'UTC'}</p></div>
       <div className="chrono-heading-actions">
