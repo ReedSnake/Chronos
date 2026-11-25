@@ -1,3 +1,4 @@
+import { WorkspaceErrorBoundary } from '../components/layout/WorkspaceErrorBoundary';
 import { IconTooltips } from '../features/ui/IconTooltips';
 import '../styles/ux-final.css';
 import { ActivityCenter } from '../features/ui/ActivityCenter';
@@ -44,7 +45,10 @@ export function ApplicationPage() {
     if(!inWorkspace||!mainRef.current||window.matchMedia('(prefers-reduced-motion: reduce)').matches)return;
     const element=Array.from(mainRef.current.children).find(node=>!node.matches('.workspace-topbar,.workspace-mobile-actions,.workspace-sign-out-error'));
     if(!element||typeof element.animate!=='function')return;
-    const animation=element.animate([{opacity:.65},{opacity:1}],{duration:320,easing:'cubic-bezier(.22,1,.36,1)'});
+    const rootStyle = getComputedStyle(document.documentElement);
+    const duration = parseFloat(rootStyle.getPropertyValue('--chronos-motion-page')) || 320;
+    const easing = rootStyle.getPropertyValue('--chronos-motion-ease').trim() || 'ease-out';
+    const animation = element.animate([{ opacity: .65 }, { opacity: 1 }], { duration, easing });
     return()=>animation.cancel();
   },[pathname,inWorkspace]);
   const isSharedScreen = workspaceRoute === '/calendar-share';
@@ -78,18 +82,18 @@ export function ApplicationPage() {
       </button>
     );
     const items = [
-      ['/', 'layout-dashboard', locale === 'uk' ? 'Огляд' : 'Dashboard'],
-      ['/calendars/view', 'calendar-week', locale === 'uk' ? 'Розклад' : 'Schedule'],
-      ['/tasks', 'checkbox', locale === 'uk' ? 'Завдання' : 'Tasks'],
+      ['/', 'layout-dashboard', t('workspace.dashboard')],
+      ['/calendars/view', 'calendar-week', t('workspace.schedule')],
+      ['/tasks', 'checkbox', t('workspace.tasks')],
       ['/calendars', 'calendar', t('navigation.calendars')],
       ['/integrations', 'plug', t('navigation.integrations')],
-      ['/account', 'settings', locale === 'uk' ? 'Налаштування' : 'Settings'],
+      ['/account', 'settings', t('workspace.settings')],
     ];
     const avatar = applicationContainer.userService.imageUrl(user?.avatarUrl);
     return <main className={"workspace"+(collapsed?" ux-sidebar-collapsed":"")}>
-      <aside className="workspace-sidebar" onClickCapture={e=>{if(e.target.closest("a")&&document.querySelector('[data-unsaved="true"]')&&!window.confirm(locale==='uk'?'Вийти без збереження?' : 'Leave without saving?')){e.preventDefault();e.stopPropagation();}}}>
+      <aside className="workspace-sidebar" onClickCapture={e=>{if(e.target.closest("a")&&document.querySelector('[data-unsaved="true"]')&&!window.confirm(t('workspace.discard'))){e.preventDefault();e.stopPropagation();}}}>
         <Link className="workspace-logo" to={localizedPath('/')}><span className="workspace-logo-icon"><TablerIcon name="clock" size={25}/></span><span>chronos<span>.</span></span></Link>
-        <div className="workspace-collapse-row"><button className="workspace-collapse" type="button" onClick={()=>setCollapsed(v=>!v)} aria-pressed={collapsed} title={locale==='uk'?'Згорнути меню':'Toggle sidebar'} aria-label={locale==='uk'?'Згорнути меню':'Toggle sidebar'}><TablerIcon name={collapsed?'chevron-right':'chevron-left'} size={18}/></button></div>
+        <div className="workspace-collapse-row"><button className="workspace-collapse" type="button" onClick={()=>setCollapsed(v=>!v)} aria-pressed={collapsed} title={t(collapsed?'workspace.expand':'workspace.collapse')} aria-label={t(collapsed?'workspace.expand':'workspace.collapse')}><TablerIcon name={collapsed?'chevron-right':'chevron-left'} size={18}/></button></div>
         <nav className="workspace-nav" aria-label={t('navigation.label')}>
           {items.map(([path, icon, label]) => <NavLink key={path} aria-label={label} title={label} end={path==='/'||path==='/calendars'} to={localizedPath(path)} className={({isActive})=>'workspace-nav-link'+(isActive?' active':'')}><TablerIcon name={icon} size={21}/><span>{label}</span></NavLink>)}
         </nav>
@@ -100,10 +104,12 @@ export function ApplicationPage() {
         </div>
       </aside>
       <div ref={mainRef} className={'workspace-main'+(showTopbar?' has-topbar':'')}>
-        {showTopbar&&<header className="workspace-topbar"><div className="workspace-topbar-actions"><button className="workspace-global-search" type="button" onClick={()=>setCommand(true)} aria-label={locale==='uk'?'Глобальний пошук':'Global search'}><TablerIcon name="search" size={18}/><span>{locale==='uk'?'Пошук…':'Search…'}</span><kbd>⌘ K / Ctrl K</kbd></button><button className="workspace-notifications" type="button" onClick={()=>setActivity(true)} title={locale==='uk'?'Нагадування та запити':'Reminders and requests'} aria-label={locale==='uk'?'Нагадування та запити':'Reminders and requests'}><TablerIcon name="bell" size={21}/></button></div></header>}
+        {showTopbar&&<header className="workspace-topbar"><div className="workspace-topbar-actions"><button className="workspace-global-search" type="button" onClick={()=>setCommand(true)} aria-label={t('workspace.globalSearch')}><TablerIcon name="search" size={18}/><span>{t('workspace.search')}</span><kbd>⌘ K / Ctrl K</kbd></button><button className="workspace-notifications" type="button" onClick={()=>setActivity(true)} title={t('workspace.activity')} aria-label={t('workspace.activity')}><TablerIcon name="bell" size={21}/></button></div></header>}
         <div className="workspace-mobile-actions"><label className="workspace-language workspace-mobile-language"><span className="visually-hidden">{t('languageSwitcher.label')}</span><select value={locale} aria-label={t('languageSwitcher.label')} onChange={event=>navigate(locationForLocale(event.target.value),{replace:true})}>{SUPPORTED_LOCALES.map(lang=><option key={lang} value={lang}>{t(`languageSwitcher.${lang}`)}</option>)}</select></label>{signOutButton}</div>
         {signOutError && <p className="workspace-sign-out-error" role="alert">{signOutError}</p>}
-        <Outlet context={{ setAccountExitState, signOutPending }}/>
+        <WorkspaceErrorBoundary key={pathname} title={t('workspace.pageError')} description={t('workspace.pageErrorDescription')} retry={t('common.retry')}>
+          <Outlet context={{ setAccountExitState, signOutPending }}/>
+        </WorkspaceErrorBoundary>
       </div>
       {command&&<CommandMenu user={user} items={items} onClose={()=>setCommand(false)}/>}
       {activity&&<ActivityCenter user={user} onClose={()=>setActivity(false)}/>}
