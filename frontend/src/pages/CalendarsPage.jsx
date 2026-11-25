@@ -63,7 +63,6 @@ export function CalendarsPage() {
   const { localizedPath, t, locale } = useLocale();
   const uk = locale === 'uk';
   const [calendars, setCalendars] = useState([]);
-  const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('all');
   const [modal, setModal] = useState(null);
   const [draft, setDraft] = useState(defaultDraft);
@@ -111,7 +110,7 @@ export function CalendarsPage() {
       if (createMode) {
         const result = await service.create(values);
         setCalendars(old => [result.calendar, ...old]);
-        setSearch(''); setFilter('all');
+         setFilter('all');
       } else {
         const result = await service.update(selected.id, values);
         setCalendars(old => old.map(c => c.id === selected.id ? result.calendar : c));
@@ -143,7 +142,7 @@ export function CalendarsPage() {
 
   const nameOf = c => c.isHolidayCalendar ? t('calendarBasics.holidays') : c.name;
   const sorted = [...calendars].sort((a,b) => Number(!!b.isMain) - Number(!!a.isMain) || Number(!!a.isArchived) - Number(!!b.isArchived) || nameOf(a).localeCompare(nameOf(b), locale));
-  const visible = sorted.filter(c => (filter === 'all' || (filter === 'archived' ? c.isArchived : !c.isArchived)) && [nameOf(c), c.description, c.timeZone, c.countryCode].some(v => String(v || '').toLowerCase().includes(search.trim().toLowerCase())));
+  const visible = sorted.filter(c => (filter === 'all' || (filter === 'archived' ? c.isArchived : !c.isArchived)));
   const tabs = selected ? [
     ...(canEdit(selected)||selected.isHolidayCalendar&&selected.role==='owner' ? [['settings', 'settings', uk ? 'Налаштування' : 'Settings']] : []),
     ...(canManage(selected) ? [['share', 'arrow-up-right', uk ? 'Посилання' : 'Share links'], ['invite', 'user', uk ? 'Запрошення' : 'Invitations'], ['members', 'users', uk ? 'Учасники' : 'Members']] : []),
@@ -153,7 +152,6 @@ export function CalendarsPage() {
     <header className="cm-heading"><div><h1>{t('calendars.title')}</h1><p>{uk ? 'Керуйте календарями та доступом до них' : 'Manage your calendars and access'}</p></div><button type="button" className="cm-primary" disabled={busy} onClick={openCreate}><Icon name="plus" size={19}/>{t('calendars.createTitle')}</button></header>
     <div className="cm-toolbar">
       <div className="cm-filters" role="group" aria-label={uk ? 'Фільтр календарів' : 'Calendar filter'}>{[['all', uk ? 'Усі' : 'All', calendars.length], ['active', uk ? 'Активні' : 'Active', calendars.filter(c => !c.isArchived).length], ['archived', uk ? 'Архів' : 'Archived', calendars.filter(c => c.isArchived).length]].map(([id,label,count]) => <button key={id} type="button" aria-pressed={filter === id} onClick={() => setFilter(id)}>{label}<small>{loading ? '—' : count}</small></button>)}</div>
-      <label className="cm-search"><Icon name="search" size={17}/><input aria-label={uk ? 'Пошук календарів' : 'Search calendars'} placeholder={uk ? 'Пошук календарів' : 'Search calendars'} value={search} onChange={e => setSearch(e.target.value)}/>{search && <button type="button" onClick={() => setSearch('')} aria-label={uk ? 'Очистити пошук' : 'Clear search'}><Icon name="x" size={15}/></button>}</label>
     </div>
     {error && <p className="cm-error" role="alert">{error} <button type="button" onClick={loadCalendars}>{uk ? 'Повторити' : 'Retry'}</button></p>}
     {loading ? <div className="cm-grid" role="status" aria-label={t('common.loading')}>{[0,1,2].map(i => <div className="cm-card cm-skeleton" key={i}><span/><i/><i/></div>)}</div> : <div className="cm-grid">
@@ -167,7 +165,7 @@ export function CalendarsPage() {
           {canManage(calendar) && <button type="button" className="cm-secondary" onClick={() => openManage(calendar, 'members')}><Icon name="users" size={16}/>{uk ? 'Доступ' : 'Access'}</button>}
         </div>
       </article>)}
-      {!visible.length && <div className="cm-empty"><span className="cm-calendar-icon"><Icon name="calendar" size={26}/></span><p>{calendars.length ? (uk ? 'Календарів за цим фільтром немає' : 'No calendars match these filters') : t('calendars.empty')}</p><button type="button" className="cm-secondary" onClick={calendars.length ? () => { setSearch(''); setFilter('all'); } : openCreate}>{calendars.length ? (uk ? 'Скинути фільтри' : 'Reset filters') : t('calendars.createTitle')}</button></div>}
+      {!visible.length && <div className="cm-empty"><span className="cm-calendar-icon"><Icon name="calendar" size={26}/></span><p>{calendars.length ? (uk ? 'Календарів за цим фільтром немає' : 'No calendars match these filters') : t('calendars.empty')}</p><button type="button" className="cm-secondary" onClick={calendars.length ? () => {  setFilter('all'); } : openCreate}>{calendars.length ? (uk ? 'Скинути фільтри' : 'Reset filters') : t('calendars.createTitle')}</button></div>}
     </div>}
     {modal && (createMode || selected) && <EventDialog label={createMode ? t('calendars.createTitle') : nameOf(selected)} onClose={close} busy={busy}>
       <div className="cm-dialog" style={{ '--calendar-color': safeColor(createMode ? draft.color : selected.color) }}>
