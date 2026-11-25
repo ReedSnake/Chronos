@@ -279,6 +279,7 @@ function CalendarViewContent() {
     }
     setBusy(true); setEventsError('');
     try {
+      if (editing&&!eventCanEdit||!editing&&!canEdit) return;
       if (editing) await applicationContainer.calendarService.updateEvent(eventCalendar.id, editing.id, values);
       else await applicationContainer.calendarService.createEvent(calendarId, values);
       setEditing(null); setEditorOpen(false); setSelection(null);
