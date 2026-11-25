@@ -42,13 +42,14 @@ export function CreateEventPage() {
     lock.current=true;setSaving(true);
     try {
       await applicationContainer.calendarService.createEvent(calendarId,values);
-      navigate(back + '?date=' + encodeURIComponent(initialDay),{replace:true});
+      const savedDay=eventDayKey(values,calendar.timeZone||'UTC') || initialDay;
+      navigate(back + '?date=' + encodeURIComponent(savedDay),{replace:true});
     } catch(err) {
       throw new Error(getLocalizedApiError(err,t,'calendarView.event.saveError'));
     } finally { lock.current=false;setSaving(false); }
   }
   return <section className="create-event-page">
-    <Link className="create-event-back" to={back} onClick={e=>{if(saving)e.preventDefault();}}><Icon name="chevron-left" size={18}/>{uk?'До календаря':'Back to calendar'}</Link>
+    <Link className="create-event-back" to={back+'?date='+encodeURIComponent(initialDay)} onClick={e=>{if(saving)e.preventDefault();}}><Icon name="chevron-left" size={18}/>{uk?'До календаря':'Back to calendar'}</Link>
     {status==='loading'||status==='authenticated'&&loading ? <p role="status">{t('common.loading')}</p> : status!=='authenticated' ? <p><Link to={localizedPath('/login')} state={{returnTo:localizedPath('/calendars/view/'+calendarId+'/new')+search}}>{t('common.signIn')}</Link></p> : error ? <p role="alert">{error}</p> : !canEdit ? <p role="alert">{uk?'Немає дозволу на створення подій':'You do not have permission to create events'}</p> : <div className="calendar-editor-shell create-event-surface"><EventEditor key={calendar.id+initialDay} calendar={calendar} initialDay={initialDay} saving={saving} onSave={save} onCancel={close}/></div>}
   </section>;
 }
