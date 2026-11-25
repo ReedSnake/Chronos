@@ -1,3 +1,4 @@
+import { SkeletonRows, EmptyState } from '../features/ui/Feedback';
 import { useLocalPreference } from '../features/ui/useLocalPreference';
 import { Notice,useNotice } from '../features/ui/useNotice';
 import { fromCalendarInput } from '../features/events/eventForm';
@@ -196,7 +197,7 @@ export function TasksPage() {
           const items = tasks.filter(e => e.status === s);
           return <section key={s} className={'tb-column ' + s + (drag && drag.status !== s ? ' drop-ready' : '')} onDragOver={e => { if (drag && !busy && !loading) { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; } }} onDrop={e => { e.preventDefault(); if (drag) void change(drag, s); setDrag(null); }}>
             <header><span className="tb-column-icon"><Icon name={stateIcon[s]} size={18}/></span><h2>{t('statuses.' + s)}</h2><span className="tb-column-count">{displayCount(items.length)}</span></header>
-            <div className="tb-column-body">{loading?<div role="status" aria-label={t('common.loading')} className="ux-skeleton"><i/><i/><i/></div>:items.map(card)}
+            <div className="tb-column-body">{loading?<SkeletonRows label={t('common.loading')} count={2}/>:items.length?items.map(card):<EmptyState icon={stateIcon[s]} title={uk?'Немає завдань':'No tasks'}/>}
               {s==='todo'&&quickCalendar&&!loading&&!overdue&&<form className="ux-quick-add" onSubmit={quickAdd}><input aria-label={uk?'Швидке завдання':'Quick task'} placeholder={uk?'Швидко додати…':'Quick add…'} maxLength={200} value={quickTitle} onChange={e=>setQuickTitle(e.target.value)} disabled={busy}/><small>{quickCalendar.name} · {uk?'Сьогодні, 23:59':'Today, 23:59'}</small>{quickTitle.trim()&&<button className="ux-primary" type="submit" disabled={busy}>{uk?'Додати':'Add'}</button>}</form>}
               <button type="button" className="tb-add-task" disabled={!editable.length || loading || busy} onClick={() => create(s)}><Icon name="plus" size={16}/>{uk ? 'Додати завдання' : 'Add task'}</button>
             </div>
