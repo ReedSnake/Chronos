@@ -8,7 +8,6 @@ import { EventEditor } from '../features/events/EventEditor';
 import { eventDayKey } from '../features/events/eventForm';
 import { isCalendarDay } from '../features/events/calendarInteractions';
 import { TablerIcon as Icon } from '../components/layout/TablerIcon';
-import '../styles/calendar-polish.css';
 
 export function CreateEventPage() {
   const { calendarId } = useParams();
