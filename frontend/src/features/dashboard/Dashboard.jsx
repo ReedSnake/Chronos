@@ -97,7 +97,7 @@ export function Dashboard({ user }) {
     setBusy(true);setActionError('');
     try{
       if(mode==='edit')await service.updateEvent(activeCalendar.id,selection.id,values);
-      else await service.createEvent(activeCalendar.id,values);
+      else {await service.createEvent(activeCalendar.id,values);setHidden(old=>old.filter(id=>id!==activeCalendar.id));}
       setMode(null);setEditing(null);setSelection(null);setReload(n=>n+1);notify(locale==='uk'?'Подію збережено':'Event saved');
     }catch(err){throw new Error(getLocalizedApiError(err,t,'calendarView.event.saveError'));}
     finally{setBusy(false);}
@@ -123,7 +123,7 @@ export function Dashboard({ user }) {
   }
   async function toggleTask(e){if(taskBusy||!canWrite(data.calendars.find(c=>c.id===e.calendarId)))return;if(e.isRecurring&&!window.confirm(t('calendarView.event.editSeriesOnly')))return;setTaskBusy(true);setQuickError('');const next=e.status==='done'?'todo':'done';const update=status=>item=>item.id===e.id&&item.calendarId===e.calendarId?{...item,status}:item;setData(old=>({...old,events:old.events.map(update(next))}));setSelection(old=>old?update(next)(old):null);setUpcoming(old=>({...old,events:old.events.map(update(next))}));try{await service.updateEvent(e.calendarId,e.id,{status:next});setReload(n=>n+1);notify(locale==='uk'?'Статус оновлено':'Status updated')}catch(err){setData(old=>({...old,events:old.events.map(update(e.status))}));setSelection(old=>old?update(e.status)(old):null);setUpcoming(old=>({...old,events:old.events.map(update(e.status))}));setQuickError(getLocalizedApiError(err,t,'calendarView.event.saveError'))}finally{setTaskBusy(false)}}
   const uk=locale==='uk';
-  const timeFormat=user.settings?.timeFormat;
+  const timeFormat=user.settings?.timeFormat||'24h';
   const mainCalendar=data.calendars.find(c=>c.isMain&&!c.isArchived)||data.calendars[0];
   const schedulePath=mainCalendar?localizedPath('/calendars/view/'+encodeURIComponent(mainCalendar.id))+'?date='+encodeURIComponent(activeDay):localizedPath('/calendars/view');
   const upcomingItems=upcoming.events.filter(e=>!hidden.includes(e.calendarId)&&e.status!=='canceled'&&['arrangement','task','reminder'].includes(e.type)&&(e.type==='task'?e.status!=='done':Date.parse(dateOf(e))>=now.getTime())).sort(byTime);
