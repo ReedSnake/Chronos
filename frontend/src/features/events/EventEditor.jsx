@@ -1,3 +1,4 @@
+import { useAuth } from '../auth/AuthContext';
 import { seedEventTime } from './calendarInteractions';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { TablerIcon } from '../../components/layout/TablerIcon';
@@ -5,11 +6,13 @@ import './event-surface.css';
 import { useLocale } from '../../i18n/LocaleProvider';
 import { buildEventPayload, defaultEventDraft, draftFromEvent, EVENT_TYPES, RECURRENCE_INTERVALS } from './eventForm';
 
-export function EventEditor({ event = null, calendar, saving, onSave, onCancel, initialType = 'arrangement', initialDay = null, initialMinute = null, initialStatus = 'todo' }) {
+export function EventEditor({ event = null, calendar, saving, onSave, onCancel, initialType = 'arrangement', initialDay = null, initialMinute = null, initialStatus = 'todo', displayZone, timeFormat }) {
   const { t, locale } = useLocale();
   const uk = locale === 'uk';
   const [tab, setTab] = useState('info');
-  const timeZone = calendar.timeZone || 'UTC';
+  const {user}=useAuth();
+  const timeZone = displayZone || user?.settings?.timeZone || calendar.timeZone || 'UTC';
+  const format = timeFormat || user?.settings?.timeFormat || '24h';
   function makeDraft(type) {
     const value=defaultEventDraft(type,timeZone,calendar.defaultEventDurationMinutes);
     if(type==='task'&&['todo','in_progress','done'].includes(initialStatus))value.status=initialStatus;
@@ -67,7 +70,7 @@ export function EventEditor({ event = null, calendar, saving, onSave, onCancel, 
   }
   function dateTimeField(field,label){
     const [date='',time='']=draft[field].split('T');
-    return <div className="event-date-group"><span className="event-field-label">{label}</span><div className="event-date-controls"><label className="event-icon-field"><TablerIcon name="calendar" size={19}/><input type="date" aria-label={label+' '+(uk?'дата':'date')} value={date} onChange={e=>datePart(field,'date',e.target.value)} required/></label><label className="event-icon-field"><TablerIcon name="clock" size={19}/><input type="time" aria-label={label+' '+(uk?'час':'time')} value={time} onChange={e=>datePart(field,'time',e.target.value)} required/></label></div></div>;
+    return <div className="event-date-group"><span className="event-field-label">{label}</span><div className="event-date-controls"><label className="event-icon-field"><TablerIcon name="calendar" size={19}/><input type="date" aria-label={label+' '+(uk?'дата':'date')} value={date} onChange={e=>datePart(field,'date',e.target.value)} required/></label><label className="event-icon-field"><TablerIcon name="clock" size={19}/>{format==='12h'?<span className="event-clock12"><select aria-label={label+' hour'} value={String(Number(time.slice(0,2))%12||12)} onChange={e=>datePart(field,'time',String(Number(e.target.value)%12+(Number(time.slice(0,2))>=12?12:0)).padStart(2,'0')+':'+time.slice(3,5))}>{Array.from({length:12},(_,i)=><option key={i+1}>{i+1}</option>)}</select><span>:</span><select aria-label={label+' minute'} value={time.slice(3,5)} onChange={e=>datePart(field,'time',time.slice(0,2)+':'+e.target.value)}>{Array.from({length:60},(_,i)=><option key={i}>{String(i).padStart(2,'0')}</option>)}</select><select aria-label={label+' AM/PM'} value={Number(time.slice(0,2))>=12?'PM':'AM'} onChange={e=>datePart(field,'time',String(Number(time.slice(0,2))%12+(e.target.value==='PM'?12:0)).padStart(2,'0')+':'+time.slice(3,5))}><option>AM</option><option>PM</option></select></span>:<input type="time" aria-label={label+' '+(uk?'час':'time')} value={time} onChange={e=>datePart(field,'time',e.target.value)} required/>}</label></div></div>;
   }
   return <form className="account-card account-form event-editor event-editor-refined" data-unsaved={dirty?'true':'false'} onSubmit={submit} onInvalidCapture={()=>setTab('info')} aria-label={t('calendarView.event.editorTitle')}>
     <header className="event-surface-header"><h2>{title}</h2><button type="button" className="event-close" onClick={cancel} disabled={saving} aria-label={t('calendarView.event.close')}><TablerIcon name="x" size={18}/></button></header>
