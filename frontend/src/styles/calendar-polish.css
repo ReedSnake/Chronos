@@ -1,0 +1,91 @@
+/* Schedule finishing pass: same inspector on every entry point, fitted calendar views. */
+.calendar-editor-shell { min-width:0; width:100%; background:var(--chronos-surface); color:var(--chronos-ink); }
+.calendar-editor-shell .event-editor-refined { width:100%; max-width:none; border:0; margin:0; padding:0; display:block; background:white; box-sizing:border-box; }
+.calendar-editor-shell .event-surface-header { display:flex; align-items:center; justify-content:space-between; padding:17px 22px 15px; }
+.calendar-editor-shell .event-identity { align-items:center; min-width:0; }
+.calendar-editor-shell .event-identity-fields { min-width:0; }
+.calendar-editor-shell .event-surface-body { padding:17px 22px; gap:12px; min-width:0; }
+.calendar-editor-shell .event-surface-body[hidden] { display:none!important; }
+.calendar-editor-shell .event-date-controls { grid-template-columns:minmax(0,1.15fr) minmax(0,1fr); }
+.calendar-editor-shell .event-date-controls input { width:100%; min-width:0; }
+.calendar-editor-shell .event-surface-footer { padding:12px 22px; }
+.calendar-editor-shell .event-surface-footer button[type=submit] { background:var(--chronos-accent)!important; }
+.event-dialog:has(.calendar-editor-shell) { width:min(520px,calc(100% - 24px)); max-height:92dvh; }
+.create-event-page { width:min(100%,680px); margin:0 auto; display:grid; gap:16px; color:var(--chronos-ink); }
+.create-event-back { display:inline-flex; justify-self:start; align-items:center; gap:5px; font-size:13px; padding:8px 2px; }
+.create-event-surface { border-radius:var(--chronos-dialog-radius,18px); overflow:hidden; }
+.create-event-surface .event-editor-refined .event-surface-header { background:white; }
+.create-event-surface .event-editor-refined .event-surface-footer { position:static; }
+.create-event-page>p { padding:15px; background:white; border-radius:12px; }
+.chrono-search { display:flex; align-items:center; gap:7px; padding:7px 10px; background:var(--chronos-surface); border:1px solid var(--chronos-border); border-radius:9px; min-width:0; width:clamp(130px,14vw,210px); color:var(--chronos-muted); }
+.chrono-search input { width:100%; min-width:0; border:0; padding:0; background:transparent; color:var(--chronos-ink); font:inherit; font-size:12px; }
+.chrono-search input::-webkit-search-cancel-button { display:none; }
+.chrono-search:focus-within { outline:1px solid var(--chronos-focus,#956719); }
+.chrono-calendar .chrono-mini-grid { grid-template-columns:18px repeat(7,minmax(0,1fr)); }
+.chrono-calendar .chrono-mini-grid .chrono-week-number { color:var(--chronos-muted); opacity:.75; font-size:9px; font-variant-numeric:tabular-nums; }
+.chrono-calendar .month-weekdays,.chrono-calendar .month-week-row { grid-template-columns:22px repeat(7,minmax(0,1fr)); }
+.chrono-calendar .month-week-number { display:grid; place-items:center; align-self:stretch; color:var(--chronos-muted); font-size:10px; font-variant-numeric:tabular-nums; }
+.calendar-create-lane,.month-tile-hit { cursor:crosshair; }
+.calendar-create-lane:hover { background-color:#f5bc5a0b; }
+.chrono-calendar .fitted-agenda-list { min-height:0; }
+.chrono-calendar .fitted-agenda-list .chrono-agenda-event { display:grid; grid-template-columns:64px 12px 30px minmax(0,1fr) minmax(0,92px); height:56px; gap:9px; padding:4px 6px; border-bottom:1px solid #3030300a; align-items:center; width:100%; }
+.chrono-calendar .fitted-agenda-list .calendar-event-wrap { height:56px; align-items:center; border-bottom:1px solid #3030300a; }
+.chrono-calendar .fitted-agenda-list .calendar-event-wrap>.calendar-event-open { width:0; border:0; }
+.chrono-calendar .fitted-agenda-list .agenda-track { height:54px; }
+.chrono-calendar .fitted-agenda-list .agenda-description { overflow:hidden; }
+.chrono-calendar .fitted-agenda-list .chrono-agenda-event:hover { background:#E8EFF655; }
+.chrono-calendar .fitted-agenda-list .calendar-event-status { justify-self:end; }
+.chrono-calendar .chrono-range { flex-wrap:wrap; }
+.chrono-calendar .chrono-range label { min-width:0; }
+.chrono-calendar.chrono-mode-year .chrono-layout { display:block; }
+.chrono-calendar.chrono-mode-year .chrono-rail { display:none; }
+.chrono-calendar.chrono-mode-year .chrono-board { height:100%; background:transparent; border:0; }
+.chrono-calendar.chrono-mode-year .chrono-view { border:0; overflow:auto; }
+.chrono-calendar.chrono-mode-year .chrono-toolbar { padding-inline:0; }
+.year-planner { display:flex; flex-direction:column; height:100%; min-height:0; padding:0; gap:8px; }
+.year-months { flex:1; min-height:0; grid-template-columns:repeat(4,minmax(0,1fr)); grid-template-rows:repeat(3,minmax(0,1fr)); gap:8px; }
+.year-month { border:0; border-radius:14px; padding:8px 10px; display:flex; flex-direction:column; background:#ffffffd9; min-height:0; }
+.chrono-calendar .year-month h3 { display:flex; align-items:center; justify-content:space-between; gap:4px; flex:none; margin:0 0 3px; }
+.chrono-calendar .year-month h3 button { font-weight:600; font-size:13px; padding:3px 2px; }
+.year-month h3 small { color:var(--chronos-muted); font-size:10px; font-weight:400; }
+.year-month-grid { flex:1; min-height:0; grid-template-columns:16px repeat(7,minmax(0,1fr)); grid-template-rows:repeat(7,minmax(0,1fr)); gap:1px; align-items:stretch; }
+.year-week-number { display:grid; place-items:center; font-size:9px; color:#30303080; font-variant-numeric:tabular-nums; }
+.year-weekday { display:grid; place-items:center; font-size:9px; line-height:1; }
+.chrono-calendar .year-day { min-height:0; border-radius:7px; font-size:11px; padding:0 0 4px; }
+.chrono-calendar .year-day.today { background:var(--chronos-accent); box-shadow:none; color:var(--chronos-ink); font-weight:650; }
+.chrono-calendar .year-day.selected:not(.today) { background:var(--chronos-ink); color:white; }
+.year-day-dots { bottom:1px; }
+.year-day-dots i { width:4px; height:4px; }
+.year-legend { flex:none; padding:4px 0; }
+@container (max-width:850px) { .year-months { grid-template-columns:repeat(3,minmax(0,1fr)); grid-template-rows:repeat(4,minmax(132px,1fr)); } }
+@container (max-width:620px) { .year-months { grid-template-columns:repeat(2,minmax(0,1fr)); grid-template-rows:repeat(6,minmax(155px,1fr)); } }
+@container (max-width:350px) { .year-months { grid-template-columns:1fr; grid-template-rows:repeat(12,minmax(175px,1fr)); } }
+@media(max-width:850px) {
+  .chrono-calendar .chrono-tools { flex-wrap:wrap; }
+  .chrono-calendar .chrono-heading-actions { flex-wrap:wrap; }
+  .chrono-calendar .chrono-search { width:150px; }
+}
+@media(max-width:700px) {
+  .workspace-main:has(>.chrono-calendar) .chrono-calendar { height:auto; min-height:0; }
+  .chrono-calendar .chrono-board { height:auto; }
+  .chrono-calendar .chrono-heading-actions,.chrono-calendar .chrono-tools { width:100%; justify-content:flex-start; }
+  .chrono-calendar .chrono-segments { max-width:100%; }
+  .chrono-calendar .chrono-search { flex:1 1 130px; }
+  .chrono-calendar .chrono-range { padding-inline:10px; }
+  .chrono-calendar .chrono-range label { flex:1 1 110px; }
+  .chrono-calendar .fitted-agenda-list .chrono-agenda-event { grid-template-columns:43px 8px 24px minmax(0,1fr) minmax(0,58px); gap:4px; padding-inline:2px; }
+  .chrono-calendar .fitted-agenda-list .calendar-event-symbol { width:24px; height:24px; }
+  .chrono-calendar .fitted-agenda-list .calendar-event-status { font-size:9px; padding:2px 3px; }
+  .chrono-calendar .month-weekdays,.chrono-calendar .month-week-row { grid-template-columns:15px repeat(7,minmax(0,1fr)); }
+  .chrono-calendar.chrono-mode-year .chrono-board,.year-planner { height:auto; }
+  .year-months { min-height:max-content; }
+  .chrono-calendar .year-day { min-height:22px; }
+}
+@media(max-width:430px) {
+  .calendar-editor-shell .event-surface-body,.calendar-editor-shell .event-surface-header,.calendar-editor-shell .event-surface-footer { padding-inline:15px; }
+  .calendar-editor-shell .event-date-controls { grid-template-columns:1fr; }
+  .chrono-calendar .fitted-agenda-list .chrono-agenda-event { grid-template-columns:39px 8px minmax(0,1fr) minmax(0,56px); }
+  .chrono-calendar .fitted-agenda-list .calendar-event-symbol { display:none; }
+  .chrono-calendar .fitted-agenda-list .agenda-description strong { font-size:11px; }
+  .chrono-calendar .fitted-agenda-list .agenda-clock strong { font-size:10px; }
+}
