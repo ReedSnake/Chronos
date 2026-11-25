@@ -1,5 +1,5 @@
 import { slotMinute } from './calendarInteractions';
-import { CalendarEventButton } from './CalendarEventActions';
+import { CalendarEventButton, useCalendarDrop } from './CalendarEventActions';
 import { useEffect, useRef, useState } from 'react';
 import { useLocale } from '../../i18n/LocaleProvider';
 import { eventDayKey, fromCalendarInput, toCalendarInput } from './eventForm';
@@ -41,6 +41,7 @@ export function visibleHours(blocks,fullDay=false){
 }
 export function PlannerGrid({view,days,events,calendars,zone,onSelect,selectedDay,onDaySelect,fullDay=false,canEdit=false,onCreateAt}){
  const {locale}=useLocale(),now=useClock();
+ const drop=useCalendarDrop();
  const viewport=useRef(null);
  const today=eventDayKey({startsAt:now},zone),nowMinute=minute(now,zone);
  const dateKey=days[0];
@@ -80,7 +81,7 @@ export function PlannerGrid({view,days,events,calendars,zone,onSelect,selectedDa
   <div className="planner-all-day">{locale==='uk'?'Увесь день':'All day'}</div>
   {days.map(d=><div className="planner-all-day" key={d}>{events.filter(e=>e.type==='holiday'&&eventDayKey(e,zone)===d).map(e=><button key={keyOf(e)} onClick={()=>onSelect(e)}>{e.title}</button>)}</div>)}
   <div className="planner-hour-labels">{hours.filter((h,i)=>!fullDay||i%2===0).map(h=><span key={h} style={{top:y(h*60)+'%'}}>{timeLabel(h*60)}</span>)}</div>
-  {days.map(d=>{const {blocks,lanes}=dayBlocks(events,d,zone);return <div key={d} className={'planner-day-lane'+(isWeekend(d)?' weekend':'')+(d===selectedDay?' selected':'')+(canEdit?' calendar-create-lane':'')} onClick={e=>{if(!canEdit||e.target.closest('button'))return;const rect=e.currentTarget.getBoundingClientRect();onCreateAt?.(d,slotMinute((e.clientY-rect.top)/rect.height,first,last));}}>
+  {days.map(d=>{const {blocks,lanes}=dayBlocks(events,d,zone);return <div key={d} {...drop(d,e=>{const rect=e.currentTarget.getBoundingClientRect();return slotMinute((e.clientY-rect.top)/rect.height,first,last);})} className={'planner-day-lane'+(isWeekend(d)?' weekend':'')+(d===selectedDay?' selected':'')+(canEdit?' calendar-create-lane':'')} onClick={e=>{if(!canEdit||e.target.closest('button'))return;const rect=e.currentTarget.getBoundingClientRect();onCreateAt?.(d,slotMinute((e.clientY-rect.top)/rect.height,first,last));}}>
     {blocks.map(b=>block(b,{top:'min('+y(b.start)+'%, calc(100% - 12px))',height:b.point?'min(20px, '+(100-y(b.start))+'%)':'max(10px, calc('+(y(b.end)-y(b.start))+'% - 1px))',left:'calc('+b.lane/lanes*100+'% + 3px)',width:'calc('+100/lanes+'% - 6px)'}))}
     {d===today&&nowVisible&&<i className="planner-now" style={{top:y(nowMinute)+'%'}}><span>{timeLabel(nowMinute)}</span></i>}
    </div>})}
