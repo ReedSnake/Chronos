@@ -66,3 +66,58 @@
 .workspace-page-error h1 {margin:0;font-size:20px;font-weight:600}
 .workspace-page-error p {margin:0;color:var(--chronos-muted);font-size:var(--chronos-font-body)}
 .workspace-page-error button {border:0;border-radius:var(--chronos-radius-field);background:var(--chronos-accent);color:var(--chronos-ink);font:inherit;font-size:var(--chronos-font-small);padding:10px 14px;cursor:pointer}
+
+/* Dashboard placement; card styling is shared with Calendar Overview. */
+.workspace .dashboard-home{max-width:1280px;gap:14px;container-type:inline-size}
+.dashboard-home .dash-header{padding:2px 0 6px}
+.dashboard-home .dash-header h1{font-size:clamp(26px,2.6vw,36px);text-transform:capitalize}
+.dashboard-overview{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1.25fr) minmax(0,1fr);grid-template-rows:minmax(128px,auto) minmax(112px,auto) minmax(230px,1fr);grid-template-areas:"schedule tasks week" "schedule tasks actions" "schedule upcoming completion";gap:10px;min-height:540px}
+.dashboard-overview button{font:inherit;font-size:12px;color:inherit;border:0;background:none;cursor:pointer;padding:0;border-radius:7px}
+.dashboard-overview button:disabled{cursor:not-allowed;opacity:.5}
+.dashboard-overview button:focus-visible{outline:2px solid var(--chronos-focus);outline-offset:2px}
+.dashboard-overview .overview-card{min-height:0;gap:12px}
+.dashboard-overview .overview-card h3{margin:0;min-width:0;overflow-wrap:anywhere}
+.dashboard-overview .home-schedule{grid-area:schedule}
+.dashboard-overview .home-tasks{grid-area:tasks}
+.dashboard-overview .home-week{grid-area:week}
+.dashboard-overview .home-actions{grid-area:actions}
+.dashboard-overview .home-upcoming{grid-area:upcoming}
+.dashboard-overview .home-completion{grid-area:completion}
+.dashboard-overview .overview-schedule-list{max-height:490px}
+.dashboard-overview .overview-table{max-height:224px}
+.dashboard-overview .overview-meeting-list{max-height:242px}
+.dashboard-overview .overview-slot>span{font-variant-numeric:tabular-nums}
+.dashboard-overview .overview-slot button.meeting{background:var(--chronos-ink);color:white}
+.dashboard-overview .overview-slot>.calendar-event-list>.calendar-event-open,.dashboard-overview .overview-table .calendar-event-open{width:0}
+.dashboard-overview .overview-table button.calendar-task-toggle{width:auto;min-width:25px;border:0;padding:3px;display:flex}
+.dashboard-overview .overview-table-head{padding-right:30px}
+.dashboard-overview .overview-table-head,.dashboard-overview .overview-table button:not(.calendar-task-toggle){grid-template-columns:minmax(0,1.3fr) minmax(48px,.8fr) minmax(43px,.6fr);gap:6px}
+.dashboard-overview .overview-table .calendar-event-status{max-width:100%;overflow:hidden;text-overflow:ellipsis;font-size:10px}
+.dashboard-overview .home-upcoming .overview-date,.dashboard-overview .home-upcoming .overview-empty{color:#ffffffb9}
+.dashboard-overview .home-week-arrows,.dashboard-overview .home-action-buttons,.dashboard-overview .home-week-footer{display:flex;align-items:center;gap:6px}
+.dashboard-overview .home-week header h3{text-transform:capitalize}
+.dashboard-overview .home-week-footer{justify-content:space-between}
+.dashboard-overview .home-action-buttons{flex-wrap:wrap}
+.dashboard-overview .home-action-buttons .overview-add{flex:1 1 100px;justify-content:center;min-height:38px;white-space:nowrap}
+.dashboard-overview .home-action-buttons .home-task-add{background:var(--chronos-background);color:var(--chronos-ink)}
+.dashboard-overview .home-completion-meta{text-align:center}
+.dashboard-overview .home-completed{align-self:flex-start;font-size:11px;color:var(--chronos-muted);padding:4px 0;text-decoration:underline}
+.dashboard-overview .dash-task-controls .dash-filters{padding:0;border:0}
+.dashboard-overview .dash-task-controls .dash-filters button{padding:5px 9px}
+.dashboard-overview .home-upcoming .overview-arrow{color:white;background:#ffffff15}
+.dashboard-home .home-extra{padding:14px 16px}
+.dashboard-home .home-extra>summary{cursor:pointer;font-size:13px;font-weight:550}
+.dashboard-home .home-extra[open]>summary{margin-bottom:12px}
+.dashboard-home .home-extra .dash-calendars{margin-top:12px}
+.dashboard-home .home-extra .ux-widget-controls{margin-bottom:10px}
+@container (max-width:850px){
+.dashboard-overview{grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);grid-template-rows:auto;grid-template-areas:"week actions" "schedule tasks" "schedule upcoming" "completion completion";min-height:0}
+.dashboard-overview .home-schedule{min-height:430px}
+.dashboard-overview .home-completion,.dashboard-overview .home-upcoming{min-height:180px}
+}
+@container (max-width:600px){
+.dashboard-overview{grid-template-columns:minmax(0,1fr);grid-template-areas:"week" "schedule" "tasks" "upcoming" "actions" "completion"}
+.dashboard-overview .home-schedule{min-height:260px}
+.dashboard-overview .overview-card{padding:15px;border-radius:18px}
+.dashboard-overview .overview-table,.dashboard-overview .overview-meeting-list,.dashboard-overview .overview-schedule-list{max-height:340px}
+}
