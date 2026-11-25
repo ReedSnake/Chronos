@@ -10,21 +10,21 @@
 .ig-heading p{font-size:13px;color:#30303099;margin-top:7px}
 .ig-page .ig-primary,.ig-dialog .ig-primary{display:inline-flex;align-items:center;justify-content:center;gap:7px;border:0;background:#F5BC5A;color:#303030;border-radius:10px;padding:11px 15px;font-size:13px;font-weight:600;white-space:nowrap}
 .ig-layout{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(270px,1fr);gap:16px;align-items:start}
-.ig-owned,.ig-section{background:#ffffffcf;border-radius:18px;padding:17px;min-width:0;display:grid;gap:14px}
+.ig-owned,.ig-section{background:transparent;border-radius:0;padding:0;min-width:0;display:grid;gap:14px}
 .ig-connections{display:grid;gap:16px;min-width:0}
 .ig-section-heading{display:flex;align-items:center;gap:8px;min-height:26px}
 .ig-section-heading h2{font-size:15px;font-weight:600;letter-spacing:-.015em}
 .ig-section-heading>span{font-size:11px;color:#30303099;background:#E8EFF6;border-radius:6px;padding:3px 7px}
 .ig-page .ig-refresh{margin-left:auto;display:grid;place-items:center;color:#30303090;border:0;background:transparent;border-radius:6px;padding:5px}
-.ig-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,205px),1fr));gap:12px}
-.ig-card{background:white;border:1px solid #3030300b;border-radius:13px;min-width:0;padding:14px;display:flex;flex-direction:column;gap:12px;min-height:145px}
+.ig-cards{display:grid;grid-template-columns:minmax(0,1fr);gap:0;border-top:1px solid var(--chronos-border)}
+.ig-card{background:transparent;border:0;border-bottom:1px solid var(--chronos-border);border-radius:0;min-width:0;padding:12px 0;display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:12px;min-height:54px}
 .ig-card-top{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
 .ig-symbol{display:grid;place-items:center;width:42px;height:42px;flex:none;border-radius:12px;background:#E8EFF6;color:#303030}
 .ig-status{display:inline-flex;align-items:center;gap:5px;font-size:11px;color:#30303099;overflow-wrap:anywhere}
 .ig-status i{width:7px;height:7px;background:#a9afb4;border-radius:50%;flex:none}
 .ig-status.active i{background:#65a982}
-.ig-card h3{font-size:16px;font-weight:600;letter-spacing:-.02em;overflow-wrap:anywhere}
-.ig-card-bottom{margin-top:auto;padding-top:9px;border-top:1px solid #3030300d}
+ .ig-card h3{font-size:14px;font-weight:600;letter-spacing:-.02em;overflow-wrap:anywhere}
+.ig-card-bottom{margin:0;padding:0;border:0}
 .ig-page .ig-card-bottom button{display:flex;align-items:center;gap:6px;padding:6px 0;border:0;background:none;color:#303030;font-size:12px}
 .ig-page .ig-card-bottom button:hover{text-decoration:underline}
 .ig-empty{background:#fff;border-radius:12px;display:grid;gap:10px;min-width:0}
@@ -101,3 +101,6 @@
 .ig-page button:focus-visible,.ig-dialog :is(button,input,select):focus-visible{outline:2px solid #b7832d;outline-offset:2px}
 @media(max-width:1050px){.ig-layout{grid-template-columns:1fr}.ig-connections{grid-template-columns:repeat(2,minmax(0,1fr))}.ig-connections>.ig-error{grid-column:1/-1}}
 @media(max-width:650px){.ig-page{gap:16px}.ig-heading{align-items:flex-start;flex-wrap:wrap}.ig-layout,.ig-connections{grid-template-columns:1fr;gap:12px}.ig-owned,.ig-section{padding:13px}.ig-empty-owned{padding:18px}.ig-dialog-body,.ig-identity{padding-inline:16px}.ig-property{gap:6px}}
+
+.ig-card .ig-symbol{background:transparent;border-radius:0;width:26px;height:26px;color:var(--chronos-muted)}.ig-card-top{justify-content:flex-start;flex-wrap:nowrap}.ig-card.ig-skeleton{display:flex;min-height:54px}.ig-owned .ig-empty{background:transparent;border:0;box-shadow:none;justify-items:start;text-align:left}.ig-owned .ig-empty>.ig-symbol{display:none}.ig-layout>.ig-connections{border-left:1px solid var(--chronos-border);padding-left:22px}.ig-connections>.ig-section+.ig-section{border-top:1px solid var(--chronos-border);padding-top:16px}
+@media(max-width:1050px){.ig-layout>.ig-connections{border-left:0;padding-left:0;border-top:1px solid var(--chronos-border);padding-top:18px}}@media(max-width:420px){.ig-card{grid-template-columns:minmax(0,1fr) auto;gap:8px}.ig-card-top{grid-column:1/-1}}
