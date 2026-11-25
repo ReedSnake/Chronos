@@ -1,10 +1,11 @@
+import { seedEventTime } from './calendarInteractions';
 import { useMemo, useState } from 'react';
 import { TablerIcon } from '../../components/layout/TablerIcon';
 import './event-surface.css';
 import { useLocale } from '../../i18n/LocaleProvider';
 import { buildEventPayload, defaultEventDraft, draftFromEvent, EVENT_TYPES, RECURRENCE_INTERVALS } from './eventForm';
 
-export function EventEditor({ event = null, calendar, saving, onSave, onCancel, initialType = 'arrangement', initialDay = null, initialStatus = 'todo' }) {
+export function EventEditor({ event = null, calendar, saving, onSave, onCancel, initialType = 'arrangement', initialDay = null, initialMinute = null, initialStatus = 'todo' }) {
   const { t, locale } = useLocale();
   const uk = locale === 'uk';
   const [tab, setTab] = useState('info');
@@ -22,7 +23,7 @@ export function EventEditor({ event = null, calendar, saving, onSave, onCancel, 
       }
       value.date=initialDay;
     }
-    return value;
+    return seedEventTime(value, initialDay, initialMinute, calendar.defaultEventDurationMinutes);
   }
   const [draft, setDraft] = useState(() => event ? draftFromEvent(event, timeZone) : makeDraft(initialType));
   const [formError, setFormError] = useState('');
