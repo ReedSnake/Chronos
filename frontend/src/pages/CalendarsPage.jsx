@@ -15,7 +15,7 @@ const safeColor = value => /^#[0-9a-f]{6}$/i.test(value || '') ? value : '#F5BC5
 const canManage = calendar => !calendar.isHolidayCalendar && ['owner', 'admin'].includes(calendar.role);
 const canEdit = calendar => !calendar.isHolidayCalendar && ['owner', 'admin', 'editor'].includes(calendar.role);
 const palette = ['#F5BC5A', '#303030', '#8EB1D7', '#65A982', '#D68B85', '#A69BC8'];
-const defaultDraft = () => ({ name: '', description: '', color: '#F5BC5A', countryCode: '', timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC', defaultView: 'month', defaultEventDurationMinutes: 60 });
+const defaultDraft = () => ({ name: '', description: '', color: '#F5BC5A', countryCode: '', timeZone: 'UTC', defaultView: 'month', defaultEventDurationMinutes: 60 });
 const editDraft = calendar => ({ name: calendar.name, description: calendar.description || '', color: safeColor(calendar.color), countryCode: calendar.countryCode || '', timeZone: calendar.timeZone || 'UTC', defaultView: calendar.defaultView || 'month', defaultEventDurationMinutes: calendar.defaultEventDurationMinutes || 60, isArchived: !!calendar.isArchived });
 
 function calendarRoleLabel(t, role) {
@@ -28,11 +28,9 @@ function CalendarForm({ draft, setDraft, calendar, busy, onSave, onClose }) {
   const { t, locale } = useLocale();
   const uk = locale === 'uk';
   const [countries, setCountries] = useState([]);
-  const [zones, setZones] = useState([]);
-  useEffect(() => {
+    useEffect(() => {
     let active = true;
     applicationContainer.countryService.getAvailableCountries().then(items => { if (active) setCountries(items); }).catch(() => {});
-    applicationContainer.timeZoneService.getAvailableTimeZones().then(items => { if (active) setZones(items); }).catch(() => {});
     return () => { active = false; };
   }, []);
   const set = (field, value) => setDraft(old => ({ ...old, [field]: value }));
@@ -50,11 +48,9 @@ function CalendarForm({ draft, setDraft, calendar, busy, onSave, onClose }) {
       <div className="cm-properties">
         {row('world', t('calendars.countryCode'), <input list="cm-country-list" value={draft.countryCode} maxLength={2} placeholder={uk ? 'Не вибрано' : 'Not set'} onChange={e => set('countryCode', e.target.value.toUpperCase())}/>)}
         <datalist id="cm-country-list">{countries.map(c => <option key={c.countryCode} value={c.countryCode}>{c.name}</option>)}</datalist>
-        {row('clock', t('calendars.timeZone'), <input list="cm-zone-list" value={draft.timeZone} maxLength={100} required onChange={e => set('timeZone', e.target.value)}/>)}
-        <datalist id="cm-zone-list">{[...new Set(['UTC', draft.timeZone, ...zones])].filter(Boolean).map(zone => <option key={zone} value={zone}/>)}</datalist>
         {row('layout-dashboard', t('calendars.defaultView'), <select value={draft.defaultView} onChange={e => set('defaultView', e.target.value)}><option value="month">{t('calendars.viewMonth')}</option><option value="agenda">{t('calendars.viewAgenda')}</option></select>)}
         {row('clock', t('calendars.defaultDuration'), <span className="cm-duration"><input type="number" min="5" max="1440" required value={draft.defaultEventDurationMinutes} onChange={e => set('defaultEventDurationMinutes', Number(e.target.value))}/><span>{uk ? 'хв' : 'min'}</span></span>)}
-        {calendar && !calendar.isMain && <label className="cm-archive-check"><input type="checkbox" checked={!!draft.isArchived} onChange={e => set('isArchived', e.target.checked)}/>{t('calendars.archived')}</label>}
+        {calendar && canManage(calendar) && !calendar.isMain && <label className="cm-archive-check"><input type="checkbox" checked={!!draft.isArchived} onChange={e => set('isArchived', e.target.checked)}/>{t('calendars.archived')}</label>}
       </div>
       {!calendar && <div className="cm-private-note"><Icon name="lock" size={17}/><div><strong>{uk ? 'Приватний календар' : 'Private calendar'}</strong><p>{uk ? 'Налаштуйте спільний доступ після створення' : 'Share access after creation'}</p></div></div>}
     </div>
@@ -94,7 +90,7 @@ export function CalendarsPage() {
     setModalError(''); setDraft(defaultDraft()); setModal({ section: 'create' });
   }
   function openManage(calendar, section) {
-    if (lock.current || (section === 'settings' ? !canEdit(calendar) : !canManage(calendar))) return;
+    if (lock.current || (section === 'settings' ? !canEdit(calendar)&&!(calendar.isHolidayCalendar&&calendar.role==='owner') : !canManage(calendar))) return;
     setModalError(''); setDraft(editDraft(calendar)); setModal({ id: calendar.id, section });
   }
   function close() { if (!lock.current) { setModal(null); setModalError(''); } }
@@ -109,6 +105,8 @@ export function CalendarsPage() {
     const values = { ...draft, name: draft.name.trim(), countryCode: draft.countryCode.trim() || null };
     if (!values.name) { lock.current = false; setBusy(false); return; }
     if (createMode || selected.isMain) delete values.isArchived;
+    if (!createMode) delete values.timeZone;
+    if (!createMode && !canManage(selected)) delete values.isArchived;
     try {
       if (createMode) {
         const result = await service.create(values);
@@ -124,11 +122,12 @@ export function CalendarsPage() {
   }
   async function toggleHoliday(calendar) {
     if (lock.current || !calendar.isHolidayCalendar) return;
-    lock.current = true; setBusy(true); setError('');
+    lock.current = true; setBusy(true); setModalError('');
     try {
       const { calendar: updated } = await service.update(calendar.id, { isArchived: !calendar.isArchived });
       setCalendars(old => old.map(c => c.id === calendar.id ? updated : c));
-    } catch (err) { setError(getLocalizedApiError(err, t, 'calendars.updateError')); }
+      setModal(null);
+    } catch (err) { setModalError(getLocalizedApiError(err, t, 'calendars.updateError')); }
     finally { lock.current = false; setBusy(false); }
   }
   async function removeCalendar(calendar) {
@@ -146,7 +145,7 @@ export function CalendarsPage() {
   const sorted = [...calendars].sort((a,b) => Number(!!b.isMain) - Number(!!a.isMain) || Number(!!a.isArchived) - Number(!!b.isArchived) || nameOf(a).localeCompare(nameOf(b), locale));
   const visible = sorted.filter(c => (filter === 'all' || (filter === 'archived' ? c.isArchived : !c.isArchived)) && [nameOf(c), c.description, c.timeZone, c.countryCode].some(v => String(v || '').toLowerCase().includes(search.trim().toLowerCase())));
   const tabs = selected ? [
-    ...(canEdit(selected) ? [['settings', 'settings', uk ? 'Налаштування' : 'Settings']] : []),
+    ...(canEdit(selected)||selected.isHolidayCalendar&&selected.role==='owner' ? [['settings', 'settings', uk ? 'Налаштування' : 'Settings']] : []),
     ...(canManage(selected) ? [['share', 'arrow-up-right', uk ? 'Посилання' : 'Share links'], ['invite', 'user', uk ? 'Запрошення' : 'Invitations'], ['members', 'users', uk ? 'Учасники' : 'Members']] : []),
   ] : [];
 
@@ -159,14 +158,13 @@ export function CalendarsPage() {
     {error && <p className="cm-error" role="alert">{error} <button type="button" onClick={loadCalendars}>{uk ? 'Повторити' : 'Retry'}</button></p>}
     {loading ? <div className="cm-grid" role="status" aria-label={t('common.loading')}>{[0,1,2].map(i => <div className="cm-card cm-skeleton" key={i}><span/><i/><i/></div>)}</div> : <div className="cm-grid">
       {visible.map(calendar => <article className="cm-card" key={calendar.id} style={{ '--calendar-color': safeColor(calendar.color) }}>
-        <div className="cm-card-head"><span className="cm-calendar-icon"><Icon name="calendar" size={24}/></span><div className="cm-badges">{calendar.isMain && <span className="cm-main-badge">{t('calendarBasics.main')}</span>}{calendar.isArchived && <span>{t('calendars.archived')}</span>}</div>{canEdit(calendar) && <button type="button" className="cm-icon-button" onClick={() => openManage(calendar, 'settings')} aria-label={t('calendars.editTitle') + ': ' + nameOf(calendar)}><Icon name="settings" size={18}/></button>}</div>
+        <div className="cm-card-head"><span className="cm-calendar-icon"><Icon name="calendar" size={24}/></span><div className="cm-badges">{calendar.isMain && <span className="cm-main-badge">{t('calendarBasics.main')}</span>}{calendar.isArchived && <span>{t('calendars.archived')}</span>}</div>{(canEdit(calendar)||calendar.isHolidayCalendar&&calendar.role==='owner') && <button type="button" className="cm-icon-button" onClick={() => openManage(calendar, 'settings')} aria-label={t('calendars.editTitle') + ': ' + nameOf(calendar)}><Icon name="settings" size={18}/></button>}</div>
         <div className="cm-card-title"><h2>{nameOf(calendar)}</h2><p>{calendarRoleLabel(t, calendar.role)}</p></div>
         {calendar.description && <p className="cm-description">{calendar.description}</p>}
         {calendar.isHolidayCalendar && <p className="cm-description">{t('calendarBasics.holidayNote')} · {calendar.countryCode}</p>}
-        <div className="cm-card-meta"><span><Icon name="clock" size={15}/>{calendar.timeZone || 'UTC'}</span>{calendar.countryCode && <span>{calendar.countryCode}</span>}</div>
+        <div className="cm-card-meta">{calendar.countryCode && <span>{calendar.countryCode}</span>}</div>
         <div className="cm-card-actions"><Link className="cm-open" to={localizedPath('/calendars/view/' + calendar.id)}>{t('calendars.view')}<Icon name="arrow-up-right" size={16}/></Link>
           {canManage(calendar) && <button type="button" className="cm-secondary" onClick={() => openManage(calendar, 'members')}><Icon name="users" size={16}/>{uk ? 'Доступ' : 'Access'}</button>}
-          {calendar.isHolidayCalendar && <button type="button" className="cm-secondary" disabled={busy} onClick={() => void toggleHoliday(calendar)}><Icon name={calendar.isArchived ? 'eye' : 'eye-off'} size={16}/>{t(calendar.isArchived ? 'calendarBasics.show' : 'calendarBasics.hide')}</button>}
         </div>
       </article>)}
       {!visible.length && <div className="cm-empty"><span className="cm-calendar-icon"><Icon name="calendar" size={26}/></span><p>{calendars.length ? (uk ? 'Календарів за цим фільтром немає' : 'No calendars match these filters') : t('calendars.empty')}</p><button type="button" className="cm-secondary" onClick={calendars.length ? () => { setSearch(''); setFilter('all'); } : openCreate}>{calendars.length ? (uk ? 'Скинути фільтри' : 'Reset filters') : t('calendars.createTitle')}</button></div>}
@@ -176,7 +174,8 @@ export function CalendarsPage() {
         <header className="cm-modal-header"><div><h2>{createMode ? (uk ? 'Новий календар' : 'New calendar') : (uk ? 'Керування календарем' : 'Manage calendar')}</h2>{!createMode && <p>{calendarRoleLabel(t, selected.role)}</p>}</div><button type="button" className="cm-icon-button" disabled={busy} onClick={close} aria-label={t('calendarView.event.cancel')}><Icon name="x" size={20}/></button></header>
         {!createMode && <nav className="cm-tabs" aria-label={uk ? 'Керування календарем' : 'Calendar management'}>{tabs.map(([id,icon,label]) => <button key={id} type="button" aria-pressed={modal.section === id} disabled={busy} onClick={() => switchSection(id)}><Icon name={icon} size={15}/>{label}</button>)}</nav>}
         {modalError && <p className="cm-error" role="alert">{modalError}</p>}
-        {(createMode || modal.section === 'settings') && <CalendarForm draft={draft} setDraft={setDraft} calendar={selected} busy={busy} onSave={save} onClose={close}/>}
+        {!createMode&&selected.isHolidayCalendar&&modal.section==='settings'?<div className="cm-form-body"><p>{t('calendarBasics.holidayNote')}</p><button type="button" className="cm-secondary" disabled={busy} onClick={()=>void toggleHoliday(selected)}><Icon name={selected.isArchived?'eye':'eye-off'} size={16}/>{t(selected.isArchived?'calendarBasics.show':'calendarBasics.hide')}</button></div>:null}
+        {(createMode || modal.section === 'settings'&&!selected.isHolidayCalendar) && <CalendarForm draft={draft} setDraft={setDraft} calendar={selected} busy={busy} onSave={save} onClose={close}/>}
         {!createMode && canManage(selected) && <div className="cm-collaboration" hidden={modal.section === 'settings'}><CalendarCollaborationPanel key={selected.id} calendar={selected} section={modal.section}/></div>}
         {!createMode && modal.section === 'settings' && canManage(selected) && !selected.isMain && <div className="cm-danger"><button type="button" disabled={busy} onClick={() => void removeCalendar(selected)}>{t('calendars.delete')}</button></div>}
       </div>
