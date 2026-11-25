@@ -1,0 +1,110 @@
+/* Shared interaction layer. Keep transitions on small surfaces rather than whole layouts. */
+@keyframes ux-enter { from {opacity:0;transform:translateY(5px)} to {opacity:1;transform:translateY(0)} }
+@keyframes ux-pop { from {opacity:0;transform:translateY(5px) scale(.985)} to {opacity:1;transform:translateY(0) scale(1)} }
+@keyframes ux-skeleton { 0%,100%{opacity:.48} 50%{opacity:1} }
+.workspace .ux-sidebar-tools {display:flex;align-items:center;gap:5px;margin-top:-24px}
+.ux-sidebar-tools button,.ux-mobile-command {display:flex;align-items:center;justify-content:center;gap:8px;border:0;border-radius:8px;background:#E8EFF6;color:#303030;padding:9px;font:inherit;font-size:12px;cursor:pointer}
+.ux-sidebar-tools button:first-child {flex:1;min-width:0;justify-content:flex-start}
+.ux-sidebar-tools kbd {font:10px inherit;color:#30303088;margin-left:auto;white-space:nowrap}
+.ux-mobile-command {display:none}
+@media(min-width:851px) {
+ .workspace.ux-sidebar-collapsed {grid-template-columns:70px minmax(0,1fr)}
+ .ux-sidebar-collapsed .workspace-sidebar {padding:20px 8px;gap:30px}
+ .ux-sidebar-collapsed .workspace-logo {padding:0;justify-content:center}
+ .ux-sidebar-collapsed .workspace-logo>span:last-child,.ux-sidebar-collapsed .workspace-nav-link span,.ux-sidebar-collapsed .workspace-user-name,.ux-sidebar-collapsed .workspace-user>svg,.ux-sidebar-collapsed .workspace-sign-out span,.ux-sidebar-collapsed .ux-sidebar-tools span,.ux-sidebar-collapsed .ux-sidebar-tools kbd {display:none}
+ .ux-sidebar-collapsed .workspace-nav-link,.ux-sidebar-collapsed .workspace-user {justify-content:center;padding-inline:0}
+ .ux-sidebar-collapsed .ux-sidebar-tools {flex-direction:column;margin-top:-12px}
+ .ux-sidebar-collapsed .ux-sidebar-tools button {width:100%;justify-content:center}
+}
+@media(max-width:850px) {
+ .ux-sidebar-tools {flex-direction:column;margin-top:-12px!important}
+ .ux-sidebar-tools span,.ux-sidebar-tools kbd,.ux-sidebar-tools .ux-collapse {display:none}
+ .ux-sidebar-tools button {justify-content:center!important;width:100%}
+}
+@media(max-width:540px) {
+ .workspace .ux-sidebar-tools {display:none}
+ .ux-mobile-command {display:flex}
+ .workspace .workspace-nav-link {min-height:44px}
+}
+.workspace :is(.tb-card,.dash-card,.cm-card,.ig-card,.year-month) {transition:box-shadow .2s ease,background-color .2s ease,border-color .2s ease}
+.workspace :is(.tb-primary,.cm-primary,.ig-primary,.chrono-primary,.dash-action,.ux-primary) {transition:background-color .16s ease,box-shadow .16s ease,transform .16s ease}
+.workspace :is(.tb-primary,.cm-primary,.ig-primary,.chrono-primary,.dash-action,.ux-primary):active:not(:disabled) {transform:scale(.98)}
+.event-preview,.ux-toast,.event-dialog[open],.dash-modal[open] {animation:ux-pop .18s cubic-bezier(.2,.65,.25,1) both}
+.chrono-view>.day-planner,.chrono-view>.month-planner,.chrono-view>.year-planner,.chrono-view>.fitted-agenda,.chrono-view>.planner-viewport {animation:ux-enter .18s ease both}
+.tb-card {animation:ux-enter .18s ease both}
+.ux-dragging :is(.day-row-lane,.planner-day-lane,.month-tile) {outline:1px dashed #b7832d60;outline-offset:-2px;transition:background .14s}
+.ux-dragging :is(.day-row-lane,.planner-day-lane,.month-tile):hover {background-color:#f5bc5a32}
+.chrono-calendar button[draggable=true] {cursor:grab}
+.chrono-calendar button[draggable=true]:active {cursor:grabbing}
+.ux-resize-handle {display:block;position:absolute;right:0;bottom:0;left:0;height:8px;cursor:ns-resize;z-index:5;border-radius:0 0 5px 5px;background:transparent}
+.ux-resize-handle:after {content:'';position:absolute;bottom:2px;left:40%;width:20%;height:2px;background:currentColor;opacity:.55;border-radius:2px}
+.chrono-mode-horizontal .ux-resize-handle {left:auto;right:0;top:0;width:8px;height:auto;cursor:ew-resize}
+.chrono-mode-horizontal .ux-resize-handle:after {bottom:40%;left:3px;width:2px;height:20%}
+.ux-paste,.ux-primary {border:0;border-radius:8px;background:#F5BC5A;color:#303030;padding:8px 12px;font:inherit;font-size:12px;font-weight:600;cursor:pointer}
+.ux-toast {position:fixed;bottom:24px;right:24px;z-index:2000;display:flex;align-items:center;gap:10px;background:#303030;color:white;border-radius:11px;padding:12px 14px;max-width:min(420px,calc(100vw - 32px));font-size:13px;box-shadow:0 8px 25px #30303025}
+.ux-toast span {overflow-wrap:anywhere}
+.ux-toast button {border:0;background:transparent;color:#F5BC5A;font:inherit;cursor:pointer;white-space:nowrap}
+.ux-toast button:last-child {color:white;font-size:20px;line-height:1}
+.event-dialog:has(.ux-quick-menu) {width:min(330px,calc(100vw - 28px))}
+.ux-quick-menu,.ux-command {display:grid;gap:12px;padding:17px;color:#303030;background:white;min-width:0}
+.ux-quick-menu header {display:flex;align-items:center;justify-content:space-between;gap:8px;overflow-wrap:anywhere}
+.ux-quick-menu header button,.ux-menu-actions button {border:0;background:none;color:#303030;border-radius:7px;padding:8px;font:inherit;font-size:13px;cursor:pointer;text-align:left}
+.ux-menu-actions,.ux-quick-menu form {display:grid;gap:5px}
+.ux-menu-actions button:hover {background:#E8EFF6}
+.ux-menu-actions button.ux-danger {color:#a32e36}
+.ux-quick-menu form label {display:grid;gap:5px;font-size:12px;padding:5px 0}
+.ux-quick-menu input {width:100%;min-width:0;border:1px solid #30303020;border-radius:7px;padding:8px;font:inherit;color:#303030}
+.event-dialog:has(.ux-command) {width:min(540px,calc(100vw - 28px))}
+.ux-command {gap:0;padding:0}
+.ux-command-input {display:flex;align-items:center;gap:9px;padding:16px;border-bottom:1px solid #30303014}
+.ux-command-input input {flex:1;min-width:0;border:0;background:none;font:inherit;color:#303030;outline:none;font-size:15px}
+.ux-command-input button {border:0;background:#E8EFF6;border-radius:5px;color:#30303088;padding:5px 7px;font-size:11px;cursor:pointer}
+.ux-command-range {padding:10px 16px;border-bottom:1px solid #30303010;display:grid;gap:8px;font-size:12px}
+.ux-command-range>div {display:flex;gap:8px;flex-wrap:wrap}
+.ux-command-range label {display:flex;align-items:center;gap:6px}
+.ux-command-range input[type=date] {border:0;background:#E8EFF6;border-radius:5px;color:#303030;min-width:0;padding:5px;font:inherit}
+.ux-command-range input[type=checkbox] {accent-color:#303030}
+.ux-command-results {max-height:45dvh;overflow:auto;padding:8px}
+.ux-command-results button {width:100%;display:flex;align-items:center;gap:10px;border:0;background:white;color:#303030;padding:10px;border-radius:7px;text-align:left;cursor:pointer}
+.ux-command-results button[aria-selected=true],.ux-command-results button:focus-visible {background:#E8EFF6}
+.ux-command-results button>span {flex:1;min-width:0;display:grid;gap:3px;overflow-wrap:anywhere}
+.ux-command-results strong {font-size:13px;font-weight:550}
+.ux-command-results small,.ux-command footer,.ux-command p {font-size:11px;color:#30303099}
+.ux-command p,.ux-command footer {padding:10px 16px;margin:0}
+.ux-command footer {border-top:1px solid #30303010}
+.ux-skeleton {display:grid;gap:8px;padding:12px;background:white;border-radius:8px}
+.ux-skeleton i {height:10px;width:85%;border-radius:5px;background:#E8EFF6;animation:ux-skeleton 1.4s ease infinite}
+.ux-skeleton i:last-child {width:55%}
+.ux-task-tools {display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.ux-task-tools button,.ux-task-tools select {background:white;border:1px solid #30303015;border-radius:7px;color:#303030;font:inherit;font-size:12px;padding:7px 9px}
+.ux-task-tools button[aria-pressed=true] {background:#F5BC5A50;border-color:#F5BC5A}
+.ux-overdue {color:#a32e36!important}
+.ux-quick-add {display:flex;flex-direction:column;gap:6px;padding:8px;border:1px solid #30303012;background:white;border-radius:8px}
+.ux-quick-add input {min-width:0;width:100%;border:0;font:inherit;font-size:12px;padding:6px;color:#303030}
+.ux-quick-add small {color:#30303099;font-size:10px;line-height:1.4}
+.ux-quick-add button {align-self:flex-end}
+.ux-bulk {display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:8px 14px;background:#E8EFF6;font-size:12px}
+.ux-bulk select,.ux-bulk input,.ux-bulk button {border:0;border-radius:6px;background:white;padding:6px;font:inherit;color:#303030}
+.ux-task-select {accent-color:#303030;margin:0;flex:none}
+.ux-widget-controls {display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:12px}
+.ux-widget-controls summary {cursor:pointer;color:#30303088}
+.ux-widget-controls details[open] {background:white;border-radius:8px;padding:8px}
+.ux-widget-controls label {display:flex;align-items:center;gap:6px;padding:5px}
+.ux-widget-controls input {accent-color:#303030}
+.ux-dashboard-widgets {display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,215px),1fr));gap:12px}
+.ux-dashboard-widgets section {display:grid;gap:8px;min-width:0;align-content:start}
+.ux-dashboard-widgets h2 {font-size:13px;font-weight:600;margin:0}
+.ux-dashboard-widgets p {font-size:12px;margin:0;color:#30303099;line-height:1.45}
+.ux-dashboard-widgets .ux-widget-value {font-size:21px;color:#303030;font-weight:620;letter-spacing:-.025em}
+.ux-dashboard-widgets textarea {width:100%;min-width:0;resize:vertical;border:0;background:#E8EFF6;border-radius:8px;padding:8px;font:inherit;font-size:12px;color:#303030}
+.ux-widget-link {border:0;background:none;color:#303030;padding:3px 0;text-align:left;font:inherit;font-size:12px;cursor:pointer;overflow-wrap:anywhere}
+@media(max-width:600px) {
+ .ux-toast {bottom:calc(76px + env(safe-area-inset-bottom));right:12px}
+ .event-dialog[open]:not(:has(.ux-command)) {margin:auto 0 0;width:100%;max-width:100%;max-height:90dvh;border-radius:18px 18px 0 0}
+ .dash-modal[open] {margin:auto 0 0;width:100%;max-width:100%;max-height:90dvh;border-radius:18px 18px 0 0}
+ .ux-task-tools {width:100%}
+ .ux-quick-menu button,.ux-command-results button {min-height:44px}
+}
+@media(prefers-reduced-motion:reduce) {
+ .workspace *, .workspace *::before,.workspace *::after,.event-preview,.event-dialog,.event-dialog *,.dash-modal,.dash-modal * {animation-duration:.01ms!important;transition-duration:.01ms!important;scroll-behavior:auto!important}
+}
