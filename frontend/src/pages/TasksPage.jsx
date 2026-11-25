@@ -69,31 +69,7 @@ export function TasksPage() {
   const lock = useRef(false);
   const { from, to } = boardRange;
   useEffect(() => {
-    function toggleOverdue(){
-    if(!overdue){setBoardRange({from:shiftDate(today,-365),to:today});setStatusFilter('');}
-    else setBoardRange({from:shiftDate(today,-30),to:shiftDate(today,60)});
-    setOverdue(v=>!v);
-  }
-  const quickCalendar=editable.find(c=>c.isMain&&!hidden.includes(c.id))||editable.find(c=>!hidden.includes(c.id));
-  async function quickAdd(e){
-    e.preventDefault();if(!quickTitle.trim()||!quickCalendar||lock.current||loading)return;
-    try{await mutate(async()=>{await service.createEvent(quickCalendar.id,{type:'task',title:quickTitle.trim(),description:'',color:safeColor(quickCalendar.color),deadline:fromCalendarInput(today+'T23:59',zone),status:'todo',categories:[],attendees:[],isRecurring:false});setQuickTitle('');setOverdue(false);setStatusFilter('');setCategory('');setSearch('');setBoardRange({from:shiftDate(today,-30),to:shiftDate(today,60)});setReload(n=>n+1);notify(uk?'Завдання додано':'Task added');});}
-    catch(err){setError(getLocalizedApiError(err,t,'calendarView.event.saveError'));}
-  }
-  const selectedTasks=tasks.filter(e=>picked.includes(taskKey(e))&&canChange(e)&&!e.isRecurring);
-  async function applyBulk(kind){
-    if(lock.current||loading||!selectedTasks.length||(kind==='date'&&!bulkDate))return;
-    await mutate(async()=>{
-      let count=0,failed=0;
-      for(const task of selectedTasks){
-        try{const patch=kind==='date'?moveEventPatch(task,bulkDate,null,zone):{status:bulkStatus};await service.updateEvent(task.calendarId,task.id,patch);count++;setData(old=>({...old,events:old.events.map(e=>taskKey(e)===taskKey(task)?{...e,...patch}:e)}));}
-        catch{failed++;}
-      }
-      setPicked([]);setBulk(false);setReload(n=>n+1);
-      notify((uk?'Оновлено: ':'Updated: ')+count+(failed?(uk?' · Помилки: ':' · Failed: ')+failed:''));
-    });
-  }
-  if (status !== 'authenticated') return;
+    if (status !== 'authenticated') return;
     let alive = true;
     setLoading(true); setError(''); setData(old => ({ ...old, events: [], failed: 0 }));
     Promise.resolve().then(() => loadDashboard(service, apiRange({ from, to }, zone))).then(result => {
@@ -153,8 +129,9 @@ export function TasksPage() {
         if (mode === 'edit') await service.updateEvent(calendar.id, selected.id, values);
         else await service.createEvent(calendar.id, values);
         const savedDay = eventDayKey({ type: 'task', deadline: values.deadline }, zone);
-        if (savedDay && (savedDay < from || savedDay > to)) setBoardRange(old => ({ from: savedDay < old.from ? savedDay : old.from, to: savedDay > old.to ? savedDay : old.to }));
+        if (savedDay && (savedDay < from || savedDay > to)) setBoardRange({ from: shiftDate(savedDay,-30), to: shiftDate(savedDay,60) });
         if (mode === 'create') { setHidden(old => old.filter(id => id !== calendar.id)); setSearch(''); setCategory(''); setStatusFilter(''); }
+        setOverdue(false); if (mode === 'create') setHideDone(false);
         setMode(null); setSelected(null); setEdit(null); setReload(n => n + 1);notify(uk?'Завдання збережено':'Task saved');
       });
     } catch (err) { throw Error(getLocalizedApiError(err, t, 'calendarView.event.saveError')); }
@@ -169,6 +146,30 @@ export function TasksPage() {
     await mutate(async () => {
       await service.sendEventInvitation(selected.calendarId, selected.id, email);
       setSelected(e => ({ ...e, attendees: e.attendees.map(a => a.email === email ? { ...a, invitationSentAt: new Date().toISOString() } : a) }));
+    });
+  }
+  function toggleOverdue(){
+    if(!overdue){setBoardRange({from:shiftDate(today,-365),to:today});setStatusFilter('');}
+    else setBoardRange({from:shiftDate(today,-30),to:shiftDate(today,60)});
+    setOverdue(v=>!v);
+  }
+  const quickCalendar=editable.find(c=>c.isMain&&!hidden.includes(c.id))||editable.find(c=>!hidden.includes(c.id));
+  async function quickAdd(e){
+    e.preventDefault();if(!quickTitle.trim()||!quickCalendar||lock.current||loading)return;
+    try{await mutate(async()=>{await service.createEvent(quickCalendar.id,{type:'task',title:quickTitle.trim(),description:'',color:safeColor(quickCalendar.color),deadline:fromCalendarInput(today+'T23:59',zone),status:'todo',categories:[],attendees:[],isRecurring:false});setQuickTitle('');setOverdue(false);setStatusFilter('');setCategory('');setSearch('');setBoardRange({from:shiftDate(today,-30),to:shiftDate(today,60)});setReload(n=>n+1);notify(uk?'Завдання додано':'Task added');});}
+    catch(err){setError(getLocalizedApiError(err,t,'calendarView.event.saveError'));}
+  }
+  const selectedTasks=tasks.filter(e=>picked.includes(taskKey(e))&&canChange(e)&&!e.isRecurring);
+  async function applyBulk(kind){
+    if(lock.current||loading||!selectedTasks.length||(kind==='date'&&!bulkDate))return;
+    await mutate(async()=>{
+      let count=0,failed=0;
+      for(const task of selectedTasks){
+        try{const patch=kind==='date'?moveEventPatch(task,bulkDate,null,zone):{status:bulkStatus};await service.updateEvent(task.calendarId,task.id,patch);count++;setData(old=>({...old,events:old.events.map(e=>taskKey(e)===taskKey(task)?{...e,...patch}:e)}));}
+        catch{failed++;}
+      }
+      setPicked([]);setBulk(false);setReload(n=>n+1);
+      notify((uk?'Оновлено: ':'Updated: ')+count+(failed?(uk?' · Помилки: ':' · Failed: ')+failed:''));
     });
   }
   if (status !== 'authenticated') return <p>{status === 'loading' ? t('common.loading') : <Link to={localizedPath('/login')}>{t('common.signIn')}</Link>}</p>;
@@ -186,7 +187,7 @@ export function TasksPage() {
             <label>{t('calendarView.event.status')}<select value={statusFilter} onChange={e => setStatusFilter(e.target.value)}><option value="">{uk ? 'Усі' : 'All'}</option>{TASK_STATES.map(s => <option key={s} value={s}>{t('statuses.' + s)}</option>)}</select></label>
             <label>{uk ? 'Від' : 'From'}<input type="date" value={from} max={to} onChange={e => { if (e.target.value && e.target.value <= to) setBoardRange(r => ({ ...r, from: e.target.value, to: r.to>shiftDate(e.target.value,365)?shiftDate(e.target.value,365):r.to })); }}/></label>
             <label>{uk ? 'До' : 'To'}<input type="date" value={to} min={from} onChange={e => { if (e.target.value && e.target.value >= from) setBoardRange(r => ({ ...r, to: e.target.value, from: r.from<shiftDate(e.target.value,-365)?shiftDate(e.target.value,-365):r.from })); }}/></label>
-            <button type="button" onClick={() => { setSearch(''); setCategory(''); setHidden([]); setStatusFilter(''); setBoardRange({ from: shiftDate(today, -30), to: shiftDate(today, 60) }); }}>{uk ? 'Скинути фільтри' : 'Reset filters'}</button>
+            <button type="button" onClick={() => { setSearch(''); setCategory(''); setHidden([]); setStatusFilter(''); setOverdue(false); setHideDone(false); setBoardRange({ from: shiftDate(today, -30), to: shiftDate(today, 60) }); }}>{uk ? 'Скинути фільтри' : 'Reset filters'}</button>
           </div></details>
           <div className="ux-task-tools"><button type="button" aria-pressed={overdue} onClick={toggleOverdue}>{uk?'Прострочені':'Overdue'}</button><button type="button" aria-pressed={hideDone} onClick={()=>setHideDone(v=>!v)}>{uk?'Приховати виконані':'Hide done'}</button><select aria-label={uk?'Сортування':'Sort'} value={sort} onChange={e=>setSort(e.target.value)}><option value="due">{uk?'За терміном':'Due date'}</option><option value="latest">{uk?'Найновіші':'Newest'}</option><option value="title">{uk?'За назвою':'Name'}</option></select><button type="button" aria-pressed={bulk} onClick={()=>{setBulk(v=>!v);setPicked([]);}}>{uk?'Вибрати':'Select'}</button></div>
           <span className="tb-period-label">{format(from, { day: 'numeric', month: 'short' })} – {format(to, { day: 'numeric', month: 'short' })}</span>
