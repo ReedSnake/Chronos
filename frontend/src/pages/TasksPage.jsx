@@ -1,9 +1,8 @@
 import { SkeletonRows, EmptyState } from '../features/ui/Feedback';
 import { useLocalPreference } from '../features/ui/useLocalPreference';
 import { Notice,useNotice } from '../features/ui/useNotice';
-import { fromCalendarInput } from '../features/events/eventForm';
 import { moveEventPatch } from '../features/events/eventQuickModel';
-import { EventPreviewButton } from '../features/events/EventPreviewButton';
+import { TaskCard } from '../features/tasks/TaskCard';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../features/auth/AuthContext';
@@ -13,40 +12,16 @@ import { loadDashboard } from '../features/dashboard/dashboardData';
 import { EventDialog } from '../features/events/EventDialog';
 import { EventEditor } from '../features/events/EventEditor';
 import { EventDetails } from '../features/events/EventDetails';
-import { CalendarEventActionsProvider, TaskCompletion } from '../features/events/CalendarEventActions';
-import { eventDayKey } from '../features/events/eventForm';
+import { CalendarEventActionsProvider } from '../features/events/CalendarEventActions';
+import { eventDayKey, fromCalendarInput } from '../features/events/eventForm';
 import { getLocalizedApiError } from '../i18n/apiErrors';
 import { TablerIcon as Icon } from '../components/layout/TablerIcon';
-import { TASK_STATES, taskKey, shiftDate, apiRange, filterTasks, taskTime, canWriteTask } from '../features/tasks/taskBoardModel';
+import { TASK_STATES, taskKey, shiftDate, apiRange, filterTasks, canWriteTask } from '../features/tasks/taskBoardModel';
 import '../features/tasks/task-board.css';
 
 const service = applicationContainer.calendarService;
 const emptyData = { calendars: [], events: [], failed: 0 };
 const safeColor = color => /^#[0-9a-f]{6}$/i.test(color || '') ? color : '#F5BC5A';
-
-function TaskCard({ task, calendar, zone, onOpen, onChange, busy, onDragStart, onDragEnd, bulk, picked, onPick }) {
-  const { t, locale } = useLocale(), uk = locale === 'uk';
-  const writable = canWriteTask(calendar);
-  const participants = task.attendees || [];
-  const category = task.categories?.[0];
-  const date = eventDayKey(task, zone);
-  const dateLabel = date ? new Date(date + 'T12:00:00Z').toLocaleDateString(locale, { day: 'numeric', month: 'short', timeZone: 'UTC' }) : '';
-  const done = task.status === 'done';
-  return <article className={'tb-card ' + task.status} style={{ '--task-color': done ? '#65a982' : safeColor(task.color || calendar?.color) }} draggable={writable && !busy} onDragStart={onDragStart} onDragEnd={onDragEnd}>
-    <div className="tb-card-main">{bulk&&writable&&!task.isRecurring&&<input className="ux-task-select" type="checkbox" aria-label={(uk?"Вибрати ":"Select ")+task.title} checked={picked} onChange={onPick} disabled={busy}/> }
-      <EventPreviewButton event={{...task,calendarName:task.calendarName||calendar?.name}} zone={zone} className="tb-card-open" onClick={() => onOpen(task)}>
-        <span className="tb-card-icon"><Icon name={done ? 'check' : task.status === 'in_progress' ? 'clock' : 'checkbox'} size={19}/></span>
-        <span className="tb-card-copy"><strong>{task.title}</strong>{task.description && <span className="tb-description">{task.description}</span>}{(category || task.calendarName || calendar?.name) && <small>{category || task.calendarName || calendar?.name}</small>}</span>
-      </EventPreviewButton>
-      <TaskCompletion event={task}/>
-    </div>
-    <div className="tb-card-bottom">
-      <div className="tb-avatars" aria-label={uk ? 'Учасники' : 'Participants'}>{participants.slice(0, 4).map(a => <span key={a.email} title={a.email}>{a.email.slice(0, 2).toUpperCase()}</span>)}{participants.length > 4 && <span>+{participants.length - 4}</span>}</div>
-      <span className={"tb-card-time"+(task.status!=="done"&&Date.parse(task.deadline)<Date.now()?" ux-overdue":"")} title={dateLabel + ' · ' + taskTime(task, zone)}>{task.isRecurring && <Icon name="refresh" size={13}/>}<Icon name="calendar" size={13}/>{dateLabel}</span>
-      {writable && <label className="tb-status-control" title={t('calendarView.event.status')}><Icon name="chevron-down" size={14}/><select aria-label={t('calendarView.event.status') + ': ' + task.title} disabled={busy} value={task.status} onChange={e => onChange(task, e.target.value)}>{TASK_STATES.map(s => <option key={s} value={s}>{t('statuses.' + s)}</option>)}</select></label>}
-    </div>
-  </article>;
-}
 
 export function TasksPage() {
   const { status, user } = useAuth();
