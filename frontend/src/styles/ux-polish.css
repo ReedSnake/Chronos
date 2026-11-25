@@ -108,3 +108,23 @@
 @media(prefers-reduced-motion:reduce) {
  .workspace *, .workspace *::before,.workspace *::after,.event-preview,.event-dialog,.event-dialog *,.dash-modal,.dash-modal * {animation-duration:.01ms!important;transition-duration:.01ms!important;scroll-behavior:auto!important}
 }
+
+.ux-widget-choice {display:flex;align-items:center;gap:4px}
+.ux-widget-choice label {flex:1}
+.ux-widget-choice button {border:0;background:#E8EFF6;border-radius:5px;color:#303030;padding:4px 8px;cursor:pointer}
+.ux-widget-choice button:disabled {opacity:.4;cursor:default}
+.event-dialog:has(.ux-activity) {width:min(460px,calc(100vw - 28px))}
+.ux-activity {display:grid;gap:12px;background:white;padding:18px;color:#303030}
+.ux-activity header {display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.ux-activity header h2 {font-size:17px;margin:0}
+.ux-activity header p,.ux-activity p {font-size:12px;color:#30303099;margin:4px 0 0;line-height:1.4}
+.ux-activity h3 {font-size:12px;font-weight:600;color:#30303099;margin:10px 0 0}
+.ux-activity button {border:0;background:none;color:#303030;font:inherit;cursor:pointer;border-radius:8px}
+.ux-activity .ux-activity-row {display:flex;align-items:center;gap:9px;padding:10px 8px;text-align:left;background:#E8EFF655;min-width:0}
+.ux-activity-row>span {flex:1;min-width:0;display:grid;gap:4px;overflow-wrap:anywhere}
+.ux-activity-row strong {font-size:13px;font-weight:550}
+.ux-activity-row small {font-size:11px;color:#30303088}
+.ux-activity footer {display:flex;justify-content:flex-end}
+.ux-activity footer button {display:flex;align-items:center;gap:6px;background:#E8EFF6;padding:8px 12px;font-size:12px}
+@media(min-width:851px){.ux-sidebar-tools kbd{display:none}}
+@media(max-width:540px){.ux-activity .ux-activity-row{min-height:44px}}
