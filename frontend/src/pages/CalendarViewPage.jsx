@@ -1,8 +1,8 @@
 import { Fragment } from 'react';
-import { matchesEvent, weekRowNumber } from '../features/events/calendarInteractions';
+import { isCalendarDay, matchesEvent, weekRowNumber } from '../features/events/calendarInteractions';
 import { BlobMascot } from '../components/auth/BlobMascot';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { applicationContainer } from '../app/applicationContainer';
 import { PageTemplate } from '../components/layout/PageTemplate';
 import { useAuth } from '../features/auth/AuthContext';
@@ -22,6 +22,7 @@ import { PlannerGrid, shiftDay, weekDays } from '../features/events/PlannerGrid'
 import { TablerIcon as Icon } from '../components/layout/TablerIcon';
 import '../styles/calendar-workspace.css';
 import '../styles/calendar-fit.css';
+import '../styles/calendar-polish.css';
 import { EVENT_TYPES, eventDayKey, eventDateLabel, fromCalendarInput, toCalendarInput } from '../features/events/eventForm';
 
 function calendarRoleLabel(t, role) {
@@ -122,7 +123,8 @@ function CalendarViewContent() {
   const events = useMemo(() => allEvents.filter(e => matchesEvent(e, search)), [allEvents, search]);
   const [infoOpen, setInfoOpen] = useState(false);
   const [partial, setPartial] = useState(false);
-  const [day, setDay] = useState(()=>eventDayKey({startsAt:new Date()},user?.settings?.timeZone||'UTC'));
+  const { search: locationSearch } = useLocation();
+  const [day, setDay] = useState(()=>{const requested=new URLSearchParams(locationSearch).get('date');return isCalendarDay(requested)?requested:eventDayKey({startsAt:new Date()},user?.settings?.timeZone||'UTC');});
   const [eventView, setEventView] = useState(() => readCalendarView(user?.id));
   const [month, setMonth] = useState(() => new Date(Number(day.slice(0,4)), Number(day.slice(5,7))-1, 1));
   const [filters, setFilters] = useState(() => ({ ...viewRange(day, eventView, user?.settings?.weekStartsOn), types: [], categories: [] }));
@@ -326,7 +328,7 @@ function CalendarViewContent() {
     else if(eventView==='month'||eventView==='agenda')moveMonth(direction);
     else setPlannerDate(shiftDay(day,direction*(['week','overview'].includes(eventView)?7:1)));
   }
-  function createOn(key, minute = null, sourceId = calendarId){if(!canEdit)return;setSelection(null);setEditing(null);setEventsError('');setCreateSlot({day:key,minute,calendarId:sourceId});setPlannerDate(key);setEditorOpen(true);}
+  function createOn(key, minute = null){if(!canEdit)return;setSelection(null);setEditing(null);setEventsError('');setCreateSlot({day:key,minute});setPlannerDate(key);setEditorOpen(true);}
   const horizontal=eventView==='day'||eventView==='week'&&!weekGrid;
   return <CalendarEventActionsProvider value={{canChange:canChangeTask,toggle:toggleTask,busy:busy||eventsLoading}}><section className={'chrono-calendar chrono-mode-'+eventView+(horizontal?' chrono-mode-horizontal':'')}>
     <header className="chrono-heading">
