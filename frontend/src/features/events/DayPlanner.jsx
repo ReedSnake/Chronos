@@ -1,3 +1,4 @@
+import { useSlotSelection } from './useSlotSelection';
 import { formatMinute } from './timeDisplay';
 import { slotMinute } from './calendarInteractions';
 import { CalendarEventButton, EventSymbol, EventStatus, useCalendarDrop } from './CalendarEventActions';
@@ -50,6 +51,7 @@ export function DayPlanner({events,calendars,day,zone,timeFormat,fullDay,workHou
  const {locale,t}=useLocale(),uk=locale==='uk';
  const clock=n=>formatMinute(n,locale,timeFormat);
  const drop=useCalendarDrop();
+ const selectSlot=useSlotSelection(onCreateAt);
  const [now,setNow]=useState(()=>new Date());
  useEffect(()=>{const timer=setInterval(()=>setNow(new Date()),30000);return()=>clearInterval(timer)},[]);
  const model=dailyPlannerModel(events,calendars,day,zone);
@@ -95,9 +97,9 @@ export function DayPlanner({events,calendars,day,zone,timeFormat,fullDay,workHou
     <div className="day-planner-grid" ref={gridRef} style={{'--hours':hours.length,'--label-width':labelWidth+'px',gridTemplateRows:'32px '+fittedRows.map(r=>'minmax(0,'+Math.max(1,r.lanes+r.holidays.length)+'fr)').join(' ')}}>
      <div className="day-axis-name">{view==='week'?(uk?'День':'Day'):(uk?'Календарі':'Calendars')}</div>
      <div className="day-axis">{hours.filter((h,i)=>i%labelStep===0).map(h=><span key={h} style={{left:pos(h*60)+'%'}}>{clock(h*60)}</span>)}{showNow&&<strong className="day-now-tag" style={{left:pos(minute)+'%'}}>{clock(minute)}</strong>}</div>
-     {fittedRows.map(row=>{const {blocks,lanes,holidays}=row;const slots=lanes+holidays.length;return <div className="day-row" key={row.id}>
+     {fittedRows.map(row=>{const {blocks,lanes,holidays}=row;const slots=Math.max(1,lanes+holidays.length);const {style:selectionStyle,...selectionHandlers}=selectSlot(row.id,row.date||day,'x',first,last,canEdit&&!loading);return <div className="day-row" key={row.id}>
       <div className={'day-row-name'+(view==='week'&&row.date===day?' selected':'')}>{view==='week'?<button className="day-row-select" type="button" onClick={()=>onDaySelect?.(row.date)}><strong>{rowName(row)}</strong><small>{count(blocks.length+holidays.length)} {uk?'подій':'events'}</small></button>:<div><strong>{rowName(row)}</strong><small>{count(blocks.length+holidays.length)} {uk?'подій':'events'}</small></div>}</div>
-      <div {...drop(row.date||day,e=>{const rect=e.currentTarget.getBoundingClientRect();return slotMinute((e.clientX-rect.left)/rect.width,first,last);})} className={'day-row-lane'+(canEdit?' calendar-create-lane':'')} onClick={e=>{if(!canEdit||e.target.closest('button'))return;const rect=e.currentTarget.getBoundingClientRect();onCreateAt?.(row.date||day,slotMinute((e.clientX-rect.left)/rect.width,first,last));}} style={{"--slot-height":100/slots+"%"}}>
+      <div {...drop(row.date||day,e=>{const rect=e.currentTarget.getBoundingClientRect();return slotMinute((e.clientX-rect.left)/rect.width,first,last);})} className={'day-row-lane'+(canEdit?' calendar-create-lane':'')} {...selectionHandlers} style={{"--slot-height":100/slots+"%",...selectionStyle}}>
        {holidays.map((e,i)=><button type="button" key={keyOf(e)} className="day-holiday" style={{top:(i+.5)/slots*100+'%'}} onClick={()=>onSelect(e)}>{e.title}</button>)}
        {blocks.map(b=>{const e=b.event;return <CalendarEventButton event={e} placement="positioned" key={keyOf(e)} className={'day-event '+(b.point?'instant ':'meeting ')+(e.status==='done'?'done ':e.status==='canceled'?'canceled ':'')+e.type} title={e.title+' · '+clock(b.start)+(b.point?'':'–'+clock(b.end))} style={{left:b.left+'%',top:(holidays.length+b.lane+.5)/slots*100+'%',width:b.width+'%'}} onClick={()=>onSelect(e)}><span className="day-event-text"><strong>{e.title}</strong><small>{clock(b.start)}{!b.point?'–'+clock(b.end):''}</small></span></CalendarEventButton>})}
        {showNow&&row.date===todayKey&&<i className="day-now-line" style={{left:pos(minute)+'%'}}/>}
