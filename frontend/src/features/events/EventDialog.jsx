@@ -1,9 +1,30 @@
-const dialogDirty=dialog=>!!dialog.querySelector('[data-unsaved="true"]');
 import { useEffect, useRef } from 'react';
+import { useLocale } from '../../i18n/LocaleProvider';
 import './event-surface.css';
 
 export function EventDialog({ children, onClose, label, busy }) {
-  const ref=useRef(null);
-  useEffect(()=>{const dialog=ref.current;dialog.showModal();return()=>dialog.close();},[]);
-  return <dialog ref={ref} className="event-dialog" aria-label={label} onCancel={e=>{e.preventDefault();if(!busy&&(!dialogDirty(e.currentTarget)||window.confirm(document.documentElement.lang==='uk'?'Закрити без збереження?':'Discard unsaved changes?')))onClose();}}>{children}</dialog>;
+  const ref = useRef(null);
+  const { locale } = useLocale();
+
+  useEffect(() => {
+    const dialog = ref.current;
+    if (!dialog.open) dialog.showModal();
+    return () => { if (dialog.open) dialog.close(); };
+  }, []);
+
+  function cancel(event) {
+    event.preventDefault();
+    if (busy) return;
+    const dirty = event.currentTarget.querySelector('[data-unsaved="true"]');
+    if (dirty && !window.confirm(locale === 'uk'
+      ? 'Закрити без збереження змін?'
+      : 'Discard unsaved changes?')) return;
+    onClose();
+  }
+
+  return (
+    <dialog ref={ref} className="event-dialog" aria-label={label} onCancel={cancel}>
+      {children}
+    </dialog>
+  );
 }
