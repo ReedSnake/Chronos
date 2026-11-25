@@ -35,6 +35,7 @@ export function Dashboard({ user }) {
   const [offset,setOffset]=useState(0);
   const [taskScope,setTaskScope]=useState('day');
   const [showCompleted,setShowCompleted]=useState(false);
+  const [createType,setCreateType]=useState('arrangement');
   const [reload,setReload]=useState(0);
   const [data,setData]=useState({calendars:[],events:[],failed:0});
   const [loading,setLoading]=useState(true);
@@ -53,7 +54,7 @@ export function Dashboard({ user }) {
   const [quickError,setQuickError]=useState('');
   const [taskBusy,setTaskBusy]=useState(false);
   const [notice,notify,dismissNotice]=useNotice();
-  const [widgetOrder,setWidgetOrder]=useLocalPreference(user.id?'widget-order:'+user.id:null,['next','progress','free','deadlines','notes']);
+  const [widgetOrder,setWidgetOrder]=useLocalPreference(user.id?'widget-order:'+user.id:null,['next','deadlines','progress','free','notes']);
   const [hiddenWidgets,setHiddenWidgets]=useLocalPreference(user.id?'widget-hidden:'+user.id:null,[]);
   const [notes,setNotes]=useLocalPreference(user.id?'quick-notes:'+user.id:null,'');
   useEffect(()=>{const timer=window.setInterval(()=>setNow(new Date()),60000);return()=>window.clearInterval(timer);},[]);
@@ -92,7 +93,7 @@ export function Dashboard({ user }) {
   const firstDate=new Date(range.days[0]+'T12:00:00Z'),lastDate=new Date(range.days[6]+'T12:00:00Z');
   const dateLabel=typeof dateFormat.formatRange==='function'?dateFormat.formatRange(firstDate,lastDate):dateFormat.format(firstDate)+' – '+dateFormat.format(lastDate);
   function close(){if(!busy){setMode(null);setSelection(null);setEditing(null);setActionError('');}}
-  function openCreate(){setSelection(null);setEditing(null);setActionError('');setCalendarId((editable.find(cal=>cal.isMain)||editable[0])?.id||'');setMode('create');}
+  function openCreate(type='arrangement'){setCreateType(type==='task'?'task':'arrangement');setSelection(null);setEditing(null);setActionError('');setCalendarId((editable.find(cal=>cal.isMain)||editable[0])?.id||'');setMode('create');}
   function openEvent(event){setSelection(event);setEditing(null);setActionError('');setMode('details');}
   async function startEdit(){
     if(!canWrite(activeCalendar)||!selection||busy)return;
@@ -143,7 +144,7 @@ export function Dashboard({ user }) {
     next:<>{!upcomingReady?<p>—</p>:nextMeeting?<><button type="button" className="ux-widget-link ux-widget-value" onClick={()=>openEvent(nextMeeting)}>{nextMeeting.title}</button><p>{shortDay(eventDayKey(nextMeeting,zone))} · {formatTime(nextMeeting)} · {uk?'через':'in'} {Math.ceil((Date.parse(nextMeeting.startsAt)-now.getTime())/60000)} {uk?'хв':'min'}</p></>:<p>{uk?'Немає зустрічей на найближчі 7 днів':'No meetings in the next 7 days'}</p>}</>,
     progress:<><strong className="ux-widget-value">{upcomingReady?todayDone+' / '+todayTasks.length:'—'}</strong><div className="dash-task-progress" aria-hidden="true"><span style={{width:upcomingReady&&todayTasks.length?todayDone/todayTasks.length*100+'%':'0%'}}/></div><p>{uk?'Завдання на сьогодні':'Tasks due today'}</p></>,
     free:<><strong className="ux-widget-value">{upcomingReady?(()=>{const n=unbookedMinutes(upcoming.events.filter(e=>!hidden.includes(e.calendarId)),actualToday,zone);return Math.floor(n/60)+(uk?' год ':'h ')+n%60+(uk?' хв':'m');})():'—'}</strong><p>{uk?'Без зустрічей · сьогодні, 09:00–18:00':'Without meetings · today, 09:00–18:00'}</p>{upcomingReady&&freeIntervals(upcoming.events.filter(e=>!hidden.includes(e.calendarId)),actualToday,zone).slice(0,3).map(([a,b])=><p key={a}>{formatTime({startsAt:new Date(a).toISOString()})} – {formatTime({startsAt:new Date(b).toISOString()})}</p>)}</>,
-    deadlines:<>{!upcomingReady?<p>—</p>:nextDue.length?nextDue.map(e=><button type="button" key={eventKey(e)} className="ux-widget-link" onClick={()=>openEvent(e)}>{e.title} · {shortDay(eventDayKey(e,zone))}</button>):<p>{uk?'Немає найближчих термінів':'No upcoming deadlines'}</p>}</>,
+    deadlines:<>{!upcomingReady?<p>—</p>:nextDue.length?nextDue.map(e=><button type="button" key={eventKey(e)} className={'ux-widget-link dash-deadline'+(Date.parse(e.deadline)<now.getTime()?' ux-overdue':'')} onClick={()=>openEvent(e)}><strong>{e.title}</strong><small>{shortDay(eventDayKey(e,zone))} · {formatTime(e)}{Date.parse(e.deadline)<now.getTime()?(uk?' · Прострочено':' · Overdue'):''}</small></button>):<p>{uk?'Немає найближчих термінів':'No upcoming deadlines'}</p>}</>,
     notes:<><textarea aria-label={names.notes} rows={3} maxLength={4000} value={notes} onChange={e=>setNotes(e.target.value)} placeholder={uk?'Запишіть думку…':'Write something…'}/><p>{uk?'Збережено на цьому пристрої':'Saved on this device'}</p></>,
   };
   const filters=[['all',uk?'Усі':'All'],['arrangement',c.meetings],['task',c.tasks],['reminder',c.reminders],['holiday',c.holidays]];
@@ -156,7 +157,7 @@ export function Dashboard({ user }) {
     {!loading&&!error&&!editable.length&&<p className="dash-muted">{c.noEditable} <Link to={localizedPath('/calendars')}>{c.manage}</Link></p>}
     <div className="dash-focus-grid"><div className="dash-focus-main">
     <section className="dash-card dash-week-top" aria-busy={loading}>
-      <div className="dash-card-head"><h2>{c.week}</h2><div className="dash-week-controls">{offset!==0&&<button className="dash-text-button" type="button" onClick={()=>{setOffset(0);setSelected(null);}}>{c.today}</button>}<button type="button" className="dash-round" aria-label={c.previous} onClick={()=>setOffset(n=>n-1)}><Icon name="chevron-left" size={18}/></button><strong>{dateLabel}</strong><button type="button" className="dash-round" aria-label={c.next} onClick={()=>setOffset(n=>n+1)}><Icon name="chevron-right" size={18}/></button></div></div>
+      <div className="dash-card-head"><h2>{c.week}</h2><div className="dash-week-controls">{(offset!==0||activeDay!==actualToday)&&<button className="dash-text-button" type="button" onClick={()=>{setOffset(0);setSelected(null);}}>{c.today}</button>}<button type="button" className="dash-round" aria-label={c.previous} onClick={()=>setOffset(n=>n-1)}><Icon name="chevron-left" size={18}/></button><strong>{dateLabel}</strong><button type="button" className="dash-round" aria-label={c.next} onClick={()=>setOffset(n=>n+1)}><Icon name="chevron-right" size={18}/></button></div></div>
       <div className="dash-week-days">{model.days.map(day=><button type="button" key={day.key} className={day.key===activeDay?'active':''} onClick={()=>setSelected(day.key)} aria-pressed={day.key===activeDay} aria-label={fullDay(day.key)}><small>{weekday(day.key)}</small><strong>{Number(day.key.slice(-2))}</strong><span>{loading||error?'—':day.events.length?day.events.length:'·'}</span></button>)}</div>
     </section>
     <Notice notice={notice} onDismiss={dismissNotice} closeLabel={uk?'Закрити':'Dismiss'}/>
@@ -167,7 +168,7 @@ export function Dashboard({ user }) {
         <div className="dash-event-list">{loading?<SkeletonRows label={t('common.loading')}/>:!dayEvents.length?<EmptyState title={error?c.error:c.noEvents} action={!error&&editable.length?c.add:null} onAction={openCreate}/>:dayEvents.map(event=><EventPreviewButton event={event} zone={zone} className="dash-event-row" key={eventKey(event)} onClick={()=>openEvent(event)}><span className="dash-event-time">{formatTime(event)}</span><span className="dash-event-body"><i style={{background:event.color||'var(--chronos-accent)'}}/><span><strong>{event.title}</strong><small>{event.calendarName} · {t('calendarView.type.'+event.type)}</small></span></span><Icon name="chevron-right" size={16}/></EventPreviewButton>)}</div>
       </section>
       <section className="dash-card dash-tasks" aria-busy={loading}>
-        <div className="dash-card-head"><h2>{taskScope==='week'?c.weekTasks:(uk?'Завдання дня':'Tasks for the day')}</h2><Link className="dash-manage" to={localizedPath('/tasks')}>{uk?'Усі завдання':'All tasks'} <Icon name="chevron-right" size={14}/></Link></div><div className="dash-task-controls"><div className="dash-filters" role="group" aria-label={uk?'Період завдань':'Task period'}><button type="button" aria-pressed={taskScope==='day'} className={taskScope==='day'?'active':''} onClick={()=>setTaskScope('day')}>{uk?'День':'Day'}</button><button type="button" aria-pressed={taskScope==='week'} className={taskScope==='week'?'active':''} onClick={()=>setTaskScope('week')}>{uk?'Тиждень':'Week'}</button></div><strong className="dash-task-count">{value(scopedDone)}/{value(scopedTasks.length)}</strong></div>
+        <div className="dash-card-head"><h2>{taskScope==='week'?c.weekTasks:(uk?'Завдання дня':'Tasks for the day')}</h2><div className="dash-task-header-actions"><button className="dash-add-inline" type="button" disabled={loading||!editable.length||busy} onClick={()=>openCreate('task')}><Icon name="plus" size={15}/>{uk?'Додати':'Add'}</button><Link className="dash-manage" to={localizedPath('/tasks')}>{uk?'Усі завдання':'All tasks'} <Icon name="chevron-right" size={14}/></Link></div></div><div className="dash-task-controls"><div className="dash-filters" role="group" aria-label={uk?'Період завдань':'Task period'}><button type="button" aria-pressed={taskScope==='day'} className={taskScope==='day'?'active':''} onClick={()=>setTaskScope('day')}>{uk?'День':'Day'}</button><button type="button" aria-pressed={taskScope==='week'} className={taskScope==='week'?'active':''} onClick={()=>setTaskScope('week')}>{uk?'Тиждень':'Week'}</button></div><strong className="dash-task-count">{value(scopedDone)}/{value(scopedTasks.length)}</strong></div>
         <div className="dash-task-progress" aria-hidden="true"><span style={{width:incomplete?'0%':percent+'%'}}/></div>
         <div className="dash-task-list">{loading?<SkeletonRows label={t('common.loading')}/>:!visibleTasks.length?<EmptyState icon="checkbox" title={error?c.error:scopedTasks.length?(uk?'Усі завдання виконано':'All tasks completed'):(uk?'Немає завдань':'No tasks planned')}/>:visibleTasks.map(event=><div className="dash-task" key={eventKey(event)}><button type="button" className={'dash-task-state'+(event.status==='done'?' done':'')} aria-label={locale==='uk'?'Змінити статус':'Toggle completion'} aria-pressed={event.status==='done'} disabled={taskBusy||loading||!canWrite(data.calendars.find(c=>c.id===event.calendarId))} onClick={()=>void toggleTask(event)}>{event.status==='done'&&<Icon name="check" size={13}/>}</button><EventPreviewButton event={event} zone={zone} className="dash-task-open" onClick={()=>openEvent(event)}><strong>{event.title}</strong><small>{shortDay(eventDayKey(event,zone))} · {formatTime(event)} · {t('statuses.'+event.status)}</small></EventPreviewButton></div>)}</div>
         {scopedDone>0&&<button className="dash-completed-toggle" type="button" aria-pressed={showCompleted} onClick={()=>setShowCompleted(v=>!v)}>{showCompleted?(uk?'Приховати виконані':'Hide completed'):(uk?'Показати виконані':'Show completed')} · {scopedDone}</button>}
@@ -185,7 +186,7 @@ export function Dashboard({ user }) {
       {actionError&&<p role="alert" className="dash-error">{actionError}</p>}
       {mode==='details'&&selection?<EventDetails key={eventKey(selection)} event={selection} calendar={activeCalendar} busy={busy} canEdit={canWrite(activeCalendar)} onClose={close} onEdit={startEdit} onDelete={remove} onInvite={invite}/>:<>
         <div className="dash-modal-top">{mode==='create'?<label>{c.selectCalendar}<select value={activeCalendar.id} disabled={busy} onChange={e=>setCalendarId(e.target.value)}>{editable.map(cal=><option value={cal.id} key={cal.id}>{cal.name}</option>)}</select></label>:<strong>{activeCalendar.name}</strong>}<button type="button" disabled={busy} onClick={()=>{if(!dialog.current?.querySelector('[data-unsaved="true"]')||window.confirm(locale==='uk'?'Закрити без збереження?':'Discard unsaved changes?'))close();}}>{c.close}</button></div>
-        <EventEditor key={mode+':'+activeCalendar.id} calendar={activeCalendar} event={editing} initialDay={activeDay} saving={busy} onSave={save} onCancel={close}/>
+        <EventEditor key={mode+':'+activeCalendar.id} calendar={activeCalendar} event={editing} initialType={createType} initialDay={activeDay} saving={busy} onSave={save} onCancel={close}/>
       </>}
     </dialog>}
   </section>;
