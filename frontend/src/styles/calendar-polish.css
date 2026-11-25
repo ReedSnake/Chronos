@@ -44,7 +44,7 @@
 .chrono-calendar.chrono-mode-year .chrono-toolbar { padding-inline:0; }
 .year-planner { display:flex; flex-direction:column; height:100%; min-height:0; padding:0; gap:8px; }
 .year-months { flex:1; min-height:0; grid-template-columns:repeat(4,minmax(0,1fr)); grid-template-rows:repeat(3,minmax(0,1fr)); gap:8px; }
-.year-month { border:0; border-radius:14px; padding:8px 10px; display:flex; flex-direction:column; background:#ffffffd9; min-height:0; }
+.year-month { border:0; border-top:1px solid var(--chronos-border); border-radius:0; padding:8px 10px; display:flex; flex-direction:column; background:transparent; min-height:0; }
 .chrono-calendar .year-month h3 { display:flex; align-items:center; justify-content:space-between; gap:4px; flex:none; margin:0 0 3px; }
 .chrono-calendar .year-month h3 button { font-weight:600; font-size:13px; padding:3px 2px; }
 .year-month h3 small { color:var(--chronos-muted); font-size:10px; font-weight:400; }
