@@ -1,4 +1,7 @@
-import { useRef, useState } from 'react';
+import { CommandMenu } from '../features/ui/CommandMenu';
+import { useLocalPreference } from '../features/ui/useLocalPreference';
+import '../styles/ux-polish.css';
+import { useEffect, useRef, useState } from 'react';
 import { Link, NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { TablerIcon } from '../components/layout/TablerIcon';
 import { applicationContainer } from '../app/applicationContainer';
@@ -23,6 +26,9 @@ export function ApplicationPage() {
   const [signOutError, setSignOutError] = useState('');
   const [accountExitState, setAccountExitState] = useState({ dirty: false, busy: false });
   const signOutLock = useRef(false);
+  const [collapsed,setCollapsed]=useLocalPreference(user?.id?'sidebar:'+user.id:null,false);
+  const [command,setCommand]=useState(false);
+  useEffect(()=>{if(status!=='authenticated'){setCommand(false);return;}const listener=e=>{if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==='k'&&!document.querySelector('dialog[open]')){e.preventDefault();setCommand(true);}};window.addEventListener('keydown',listener);return()=>window.removeEventListener('keydown',listener);},[status]);
   const signedIn = status === 'authenticated';
   const isPublicHome = status === 'anonymous' && pathname.replace(/\/$/, '') === localizedPath('/').replace(/\/$/, '');
   const authResolved = status !== 'loading';
@@ -67,9 +73,10 @@ export function ApplicationPage() {
       ['/account', 'settings', locale === 'uk' ? 'Налаштування' : 'Settings'],
     ];
     const avatar = applicationContainer.userService.imageUrl(user?.avatarUrl);
-    return <main className="workspace">
+    return <main className={"workspace"+(collapsed?" ux-sidebar-collapsed":"")}>
       <aside className="workspace-sidebar">
         <Link className="workspace-logo" to={localizedPath('/')}><span className="workspace-logo-icon"><TablerIcon name="clock" size={25}/></span><span>chronos<span>.</span></span></Link>
+        <div className="ux-sidebar-tools"><button type="button" onClick={()=>setCommand(true)} title={locale==='uk'?'Пошук (Ctrl/⌘ K)':'Search (Ctrl/⌘ K)'} aria-label={locale==='uk'?'Пошук':'Search'}><TablerIcon name="search" size={18}/><span>{locale==='uk'?'Пошук':'Search'}</span><kbd>⌘ K</kbd></button><button className="ux-collapse" type="button" onClick={()=>setCollapsed(v=>!v)} aria-pressed={collapsed} title={locale==='uk'?'Згорнути меню':'Toggle sidebar'} aria-label={locale==='uk'?'Згорнути меню':'Toggle sidebar'}><TablerIcon name={collapsed?'chevron-right':'chevron-left'} size={18}/></button></div>
         <nav className="workspace-nav" aria-label={t('navigation.label')}>
           {items.map(([path, icon, label]) => <NavLink key={path} aria-label={label} title={label} end={path==='/'||path==='/calendars'} to={localizedPath(path)} className={({isActive})=>'workspace-nav-link'+(isActive?' active':'')}><TablerIcon name={icon} size={21}/><span>{label}</span></NavLink>)}
         </nav>
@@ -79,10 +86,11 @@ export function ApplicationPage() {
           {signOutButton}
         </div>
       </aside>
-      <div className="workspace-main"><div className="workspace-mobile-actions"><label className="workspace-language workspace-mobile-language"><span className="visually-hidden">{t('languageSwitcher.label')}</span><select value={locale} aria-label={t('languageSwitcher.label')} onChange={event=>navigate(locationForLocale(event.target.value),{replace:true})}>{SUPPORTED_LOCALES.map(lang=><option key={lang} value={lang}>{t(`languageSwitcher.${lang}`)}</option>)}</select></label>{signOutButton}</div>
+      <div className="workspace-main"><div className="workspace-mobile-actions"><button className="ux-mobile-command" type="button" onClick={()=>setCommand(true)} aria-label={locale==='uk'?'Пошук':'Search'}><TablerIcon name="search" size={20}/></button><label className="workspace-language workspace-mobile-language"><span className="visually-hidden">{t('languageSwitcher.label')}</span><select value={locale} aria-label={t('languageSwitcher.label')} onChange={event=>navigate(locationForLocale(event.target.value),{replace:true})}>{SUPPORTED_LOCALES.map(lang=><option key={lang} value={lang}>{t(`languageSwitcher.${lang}`)}</option>)}</select></label>{signOutButton}</div>
         {signOutError && <p className="workspace-sign-out-error" role="alert">{signOutError}</p>}
         <Outlet context={{ setAccountExitState, signOutPending }}/>
       </div>
+      {command&&<CommandMenu user={user} items={items} onClose={()=>setCommand(false)}/>}
     </main>;
   }
   return (
