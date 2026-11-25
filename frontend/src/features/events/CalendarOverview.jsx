@@ -49,10 +49,10 @@ export function OverviewScheduleList({schedule,onSelect,loading,error,timeFormat
   return <div className="overview-schedule-list">{loading||error?empty(''):schedule.length?schedule.map(e=><div className="overview-slot" key={keyOf(e)}><span>{e.displayMinute==null?(uk?'День':'All day'):timeLabel(e.displayMinute)}</span><CalendarEventButton event={e} onClick={()=>onSelect(e)} className={e.type==='arrangement'?'meeting':''}><strong>{e.title}</strong><small>{e.point||e.displayEnd==null?typeName(e):timeLabel(e.displayMinute)+' – '+timeLabel(e.displayEnd)}</small></CalendarEventButton></div>):empty(uk?'На цей день нічого не заплановано':'Nothing planned for this day')}</div>;
 }
 
-export function OverviewTasksTable({tasks,zone,onSelect,loading,error,timeFormat}) {
+export function OverviewTasksTable({tasks,zone,onSelect,loading,error,timeFormat,emptyLabel}) {
   const {t,uk,dateTime}=useOverviewLabels(zone,timeFormat);
   const empty=label=><p className="overview-empty">{loading?t('common.loading'):error||label}</p>;
-  return <>{loading||error?empty(''):tasks.length?<div className="overview-table"><div className="overview-table-head"><span>{uk?'Назва':'Task'}</span><span>{uk?'Термін':'Deadline'}</span><span>{uk?'Статус':'Status'}</span></div>{tasks.map(e=><CalendarEventButton event={e} key={keyOf(e)} onClick={()=>onSelect(e)}><span><strong>{e.title}</strong><small>{e.calendarName}</small></span><small>{dateTime(e)}</small><EventStatus event={e}/></CalendarEventButton>)}</div>:empty(uk?'Немає завдань цього тижня':'No tasks this week')}</>;
+  return <>{loading||error?empty(''):tasks.length?<div className="overview-table"><div className="overview-table-head"><span>{uk?'Назва':'Task'}</span><span>{uk?'Термін':'Deadline'}</span><span>{uk?'Статус':'Status'}</span></div>{tasks.map(e=><CalendarEventButton event={e} key={keyOf(e)} onClick={()=>onSelect(e)}><span><strong>{e.title}</strong><small>{e.calendarName}</small></span><small>{dateTime(e)}</small><EventStatus event={e}/></CalendarEventButton>)}</div>:empty(emptyLabel||(uk?'Немає завдань цього тижня':'No tasks this week'))}</>;
 }
 
 export function OverviewUpcomingList({events,zone,onSelect,loading,error,timeFormat,emptyLabel}) {
@@ -69,7 +69,7 @@ export function OverviewCompletion({tasks,unknown}) {
   return <><div className="overview-ring" style={{'--done':unknown?'0%':percent+'%'}}><div><strong>{unknown?'—':percent+'%'}</strong><small>{uk?'виконано':'completed'}</small></div></div><div className="overview-ring-labels"><span><i/>{val(done)} {uk?'готово':'done'}</span><span><i/>{val(tasks.length-done)} {uk?'залишилось':'left'}</span></div></>;
 }
 
-export function CalendarOverview({events,days,day,today,zone,loading,error,partial,onSelect,onDaySelect,onView,onCreate,canEdit}){
+export function CalendarOverview({events,days,day,today,zone,timeFormat,loading,error,partial,onSelect,onDaySelect,onView,onCreate,canEdit}){
  const {locale,t}=useLocale(),uk=locale==='uk';
  const model=overviewModel(events,days,day,zone);
  const {tasks,meetings,reminders,done,daily,schedule}=model;
@@ -88,14 +88,14 @@ export function CalendarOverview({events,days,day,today,zone,loading,error,parti
     <header><h3>{uk?'Розклад':'Schedule'}</h3>{arrow('day',uk?'Відкрити день':'Open day')}</header>
     <OverviewWeek days={days} day={day} today={today} onDaySelect={onDaySelect}/>
     <p className="overview-date">{dateLabel(day)}</p>
-    <OverviewScheduleList schedule={schedule} onSelect={onSelect} loading={loading} error={error}/>
+    <OverviewScheduleList schedule={schedule} onSelect={onSelect} loading={loading} error={error} timeFormat={timeFormat}/>
     {canEdit&&<button className="overview-add" type="button" onClick={onCreate}><Icon name="plus" size={16}/>{t('calendarView.event.create')}</button>}
    </section>
    <section className="overview-card overview-tasks"><header><h3>{uk?'Завдання тижня':'Tasks this week'}</h3>{arrow('agenda',uk?'Список подій':'Open agenda')}</header>
-    <OverviewTasksTable tasks={tasks} zone={zone} onSelect={onSelect} loading={loading} error={error}/>
+    <OverviewTasksTable tasks={tasks} zone={zone} onSelect={onSelect} loading={loading} error={error} timeFormat={timeFormat}/>
    </section>
    <section className="overview-card overview-meetings"><header><h3>{uk?'Зустрічі та нагадування':'Meetings & reminders'}</h3>{arrow('day',uk?'Відкрити день':'Open day')}</header>
-    <OverviewUpcomingList events={[...meetings,...reminders].sort(sortEvents)} zone={zone} onSelect={onSelect} loading={loading} error={error}/>
+    <OverviewUpcomingList events={[...meetings,...reminders].sort(sortEvents)} zone={zone} onSelect={onSelect} loading={loading} error={error} timeFormat={timeFormat}/>
    </section>
    <section className="overview-card overview-activity"><header><h3>{uk?'Події за тиждень':'Weekly activity'}</h3>{arrow('week',uk?'Відкрити тиждень':'Open week')}</header><div className="overview-bars">{daily.map(d=><button type="button" key={d.day} onClick={()=>onDaySelect(d.day)} aria-pressed={d.day===day}><strong>{val(d.count)}</strong><span><i style={{height:unknown?'0%':d.count/Math.max(1,...daily.map(x=>x.count))*100+'%'}}/></span><small>{new Date(d.day+'T12:00:00Z').toLocaleDateString(locale,{weekday:'short',timeZone:'UTC'})}</small></button>)}</div></section>
    <section className="overview-card overview-completion"><header><h3>{uk?'Виконання завдань':'Task completion'}</h3></header><OverviewCompletion tasks={tasks} unknown={unknown}/></section>
