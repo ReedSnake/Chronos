@@ -1,5 +1,5 @@
 import { seedEventTime } from './calendarInteractions';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { TablerIcon } from '../../components/layout/TablerIcon';
 import './event-surface.css';
 import { useLocale } from '../../i18n/LocaleProvider';
@@ -27,6 +27,11 @@ export function EventEditor({ event = null, calendar, saving, onSave, onCancel, 
   }
   const [draft, setDraft] = useState(() => event ? draftFromEvent(event, timeZone) : makeDraft(initialType));
   const [formError, setFormError] = useState('');
+  const initial=useRef(JSON.stringify(draft));
+  const dirty=JSON.stringify(draft)!==initial.current;
+  useEffect(()=>{if(!dirty)return;const before=e=>{e.preventDefault();e.returnValue='';};window.addEventListener('beforeunload',before);return()=>window.removeEventListener('beforeunload',before);},[dirty]);
+  function cancel(){if(!dirty||window.confirm(uk?'Закрити без збереження змін?':'Discard unsaved changes?'))onCancel();}
+
   const isEditing = Boolean(event);
   const copy = (field, value) => setDraft((current) => ({ ...current, [field]: value }));
   const typeOptions = useMemo(() => EVENT_TYPES.map((type) => ({ type, label: t(`calendarView.type.${type}`) })), [t]);
@@ -64,8 +69,8 @@ export function EventEditor({ event = null, calendar, saving, onSave, onCancel, 
     const [date='',time='']=draft[field].split('T');
     return <div className="event-date-group"><span className="event-field-label">{label}</span><div className="event-date-controls"><label className="event-icon-field"><TablerIcon name="calendar" size={19}/><input type="date" aria-label={label+' '+(uk?'дата':'date')} value={date} onChange={e=>datePart(field,'date',e.target.value)} required/></label><label className="event-icon-field"><TablerIcon name="clock" size={19}/><input type="time" aria-label={label+' '+(uk?'час':'time')} value={time} onChange={e=>datePart(field,'time',e.target.value)} required/></label></div></div>;
   }
-  return <form className="account-card account-form event-editor event-editor-refined" onSubmit={submit} onInvalidCapture={()=>setTab('info')} aria-label={t('calendarView.event.editorTitle')}>
-    <header className="event-surface-header"><h2>{title}</h2><button type="button" className="event-close" onClick={onCancel} disabled={saving} aria-label={t('calendarView.event.close')}><TablerIcon name="x" size={18}/></button></header>
+  return <form className="account-card account-form event-editor event-editor-refined" data-unsaved={dirty?'true':'false'} onSubmit={submit} onInvalidCapture={()=>setTab('info')} aria-label={t('calendarView.event.editorTitle')}>
+    <header className="event-surface-header"><h2>{title}</h2><button type="button" className="event-close" onClick={cancel} disabled={saving} aria-label={t('calendarView.event.close')}><TablerIcon name="x" size={18}/></button></header>
     <div className="event-identity" style={{'--event-color':draft.color}}>
       <span className="event-surface-symbol"><TablerIcon name={draft.type==='task'?'checkbox':draft.type==='reminder'?'bell':'calendar-event'} size={27}/></span>
       <div className="event-identity-fields"><input className="event-title-input" aria-label={t('calendarView.event.title')} value={draft.title} onChange={e=>copy('title',e.target.value)} placeholder={task?(uk?'Назва завдання':'Task name'):(uk?'Назва події':'Event name')} maxLength={200} required/><p>{calendar.name} · {timeZone}</p></div>
@@ -104,6 +109,6 @@ export function EventEditor({ event = null, calendar, saving, onSave, onCancel, 
     </>}
     </details></div>
     <div className="event-surface-body" hidden={tab!=='notes'}><label>{t('calendarView.event.description')}<textarea value={draft.description} onChange={(e) => copy('description', e.target.value)} maxLength={4000} rows={7} placeholder={uk?'Додати деталі…':'Add details…'}/></label></div>
-    <div className="button-row event-surface-footer"><button type="button" onClick={onCancel} disabled={saving}>{t('calendarView.event.cancel')}</button><button type="submit" disabled={saving}>{saving?t('common.loading'):isEditing?t('calendarView.event.save'):task?(uk?'Створити завдання':'Create task'):(uk?'Створити подію':'Create event')}</button></div>
+    <div className="button-row event-surface-footer"><button type="button" onClick={cancel} disabled={saving}>{t('calendarView.event.cancel')}</button><button type="submit" disabled={saving}>{saving?t('common.loading'):isEditing?t('calendarView.event.save'):task?(uk?'Створити завдання':'Create task'):(uk?'Створити подію':'Create event')}</button></div>
   </form>;
 }
