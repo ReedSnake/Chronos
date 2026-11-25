@@ -1,3 +1,6 @@
+import { useLocalPreference } from '../ui/useLocalPreference';
+import { Notice,useNotice } from '../ui/useNotice';
+import { moveWidget,unbookedMinutes } from './dashboardUxModel';
 import { EventPreviewButton } from '../events/EventPreviewButton';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
@@ -17,7 +20,7 @@ const copy = {
 const service = applicationContainer.calendarService;
 const eventKey = e => e.calendarId+':'+(e.occurrenceId||e.id);
 const dateOf = e => e.startsAt||e.deadline||e.remindAt;
-const canWrite = calendar => Boolean(calendar && !calendar.isHolidayCalendar && ['owner','admin','editor'].includes(calendar.role));
+const canWrite = calendar => Boolean(calendar && !calendar.isArchived && !calendar.isHolidayCalendar && ['owner','admin','editor'].includes(calendar.role));
 const byTime = (a,b) => String(dateOf(a)||'').localeCompare(String(dateOf(b)||''));
 
 export function Dashboard({ user }) {
@@ -42,10 +45,14 @@ export function Dashboard({ user }) {
   const [calendarId,setCalendarId]=useState('');
   const [busy,setBusy]=useState(false);
   const [lookup,setLookup]=useState('');
-  const [hidden,setHidden]=useState([]);
+  const [hidden,setHidden]=useLocalPreference(user.id?'dashboard-hidden:'+user.id:null,[]);
   const [upcoming,setUpcoming]=useState({events:[],loading:true,error:false});
   const [quickError,setQuickError]=useState('');
   const [taskBusy,setTaskBusy]=useState(false);
+  const [notice,notify,dismissNotice]=useNotice();
+  const [widgetOrder,setWidgetOrder]=useLocalPreference(user.id?'widget-order:'+user.id:null,['next','progress','free','deadlines','notes']);
+  const [hiddenWidgets,setHiddenWidgets]=useLocalPreference(user.id?'widget-hidden:'+user.id:null,[]);
+  const [notes,setNotes]=useLocalPreference(user.id?'quick-notes:'+user.id:null,'');
   useEffect(()=>{const timer=window.setInterval(()=>setNow(new Date()),60000);return()=>window.clearInterval(timer);},[]);
   const currentRange=weekWindow(now,zone,starts);
   const range=weekWindow(now,zone,starts,offset);
@@ -60,7 +67,7 @@ export function Dashboard({ user }) {
       .finally(()=>{if(alive)setLoading(false);});
     return()=>{alive=false;};
   },[weekKey,zone,reload,user.id]);
-  useEffect(()=>{let alive=true;setUpcoming({events:[],loading:true,error:false});const end=new Date(actualToday+'T00:00:00Z');end.setUTCDate(end.getUTCDate()+7);loadDashboard(service,{from:fromCalendarInput(actualToday+'T00:00',zone),to:new Date(Date.parse(fromCalendarInput(end.toISOString().slice(0,10)+'T00:00',zone))-1).toISOString(),types:['arrangement','reminder']}).then(d=>{if(alive)setUpcoming({events:d.events,loading:false,error:!!d.failed})}).catch(()=>{if(alive)setUpcoming({events:[],loading:false,error:true})});return()=>{alive=false}},[actualToday,zone,reload,user.id]);
+  useEffect(()=>{let alive=true;setUpcoming({events:[],loading:true,error:false});const end=new Date(actualToday+'T00:00:00Z');end.setUTCDate(end.getUTCDate()+7);loadDashboard(service,{from:fromCalendarInput(actualToday+'T00:00',zone),to:new Date(Date.parse(fromCalendarInput(end.toISOString().slice(0,10)+'T00:00',zone))-1).toISOString(),types:['arrangement','reminder','task']}).then(d=>{if(alive)setUpcoming({events:d.events,loading:false,error:!!d.failed})}).catch(()=>{if(alive)setUpcoming({events:[],loading:false,error:true})});return()=>{alive=false}},[actualToday,zone,reload,user.id]);
   useEffect(()=>{if(mode&&dialog.current&&!dialog.current.open)dialog.current.showModal();},[mode]);
   const model=useMemo(()=>summarizeDashboard(data.events.filter(e=>!hidden.includes(e.calendarId)),{...range,today:actualToday},zone),[data.events,weekKey,actualToday,zone,hidden]);
   const activeDay=range.days.includes(selected)?selected:range.days.includes(actualToday)?actualToday:range.days[0];
@@ -94,7 +101,7 @@ export function Dashboard({ user }) {
     try{
       if(mode==='edit')await service.updateEvent(activeCalendar.id,selection.id,values);
       else await service.createEvent(activeCalendar.id,values);
-      setMode(null);setEditing(null);setSelection(null);setReload(n=>n+1);
+      setMode(null);setEditing(null);setSelection(null);setReload(n=>n+1);notify(locale==='uk'?'Подію збережено':'Event saved');
     }catch(err){throw new Error(getLocalizedApiError(err,t,'calendarView.event.saveError'));}
     finally{setBusy(false);}
   }
@@ -117,8 +124,22 @@ export function Dashboard({ user }) {
     }
     setReload(n=>n+1);
   }
-  async function toggleTask(e){if(taskBusy||!canWrite(data.calendars.find(c=>c.id===e.calendarId)))return;if(e.isRecurring&&!window.confirm(t('calendarView.event.editSeriesOnly')))return;setTaskBusy(true);setQuickError('');try{await service.updateEvent(e.calendarId,e.id,{status:e.status==='done'?'todo':'done'});setReload(n=>n+1)}catch(err){setQuickError(getLocalizedApiError(err,t,'calendarView.event.saveError'))}finally{setTaskBusy(false)}}
+  async function toggleTask(e){if(taskBusy||!canWrite(data.calendars.find(c=>c.id===e.calendarId)))return;if(e.isRecurring&&!window.confirm(t('calendarView.event.editSeriesOnly')))return;setTaskBusy(true);setQuickError('');const next=e.status==='done'?'todo':'done';const update=status=>item=>item.id===e.id&&item.calendarId===e.calendarId?{...item,status}:item;setData(old=>({...old,events:old.events.map(update(next))}));setUpcoming(old=>({...old,events:old.events.map(update(next))}));try{await service.updateEvent(e.calendarId,e.id,{status:next});setReload(n=>n+1);notify(locale==='uk'?'Статус оновлено':'Status updated')}catch(err){setData(old=>({...old,events:old.events.map(update(e.status))}));setUpcoming(old=>({...old,events:old.events.map(update(e.status))}));setQuickError(getLocalizedApiError(err,t,'calendarView.event.saveError'))}finally{setTaskBusy(false)}}
   const nextEvents=upcoming.events.filter(e=>e.status!=='canceled'&&!hidden.includes(e.calendarId)&&Date.parse(dateOf(e))>=now.getTime()).sort(byTime);
+  const upcomingReady=!upcoming.loading&&!upcoming.error;
+  const todayItems=upcoming.events.filter(e=>!hidden.includes(e.calendarId)&&e.status!=='canceled'&&eventDayKey(e,zone)===actualToday);
+  const todayTasks=todayItems.filter(e=>e.type==='task'),todayDone=todayTasks.filter(e=>e.status==='done').length;
+  const nextMeeting=nextEvents.find(e=>e.type==='arrangement');
+  const nextDue=nextEvents.filter(e=>e.type==='task'&&e.status!=='done').slice(0,3);
+  const uk=locale==='uk';
+  const names={next:uk?'Наступна зустріч':'Next meeting',progress:uk?'Прогрес дня':'Daily progress',free:uk?'Вільний час':'Unbooked time',deadlines:uk?'Найближчі терміни':'Upcoming deadlines',notes:uk?'Швидкі нотатки':'Quick notes'};
+  const widgets={
+    next:<>{!upcomingReady?<p>—</p>:nextMeeting?<><button type="button" className="ux-widget-link ux-widget-value" onClick={()=>openEvent(nextMeeting)}>{nextMeeting.title}</button><p>{shortDay(eventDayKey(nextMeeting,zone))} · {formatTime(nextMeeting)} · {uk?'через':'in'} {Math.ceil((Date.parse(nextMeeting.startsAt)-now.getTime())/60000)} {uk?'хв':'min'}</p></>:<p>{uk?'Немає зустрічей на найближчі 7 днів':'No meetings in the next 7 days'}</p>}</>,
+    progress:<><strong className="ux-widget-value">{upcomingReady?todayDone+' / '+todayTasks.length:'—'}</strong><div className="dash-task-progress" aria-hidden="true"><span style={{width:upcomingReady&&todayTasks.length?todayDone/todayTasks.length*100+'%':'0%'}}/></div><p>{uk?'Завдання на сьогодні':'Tasks due today'}</p></>,
+    free:<><strong className="ux-widget-value">{upcomingReady?(()=>{const n=unbookedMinutes(upcoming.events.filter(e=>!hidden.includes(e.calendarId)),actualToday,zone);return Math.floor(n/60)+(uk?' год ':'h ')+n%60+(uk?' хв':'m');})():'—'}</strong><p>{uk?'Без зустрічей · сьогодні, 09:00–18:00':'Without meetings · today, 09:00–18:00'}</p></>,
+    deadlines:<>{!upcomingReady?<p>—</p>:nextDue.length?nextDue.map(e=><button type="button" key={eventKey(e)} className="ux-widget-link" onClick={()=>openEvent(e)}>{e.title} · {shortDay(eventDayKey(e,zone))}</button>):<p>{uk?'Немає найближчих термінів':'No upcoming deadlines'}</p>}</>,
+    notes:<><textarea aria-label={names.notes} rows={3} maxLength={4000} value={notes} onChange={e=>setNotes(e.target.value)} placeholder={uk?'Запишіть думку…':'Write something…'}/><p>{uk?'Збережено на цьому пристрої':'Saved on this device'}</p></>,
+  };
   const filters=[['all',c.all],['arrangement',c.meetings],['task',c.tasks],['reminder',c.reminders],['holiday',c.holidays]];
   return <section className="dashboard">
     <header className="dash-header">
@@ -132,6 +153,9 @@ export function Dashboard({ user }) {
       <div className="dash-week-days">{model.days.map(day=><button type="button" key={day.key} className={day.key===activeDay?'active':''} onClick={()=>setSelected(day.key)} aria-pressed={day.key===activeDay} aria-label={fullDay(day.key)}><small>{weekday(day.key)}</small><strong>{Number(day.key.slice(-2))}</strong><span>{loading||error?'—':day.events.length?day.events.length:'·'}</span></button>)}</div>
     </section>
     <div className="dash-summary" aria-busy={loading}>{[[c.weekMeetings,model.meetings.length],[c.weekTasks,model.tasks.length],[c.weekReminders,model.reminders.length]].map(([label,n])=><div key={label}><span>{label}</span><strong>{value(n)}</strong></div>)}</div>
+    <div className="ux-widget-controls"><details><summary>{uk?'Налаштувати віджети':'Customize widgets'}</summary>{widgetOrder.filter(k=>names[k]).map((key,i)=><div className="ux-widget-choice" key={key}><label><input type="checkbox" checked={!hiddenWidgets.includes(key)} onChange={()=>setHiddenWidgets(old=>old.includes(key)?old.filter(k=>k!==key):[...old,key])}/>{names[key]}</label><button type="button" disabled={i===0} aria-label={names[key]+(uk?' вище':' up')} onClick={()=>setWidgetOrder(old=>moveWidget(old,key,-1))}>↑</button><button type="button" disabled={i===widgetOrder.length-1} aria-label={names[key]+(uk?' нижче':' down')} onClick={()=>setWidgetOrder(old=>moveWidget(old,key,1))}>↓</button></div>)}</details></div>
+    <div className="ux-dashboard-widgets">{widgetOrder.filter(key=>names[key]&&!hiddenWidgets.includes(key)).map(key=><section key={key} className="dash-card"><h2>{names[key]}</h2>{widgets[key]}</section>)}</div>
+    <Notice notice={notice} onDismiss={dismissNotice} closeLabel={uk?'Закрити':'Dismiss'}/>
     {quickError&&<p role="alert" className="dash-error">{quickError}</p>}
     <div className="dash-grid">
       <section className="dash-card dash-agenda" aria-busy={loading}>
