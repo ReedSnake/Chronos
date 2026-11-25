@@ -1,3 +1,5 @@
+import { DEFAULT_WORK_HOURS, normalizeWorkHours, isPastEvent } from '../features/events/planningPreferences';
+import { useRefreshOnFocus } from '../features/ui/useRefreshOnFocus';
 import { formatEventTime } from '../features/events/timeDisplay';
 import { MobileAgenda } from '../features/events/MobileAgenda';
 import { useMediaQuery } from '../features/ui/useMediaQuery';
@@ -135,7 +137,13 @@ function CalendarViewContent() {
   const [mobileLayout,setMobileLayout]=useLocalPreference(user?.id?'mobile-calendar:'+user.id:null,'list');
   const [allEvents, setEvents] = useState([]);
   const [search, setSearch] = useState('');
-  const events = useMemo(() => search.trim() ? allEvents.filter(e => matchesEvent(e, search)) : allEvents, [allEvents, search]);
+  const [hidePast,setHidePast]=useLocalPreference(user?.id?'calendar-hide-past:'+user.id:null,false);
+  const [hideCompleted,setHideCompleted]=useLocalPreference(user?.id?'calendar-hide-completed:'+user.id:null,false);
+  const [workHours,setWorkHours]=useLocalPreference(user?.id?'calendar-work-hours:'+user.id:null,DEFAULT_WORK_HOURS);
+  const hours=normalizeWorkHours(workHours);
+  const [clock,setClock]=useState(()=>Date.now());
+  useEffect(()=>{const timer=setInterval(()=>setClock(Date.now()),60000);return()=>clearInterval(timer);},[]);
+  const events = useMemo(() => allEvents.filter(e => (!search.trim()||matchesEvent(e,search))&&(!hidePast||!isPastEvent(e,clock))&&(!hideCompleted||e.type!=='task'||e.status!=='done')), [allEvents,search,hidePast,hideCompleted,clock]);
   const [infoOpen, setInfoOpen] = useState(false);
   const [partial, setPartial] = useState(false);
   const { search: locationSearch } = useLocation();
@@ -165,6 +173,7 @@ function CalendarViewContent() {
   const dragRef=useRef(null), clipboard=useRef(null), quickLock=useRef(false), swipe=useRef(null);
   const [hasCopy,setHasCopy]=useState(false);
   const [notice,notify,dismissNotice]=useNotice();
+  useRefreshOnFocus(()=>setRefresh(n=>n+1),status==='authenticated'&&!busy&&!editorOpen&&!selection&&!quickMenu);
   useEffect(()=>{const timer=setTimeout(()=>{const categories=categoryInput.split(',').map(item=>item.trim().toLowerCase()).filter(Boolean);setFilters(old=>JSON.stringify(old.categories)===JSON.stringify(categories)?old:{...old,categories});},350);return()=>clearTimeout(timer);},[categoryInput]);
   useEffect(()=>{setSavedFilters({types:filters.types,categories:filters.categories});},[filters.types,filters.categories]);
 
@@ -197,7 +206,7 @@ function CalendarViewContent() {
     let active = true;
     setEventsLoading(true); setEvents([]); setEventsError('');
     setPartial(false);
-    const sources=calendars.filter(c=>c.id===calendarId||(!c.isArchived&&additionalCalendars.includes(c.id)));
+    const sources=[calendar,...calendars.filter(c=>c.id!==calendarId&&!c.isArchived&&additionalCalendars.includes(c.id))];
     setTimelineCalendars(sources);
     const request=Promise.allSettled(sources.map(async c=>(await fetchAllEvents(c.id,filters,c.isHolidayCalendar?'UTC':zone)).map(e=>({...e,calendarId:c.id,calendarName:c.name})))).then(groups=>{
       if(!active)return [];
@@ -263,21 +272,22 @@ function CalendarViewContent() {
   }
 
   async function startEdit() {
-    if (!selection || !eventCanEdit) return;
-    setBusy(true); setEventsError('');
+    if (!selection || !eventCanEdit || busy || quickLock.current) return;
+    quickLock.current=true;setBusy(true); setEventsError('');
     try {
       const { event } = await applicationContainer.calendarService.getEvent(eventCalendar.id, selection.id);
       setEditing(event); setEditorOpen(true);
     } catch (err) { setEventsError(getLocalizedApiError(err, t, 'calendarView.event.loadError')); }
-    finally { setBusy(false); }
+    finally { quickLock.current=false;setBusy(false); }
   }
 
   async function saveEvent(values) {
+    if(busy||quickLock.current||taskMutation.current)throw Error(t('calendarView.event.saveError'));
     if(values.type==='arrangement'||editing?.type==='arrangement'){
       const candidate={...editing,...values,type:'arrangement',calendarId:editing?eventCalendar.id:calendarId};
       if(overlappingMeetings(candidate,allEvents).length&&!window.confirm(locale==='uk'?'Зустріч перетинається з подією у завантаженому розкладі. Зберегти?':'This overlaps a meeting in the loaded schedule. Save anyway?'))throw Error(locale==='uk'?'Збереження скасовано':'Save canceled');
     }
-    setBusy(true); setEventsError('');
+    quickLock.current=true;setBusy(true); setEventsError('');
     try {
       if ((editing&&!eventCanEdit)||(!editing&&!canEdit)) throw Error(t('calendarView.event.saveError'));
       if (editing) await applicationContainer.calendarService.updateEvent(eventCalendar.id, editing.id, values);
@@ -289,17 +299,17 @@ function CalendarViewContent() {
       setRefresh((current) => current + 1);
     } catch (err) {
       throw new Error(getLocalizedApiError(err, t, 'calendarView.event.saveError'));
-    } finally { setBusy(false); }
+    } finally { quickLock.current=false;setBusy(false); }
   }
 
   async function deleteEvent() {
-    if (!selection || !eventCanEdit || !window.confirm(t(selection.isRecurring ? 'calendarView.event.confirmDeleteSeries' : 'calendarView.event.confirmDelete'))) return;
-    setBusy(true); setEventsError('');
+    if (!selection || !eventCanEdit || busy || quickLock.current || taskMutation.current || !window.confirm(t(selection.isRecurring ? 'calendarView.event.confirmDeleteSeries' : 'calendarView.event.confirmDelete'))) return;
+    quickLock.current=true;setBusy(true); setEventsError('');
     try {
       await applicationContainer.calendarService.deleteEvent(eventCalendar.id, selection.id);
       setSelection(null); setRefresh((current) => current + 1);
     } catch (err) { setEventsError(getLocalizedApiError(err, t, 'calendarView.event.deleteError')); }
-    finally { setBusy(false); }
+    finally { quickLock.current=false;setBusy(false); }
   }
 
   async function sendInvitation(email) {
@@ -403,7 +413,7 @@ function CalendarViewContent() {
     return item.type==='task'&&source&&!source.isArchived&&!source.isHolidayCalendar&&['owner','admin','editor'].includes(source.role);
   }
   async function toggleTask(item){
-    if(busy||taskMutation.current||!canChangeTask(item))return;
+    if(busy||quickLock.current||taskMutation.current||!canChangeTask(item))return;
     if(item.isRecurring&&!window.confirm(t('calendarView.event.editSeriesOnly')))return;
     taskMutation.current=true;
     setBusy(true);setEventsError('');
@@ -445,13 +455,15 @@ function CalendarViewContent() {
   useEffect(()=>{
     if(!calendar||loading||status!=='authenticated')return;
     const key=e=>{
-      if(e.defaultPrevented||e.metaKey||e.ctrlKey||e.altKey||e.repeat||e.target.closest?.('input,textarea,select,[contenteditable=true]')||document.querySelector('dialog[open]'))return;
+      if(e.defaultPrevented||e.altKey||e.repeat||busy||e.target.closest?.('input,textarea,select,[contenteditable=true]')||document.querySelector('dialog[open]'))return;
+      if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==='v'&&clipboard.current&&canEdit){e.preventDefault();void duplicate(clipboard.current,day);return;}
+      if(e.metaKey||e.ctrlKey)return;
       if(e.key.toLowerCase()==='n'&&canEdit){e.preventDefault();openCreate();}
       else if(e.key.toLowerCase()==='t'){e.preventDefault();setPlannerDate(eventDayKey({startsAt:new Date()},zone));}
       else if(['1','2','3','4','5','6'].includes(e.key)){e.preventDefault();switchView(CALENDAR_VIEWS[Number(e.key)-1]);}
     };
     window.addEventListener('keydown',key);return()=>window.removeEventListener('keydown',key);
-  },[calendar,loading,status,day,eventView,canEdit,startsOn]);
+  },[calendar,loading,status,day,eventView,canEdit,startsOn,busy,zone,allEvents]);
   if (status === 'loading' || loading) return <PageTemplate><BlobMascot mood="loading" compact /><p role="status">{t('common.loading')}</p></PageTemplate>;
   if (status !== 'authenticated') return <PageTemplate><p>{t('calendarView.signInBefore')}<Link to={localizedPath('/login')}>{t('common.signIn')}</Link>{t('calendarView.signInAfter')}</p></PageTemplate>;
 
@@ -504,7 +516,7 @@ function CalendarViewContent() {
       <div className="chrono-board">
         <div className="chrono-toolbar">
           <div className="chrono-selected-inline"><span>{uk?'Календарі':'Calendars'}</span>{calendarSelector}</div><div className="chrono-period"><button type="button" aria-label={uk?'Назад':'Previous'} onClick={()=>navigatePeriod(-1)}><Icon name="chevron-left" size={19}/></button><h2>{title}</h2>{rangeLabel&&<span className="chrono-week-label">{rangeLabel}</span>}<button type="button" aria-label={uk?'Далі':'Next'} onClick={()=>navigatePeriod(1)}><Icon name="chevron-right" size={19}/></button><button className="chrono-today" type="button" disabled={day===today} onClick={()=>setPlannerDate(today)}>{uk?'Сьогодні':'Today'}</button></div>
-          <div className="chrono-tools"><label className="chrono-search"><Icon name="search" size={16}/><input type="search" aria-label={uk?'Пошук подій':'Search events'} placeholder={uk?'Пошук подій':'Search events'} value={search} onChange={e=>setSearch(e.target.value)}/>{search&&<button type="button" aria-label={uk?'Очистити пошук':'Clear search'} onClick={()=>setSearch('')}><Icon name="x" size={14}/></button>}</label>{eventView==='week'&&<button type="button" className="chrono-hours" aria-pressed={weekGrid} onClick={()=>setWeekGrid(v=>!v)}>{weekGrid?(uk?'Сітка':'Grid'):(uk?'Горизонтально':'Horizontal')}</button>}{(narrow||['overview','month','year'].includes(eventView)||horizontal)&&<details className="chrono-filter chrono-overview-sources"><summary>{uk?'Календарі':'Calendars'}<Icon name="chevron-down" size={15}/></summary><div className="chrono-filter-pop"><label>{uk?'Дата':'Date'}<input type="date" value={day} onChange={e=>{if(e.target.value)setPlannerDate(e.target.value)}}/></label>{calendarSelector}<strong>{uk?'Додаткові календарі':'Additional calendars'}</strong>{visibleCalendars.map(item=><div className="chrono-source" key={item.id}><input type="checkbox" aria-label={item.name} checked={item.id===calendarId||additionalCalendars.includes(item.id)} disabled={item.id===calendarId} onChange={()=>setAdditionalCalendars(old=>old.includes(item.id)?old.filter(id=>id!==item.id):[...old,item.id])}/><i style={{background:item.color||'var(--chronos-accent)'}}/><span>{item.name}</span></div>)}<Link to={localizedPath('/calendars')}>{t('calendarView.manageCalendars')}</Link></div></details>}{['week','day'].includes(eventView)&&<button type="button" className="chrono-hours" aria-pressed={fullDay} onClick={()=>setFullDay(v=>!v)}>{uk?'24 год':'24h'}</button>}<details className="chrono-filter"><summary>{uk?'Фільтри':'Filters'}{filters.types.length+filters.categories.length>0&&<span>{filters.types.length+filters.categories.length}</span>}<Icon name="chevron-down" size={15}/></summary><div className="chrono-filter-pop"><strong>{t('calendarView.types')}</strong>{EVENT_TYPES.map(type=><label key={type}><input type="checkbox" checked={filters.types.includes(type)} onChange={()=>toggleType(type)}/>{typeName(type)}</label>)}<label className="chrono-filter-categories">{t('calendarView.categories')}<input value={categoryInput} onChange={e=>updateCategories(e.target.value)} placeholder={t('calendarView.categoriesPlaceholder')}/></label><button type="button" onClick={()=>{setCategoryInput('');setFilters(old=>({...old,types:[],categories:[]}));}}>{uk?'Скинути':'Reset'}</button></div></details></div>
+          <div className="chrono-tools"><label className="chrono-search"><Icon name="search" size={16}/><input type="search" aria-label={uk?'Пошук подій':'Search events'} placeholder={uk?'Пошук подій':'Search events'} value={search} onChange={e=>setSearch(e.target.value)}/>{search&&<button type="button" aria-label={uk?'Очистити пошук':'Clear search'} onClick={()=>setSearch('')}><Icon name="x" size={14}/></button>}</label>{eventView==='week'&&<button type="button" className="chrono-hours" aria-pressed={weekGrid} onClick={()=>setWeekGrid(v=>!v)}>{weekGrid?(uk?'Сітка':'Grid'):(uk?'Горизонтально':'Horizontal')}</button>}{(narrow||['overview','month','year'].includes(eventView)||horizontal)&&<details className="chrono-filter chrono-overview-sources"><summary>{uk?'Календарі':'Calendars'}<Icon name="chevron-down" size={15}/></summary><div className="chrono-filter-pop"><label>{uk?'Дата':'Date'}<input type="date" value={day} onChange={e=>{if(e.target.value)setPlannerDate(e.target.value)}}/></label>{calendarSelector}<strong>{uk?'Додаткові календарі':'Additional calendars'}</strong>{visibleCalendars.map(item=><div className="chrono-source" key={item.id}><input type="checkbox" aria-label={item.name} checked={item.id===calendarId||additionalCalendars.includes(item.id)} disabled={item.id===calendarId} onChange={()=>setAdditionalCalendars(old=>old.includes(item.id)?old.filter(id=>id!==item.id):[...old,item.id])}/><i style={{background:item.color||'var(--chronos-accent)'}}/><span>{item.name}</span></div>)}<Link to={localizedPath('/calendars')}>{t('calendarView.manageCalendars')}</Link></div></details>}{['week','day'].includes(eventView)&&<button type="button" className="chrono-hours" aria-pressed={fullDay} onClick={()=>setFullDay(v=>!v)}>{uk?'24 год':'24h'}</button>}{['week','day'].includes(eventView)&&<details className="chrono-filter chrono-work-hours"><summary>{uk?'Робочі години':'Working hours'}<Icon name="chevron-down" size={15}/></summary><div className="chrono-filter-pop"><label>{uk?'Початок':'Start'}<select value={hours.start} onChange={e=>setWorkHours({start:Number(e.target.value),end:hours.end})}>{Array.from({length:hours.end},(_,h)=><option key={h} value={h}>{String(h).padStart(2,'0')}:00</option>)}</select></label><label>{uk?'Кінець':'End'}<select value={hours.end} onChange={e=>setWorkHours({start:hours.start,end:Number(e.target.value)})}>{Array.from({length:24-hours.start},(_,i)=>hours.start+i+1).map(h=><option key={h} value={h}>{String(h).padStart(2,'0')}:00</option>)}</select></label><small>{uk?'Події поза цими годинами залишаються видимими':'Events outside these hours remain visible'}</small><button type="button" onClick={()=>setWorkHours(DEFAULT_WORK_HOURS)}>{uk?'Скинути':'Reset'}</button></div></details>}<details className="chrono-filter"><summary>{uk?'Фільтри':'Filters'}{filters.types.length+filters.categories.length>0&&<span>{filters.types.length+filters.categories.length}</span>}<Icon name="chevron-down" size={15}/></summary><div className="chrono-filter-pop"><strong>{uk?'Відображення':'Display'}</strong><label><input type="checkbox" checked={hidePast} onChange={e=>setHidePast(e.target.checked)}/>{uk?'Приховати минулі зустрічі й нагадування':'Hide past meetings and reminders'}</label><label><input type="checkbox" checked={hideCompleted} onChange={e=>setHideCompleted(e.target.checked)}/>{uk?'Приховати виконані завдання':'Hide completed tasks'}</label><strong>{t('calendarView.types')}</strong>{EVENT_TYPES.map(type=><label key={type}><input type="checkbox" checked={filters.types.includes(type)} onChange={()=>toggleType(type)}/>{typeName(type)}</label>)}<label className="chrono-filter-categories">{t('calendarView.categories')}<input value={categoryInput} onChange={e=>updateCategories(e.target.value)} placeholder={t('calendarView.categoriesPlaceholder')}/></label><button type="button" onClick={()=>{setCategoryInput('');setHidePast(false);setHideCompleted(false);setFilters(old=>({...old,types:[],categories:[]}));}}>{uk?'Скинути':'Reset'}</button></div></details></div>
         </div>
         {horizontal&&<div className="chrono-day-strip">{weekDays(day,startsOn).map(key=><button type="button" key={key} aria-pressed={key===day} onClick={()=>setPlannerDate(key)}><small>{new Date(key+'T12:00:00Z').toLocaleDateString(locale,{weekday:'short',timeZone:'UTC'})}</small><strong>{Number(key.slice(-2))}</strong>{key===today&&<i/>}</button>)}</div>}
         {eventView==='agenda'&&<div className="chrono-range"><label>{t('calendarView.from')}<input type="date" value={filters.from} onChange={e=>{const value=e.target.value;if(isCalendarDay(value))setFilters(old=>({...old,from:value,to:old.to<value?value:old.to>shiftDay(value,365)?shiftDay(value,365):old.to}));}}/></label><label>{t('calendarView.to')}<input type="date" value={filters.to} onChange={e=>{const value=e.target.value;if(isCalendarDay(value))setFilters(old=>({...old,to:value,from:old.from>value?value:old.from<shiftDay(value,-365)?shiftDay(value,-365):old.from}));}}/></label></div>}
@@ -515,8 +527,8 @@ function CalendarViewContent() {
           {eventsLoading&&!mobileList&&<div className="chrono-loading" role="status">{t('common.loading')}</div>}
           {mobileList&&<MobileAgenda events={events} days={plannerDays} day={day} zone={zone} timeFormat={timeFormat} loading={eventsLoading} error={eventsError} partial={partial} canEdit={canEdit} onSelect={selectEvent} onCreate={createOn} onDaySelect={setPlannerDate}/> }
           {!mobileList&&eventView==='overview'&&<CalendarOverview events={events} days={plannerDays} day={day} today={today} zone={zone} timeFormat={timeFormat} loading={eventsLoading} error={eventsError} partial={partial} onSelect={selectEvent} onDaySelect={setPlannerDate} onView={switchView} onCreate={openCreate} canEdit={canEdit}/>}
-          {!mobileList&&horizontal&&<DayPlanner view={eventView} days={plannerDays} events={events} calendars={timelineCalendars} day={day} zone={zone} timeFormat={timeFormat} fullDay={fullDay} loading={eventsLoading} error={eventsError} partial={partial} onSelect={selectEvent} onCreate={openCreate} onCreateAt={createOn} canEdit={canEdit} onDaySelect={setPlannerDate}/>}
-          {!mobileList&&eventView==='week'&&weekGrid&&<PlannerGrid key={eventView} view={eventView} days={plannerDays} events={events} calendars={timelineCalendars} zone={zone} timeFormat={timeFormat} onSelect={selectEvent} selectedDay={day} onDaySelect={setPlannerDate} fullDay={fullDay} canEdit={canEdit} onCreateAt={createOn}/>}
+          {!mobileList&&horizontal&&<DayPlanner view={eventView} days={plannerDays} events={events} calendars={timelineCalendars} day={day} zone={zone} timeFormat={timeFormat} workHours={hours} fullDay={fullDay} loading={eventsLoading} error={eventsError} partial={partial} onSelect={selectEvent} onCreate={openCreate} onCreateAt={createOn} canEdit={canEdit} onDaySelect={setPlannerDate}/>}
+          {!mobileList&&eventView==='week'&&weekGrid&&<PlannerGrid key={eventView} view={eventView} days={plannerDays} events={events} calendars={timelineCalendars} zone={zone} timeFormat={timeFormat} onSelect={selectEvent} selectedDay={day} onDaySelect={setPlannerDate} fullDay={fullDay} workHours={hours} canEdit={canEdit} onCreateAt={createOn}/>}
           {eventView==='month'&&<MonthPlanner day={day} today={today} startsOn={startsOn} events={events} zone={zone} timeFormat={timeFormat} calendarName={calendar.name} loading={eventsLoading} error={eventsError} partial={partial} canEdit={canEdit} onDaySelect={setPlannerDate} onSelect={selectEvent} onCreate={createOn}/>}
           {eventView==='year'&&<YearPlanner day={day} today={today} startsOn={startsOn} events={events} zone={zone} timeFormat={timeFormat} onDaySelect={key=>switchView('day',key)} onMonthSelect={key=>switchView('month',key)}/>}
           {eventView==='agenda'&&<FittedAgenda eventsByDay={eventsByDay} locale={locale} t={t} zone={zone} timeFormat={timeFormat} onSelect={selectEvent} typeName={typeName} loading={eventsLoading}/>} 
