@@ -1,3 +1,4 @@
+import { DateField } from '../components/forms/DateField';
 import { FlowSurface } from '../components/layout/FlowSurface';
 import { useEffect, useRef, useState } from 'react';
 import { applicationContainer } from '../app/applicationContainer';
@@ -102,10 +103,10 @@ export function CalendarSharePage() {
         <h2>{t('calendarShare.eventsTitle')}</h2>
         <div className="calendar-filter-grid">
           <label>{t('calendarView.from')}
-            <input type="date" value={filters.from} onChange={(event) => setFilters((current) => updateSharedEventFilters(current, 'from', event.target.value))} />
+            <DateField value={filters.from} onChange={(event) => setFilters((current) => updateSharedEventFilters(current, 'from', event.target.value))} />
           </label>
           <label>{t('calendarView.to')}
-            <input type="date" value={filters.to} onChange={(event) => setFilters((current) => updateSharedEventFilters(current, 'to', event.target.value))} />
+            <DateField value={filters.to} onChange={(event) => setFilters((current) => updateSharedEventFilters(current, 'to', event.target.value))} />
           </label>
         </div>
         {eventsLoading && <p role="status">{t('common.loading')}</p>}

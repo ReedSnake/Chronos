@@ -1,0 +1,58 @@
+/* Native form semantics, Chronos presentation. Older browsers keep their native select picker. */
+@supports (appearance: base-select) {
+  select, ::picker(select) { appearance: base-select; }
+  select { align-items: center; gap: 7px; }
+  select::picker-icon { color: var(--chronos-muted); font-size: .85em; transition: rotate .15s ease; }
+  select:open::picker-icon { rotate: 180deg; }
+  ::picker(select) {
+    color: var(--chronos-ink); background: var(--chronos-surface);
+    border: 1px solid var(--chronos-border); border-radius: 12px;
+    padding: 5px; margin-block: 5px; min-inline-size: max(anchor-size(width), 108px);
+    max-inline-size: min(340px, calc(100vw - 16px)); max-block-size: min(300px, 55dvh);
+    box-shadow: 0 9px 30px #30303020; overflow: auto; scrollbar-width: none;
+    font: 400 13px/1.4 Inter, ui-sans-serif, system-ui, sans-serif;
+  }
+  select option { display: flex; align-items: center; gap: 8px; white-space: normal; overflow-wrap: anywhere; min-height: 33px; padding: 7px 10px; border-radius: 7px; color: var(--chronos-ink); background: transparent; }
+  select option::checkmark { order: 1; margin-inline-start: auto; color: var(--chronos-ink); }
+  select option:checked { background: var(--chronos-accent); font-weight: 600; }
+  select option:not(:checked):is(:hover,:focus-visible) { background: var(--chronos-background); }
+  select option:disabled { opacity: .45; }
+  select optgroup { color: var(--chronos-muted); font-size: 11px; }
+  select optgroup option { font-size: 13px; }
+}
+select { accent-color: var(--chronos-accent); }
+.chronos-date-field { cursor: pointer; min-width: 0; }
+.chronos-date-field::-webkit-calendar-picker-indicator { opacity: 0; pointer-events: none; }
+.chronos-date-field[type="date"] {
+  padding-inline-end: 27px !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='17' height='17' viewBox='0 0 24 24' fill='none' stroke='%23646b73' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='5' width='18' height='16' rx='3'/%3E%3Cpath d='M16 3v4M8 3v4M3 10h18'/%3E%3C/svg%3E") !important;
+  background-repeat: no-repeat !important; background-position: right 7px center !important;
+}
+/* Date/time rows already contain a calendar icon. */
+.event-icon-field .chronos-date-field[type="date"] { background-image: none !important; padding-inline-end: 2px !important; }
+.event-icon-field .chronos-date-field::-webkit-calendar-picker-indicator { display: none; }
+.chronos-date-popup {
+  position: fixed; inset: auto; margin: 0; z-index: 10000; box-sizing: border-box;
+  width: min(306px, calc(100vw - 16px)); max-height: calc(100dvh - 16px); overflow: auto; scrollbar-width: none;
+  padding: 12px; border: 1px solid var(--chronos-border); border-radius: 16px;
+  background: var(--chronos-surface); color: var(--chronos-ink); box-shadow: 0 12px 38px #30303026;
+  font: 400 13px/1.4 Inter, ui-sans-serif, system-ui, sans-serif;
+}
+.chronos-date-popup .chronos-date-heading { display: grid; grid-template-columns: 30px minmax(0, 1fr) 30px; align-items: center; gap: 4px; margin-bottom: 9px; }
+.chronos-date-popup .chronos-date-month { display: flex; justify-content: center; align-items: center; gap: 3px; min-width: 0; }
+.chronos-date-popup .chronos-date-month select { width: auto; max-width: 100%; min-width: 0; font: inherit; font-weight: 600; color: var(--chronos-ink); background: transparent; border: 0; border-radius: 7px; padding: 5px 2px; text-transform: capitalize; }
+.chronos-date-popup button { display: grid; place-items: center; border: 0; background: transparent; color: var(--chronos-ink); font: inherit; padding: 0; border-radius: 8px; min-width: 0; cursor: pointer; }
+.chronos-date-popup .chronos-date-heading button { height: 30px; width: 30px; font-size: 23px; line-height: 1; }
+.chronos-date-popup .chronos-date-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 3px; }
+.chronos-date-popup .chronos-date-weekday { color: var(--chronos-muted); text-align: center; font-size: 10px; text-transform: capitalize; padding: 3px 0 5px; }
+.chronos-date-popup .chronos-date-day { height: 34px; width: 100%; font-variant-numeric: tabular-nums; }
+.chronos-date-popup .chronos-date-day.outside { color: #969da5; }
+.chronos-date-popup .chronos-date-day.today { box-shadow: inset 0 0 0 1.5px var(--chronos-accent); font-weight: 650; }
+.chronos-date-popup button:not(:disabled):hover, .chronos-date-popup .chronos-date-month select:hover { background: var(--chronos-background); }
+.chronos-date-popup .chronos-date-day[aria-pressed="true"] { background: var(--chronos-accent); color: var(--chronos-ink); font-weight: 650; }
+.chronos-date-popup button:disabled { opacity: .35; cursor: not-allowed; }
+.chronos-date-popup :is(button,select):focus-visible { outline: 2px solid var(--chronos-focus); outline-offset: 1px; }
+.chronos-date-popup .chronos-date-footer { display: flex; align-items: center; gap: 5px; margin-top: 9px; padding-top: 8px; border-top: 1px solid var(--chronos-border); }
+.chronos-date-popup .chronos-date-footer button { padding: 7px 9px; font-size: 12px; }
+.chronos-date-popup .chronos-date-footer button:last-child { margin-inline-start: auto; color: var(--chronos-muted); }
+@media (prefers-reduced-motion: reduce) { select::picker-icon { transition: none; } }
