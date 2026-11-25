@@ -7,7 +7,7 @@ import './event-surface.css';
 import { useLocale } from '../../i18n/LocaleProvider';
 import { buildEventPayload, defaultEventDraft, draftFromEvent, EVENT_TYPES, RECURRENCE_INTERVALS } from './eventForm';
 
-export function EventEditor({ event = null, calendar, saving, onSave, onCancel, initialType = 'arrangement', initialDay = null, initialMinute = null, initialStatus = 'todo', displayZone, timeFormat }) {
+export function EventEditor({ event = null, calendar, saving, onSave, onCancel, initialType = 'arrangement', initialDay = null, initialMinute = null, initialDuration = null, initialStatus = 'todo', displayZone, timeFormat }) {
   const { t, locale } = useLocale();
   const uk = locale === 'uk';
   const [tab, setTab] = useState('info');
@@ -27,10 +27,11 @@ export function EventEditor({ event = null, calendar, saving, onSave, onCancel, 
       }
       value.date=initialDay;
     }
-    return seedEventTime(value, initialDay, initialMinute, calendar.defaultEventDurationMinutes);
+    return seedEventTime(value, initialDay, initialMinute, initialDuration || calendar.defaultEventDurationMinutes);
   }
   const [draft, setDraft] = useState(() => event ? draftFromEvent(event, timeZone) : makeDraft(initialType));
   const [formError, setFormError] = useState('');
+  const submitting=useRef(false);
   const initial=useRef(JSON.stringify(draft));
   const dirty=JSON.stringify(draft)!==initial.current;
   useEffect(()=>{if(!dirty)return;const before=e=>{e.preventDefault();e.returnValue='';};window.addEventListener('beforeunload',before);return()=>window.removeEventListener('beforeunload',before);},[dirty]);
@@ -49,8 +50,8 @@ export function EventEditor({ event = null, calendar, saving, onSave, onCancel, 
 
   async function submit(action) {
     action.preventDefault();
-    if(saving)return;
-    setFormError('');
+    if(saving||submitting.current)return;
+    submitting.current=true;setFormError('');
     try {
       const payload = buildEventPayload(draft, timeZone);
       if (isEditing) delete payload.type; // An event keeps its type and series ID.
@@ -59,7 +60,7 @@ export function EventEditor({ event = null, calendar, saving, onSave, onCancel, 
       const key = `calendarView.event.${error.message}`;
       setTab('info');
       setFormError(t(key) === key ? (error.message || t('calendarView.event.saveError')) : t(key));
-    }
+    } finally { submitting.current=false; }
   }
 
   const task=draft.type==='task';
