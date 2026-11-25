@@ -349,10 +349,11 @@ function CalendarViewContent() {
     try{const patch=drag.mode==='resize'?resizeEventPatch(drag.item,date,minute,calendar.timeZone):moveEventPatch(drag.item,date,minute,calendar.timeZone);void patchEvent(drag.item,patch);}
     catch(err){notify(locale==='uk'?'Неприпустимий час або тривалість':'Invalid time or duration');}
   }
-  function quickEdit(item,{title,time,duration}){
+  function quickEdit(item,{title,time,duration,status}){
     if(!title)return;
     try{
       const patch={title};
+      if(item.type==='task'&&['todo','in_progress','done'].includes(status))patch.status=status;
       if(canMoveEvent(item)){
         const [date,clock]=time.split('T'),[h,m]=clock.split(':').map(Number);
         Object.assign(patch,moveEventPatch(item,date,h*60+m,calendar.timeZone));
