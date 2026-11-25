@@ -118,11 +118,11 @@ export function eventDayKey(event, timeZone = 'UTC') {
   return `${part.year}-${pad(part.month)}-${pad(part.day)}`;
 }
 
-export function eventDateLabel(event, locale, timeZone) {
+export function eventDateLabel(event, locale, timeZone, timeFormat) {
   if (event.type === 'holiday') return eventDayKey(event, timeZone);
   const value = event.type === 'task' ? event.deadline : event.type === 'reminder' ? event.remindAt : event.startsAt;
   if (!value) return '';
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return '';
-  return date.toLocaleString(locale, { dateStyle: 'medium', timeStyle: 'short', timeZone });
+  return date.toLocaleString(locale, { dateStyle: 'medium', timeStyle: 'short', timeZone, ...(timeFormat?{hour12:timeFormat==='12h'}:{}) });
 }
