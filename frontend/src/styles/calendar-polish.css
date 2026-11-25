@@ -89,3 +89,9 @@
   .chrono-calendar .fitted-agenda-list .agenda-description strong { font-size:11px; }
   .chrono-calendar .fitted-agenda-list .agenda-clock strong { font-size:10px; }
 }
+
+.chrono-week-label { font-size:10px; color:var(--chronos-muted); white-space:nowrap; padding:3px 6px; background:var(--chronos-background); border-radius:5px; }
+.chrono-calendar .chrono-search button { flex:none; display:grid; place-items:center; }
+.chrono-calendar .chrono-tools { min-width:0; flex-wrap:wrap; }
+.chrono-calendar .fitted-agenda-list .calendar-event-wrap>.calendar-task-toggle { flex:none; }
+@media(max-width:540px) { .chrono-calendar .chrono-week-label { font-size:9px; } .chrono-calendar .chrono-mini-grid { display:none; } .chrono-calendar .chrono-segments button { padding:7px 8px; } }
