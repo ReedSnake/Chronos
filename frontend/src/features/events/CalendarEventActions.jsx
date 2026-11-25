@@ -1,3 +1,4 @@
+import { canMoveEvent } from './eventQuickModel';
 import { EventPreviewButton } from './EventPreviewButton';
 import { createContext, useContext } from 'react';
 import { useLocale } from '../../i18n/LocaleProvider';
@@ -25,12 +26,26 @@ export function TaskCompletion({event,large=false}){
  return <button type="button" className={'calendar-task-toggle'+(large?' large':'')} aria-pressed={done} aria-label={label+': '+event.title} title={label} disabled={actions.busy} onClick={()=>void actions.toggle(event)}><span><Icon name="check" size={13}/></span>{large&&label}</button>;
 }
 
-// Separate sibling buttons keep the event opener and completion control keyboard accessible.
+export function useCalendarDrop() {
+ const actions=useContext(ActionsContext);
+ return (day, minuteFor=null)=>({
+  onDragOver:e=>{if(actions?.dragging && e.dataTransfer.types.includes('application/x-chronos-event') && (minuteFor||actions.dragging.mode==='move')){e.preventDefault();e.dataTransfer.dropEffect='move';}},
+  onDrop:e=>{if(!actions?.dragging||!e.dataTransfer.types.includes('application/x-chronos-event'))return;e.preventDefault();e.stopPropagation();actions.drop?.(day,minuteFor?minuteFor(e):null);}
+ });
+}
+
+ // Separate sibling buttons keep the event opener and completion control keyboard accessible.
 export function CalendarEventButton({event,placement='list',className='',style,children,...props}){
  const actions=useContext(ActionsContext);
- if(event.type!=='task'||!actions?.canChange(event))return <EventPreviewButton event={event} zone={actions?.zone} className={className||undefined} style={style} {...props}>{children}</EventPreviewButton>;
+ const {locale}=useLocale(),uk=locale==='uk';
+ const editable=!!actions?.canEditEvent?.(event)&&!actions.busy;
+ const draggable=editable&&canMoveEvent(event);
+ const dragProps=editable?{onContextMenu:e=>{e.preventDefault();actions.context?.(event);},onKeyDown:e=>{if(e.key==='F10'&&e.shiftKey){e.preventDefault();actions.context?.(event);}},draggable,onDragStart:e=>{if(!draggable)return;actions.startDrag?.(event,'move',e);},onDragEnd:()=>actions.endDrag?.()}: {};
+ const resize=draggable&&event.type==='arrangement'&&placement==='positioned'&&actions.resizeEnabled;
+ const content=<>{children}{resize&&<span className="ux-resize-handle" draggable title={uk?'Перетягніть для зміни тривалості':'Drag to resize'} aria-hidden="true" onClick={e=>e.stopPropagation()} onDragStart={e=>{e.stopPropagation();actions.startDrag?.(event,'resize',e);}} onDragEnd={()=>actions.endDrag?.()}/>}</>;
+ if(event.type!=='task'||!actions?.canChange(event))return <EventPreviewButton event={event} zone={actions?.zone} className={className||undefined} style={style} {...props} {...dragProps}>{content}</EventPreviewButton>;
  return <div className={'calendar-event-wrap calendar-event-'+placement+' '+(event.status==='done'?'is-done':'')} style={placement==='list'?undefined:style}>
-  <EventPreviewButton event={event} zone={actions?.zone} className={(className?className+' ':'')+'calendar-event-open'} style={placement==='list'?style:undefined} {...props}>{children}</EventPreviewButton>
+  <EventPreviewButton event={event} zone={actions?.zone} className={(className?className+' ':'')+'calendar-event-open'} style={placement==='list'?style:undefined} {...props} {...dragProps}>{content}</EventPreviewButton>
   <TaskCompletion event={event}/>
  </div>;
 }
