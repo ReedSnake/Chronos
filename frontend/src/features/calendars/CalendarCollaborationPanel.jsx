@@ -24,7 +24,7 @@ function statusLabel(t, status) {
 }
 
 export function CalendarCollaborationPanel({ calendar, section = null }) {
-  const { t } = useLocale();
+  const { t, locale } = useLocale();
   const [shareSettings, setShareSettings] = useState({});
   const [inviteSettings, setInviteSettings] = useState({});
   const [shareLinks, setShareLinks] = useState({});
@@ -261,16 +261,16 @@ export function CalendarCollaborationPanel({ calendar, section = null }) {
               <summary hidden={section !== null}>{t('calendars.inviteTitle')}</summary>
               <label htmlFor={`invite-emails-${calendar.id}`}>{t('calendars.inviteEmails')}</label>
               <textarea id={`invite-emails-${calendar.id}`} value={invite.emails} onChange={(event) => setInviteSettings((current) => ({ ...current, [calendar.id]: { ...invite, emails: event.target.value } }))} />
-              <label htmlFor={`invite-role-${calendar.id}`}>{t('calendars.shareRole')}</label>
+              <label htmlFor={`invite-role-${calendar.id}`}>{t('calendars.memberRole')}</label>
               <select id={`invite-role-${calendar.id}`} value={invite.role} onChange={(event) => setInviteSettings((current) => ({ ...current, [calendar.id]: { ...invite, role: event.target.value } }))}>
                 <option value="viewer">{t('calendars.viewer')}</option><option value="editor">{t('calendars.editor')}</option><option value="admin">{t('calendars.admin')}</option>
               </select>
-              <label htmlFor={`invite-expiry-${calendar.id}`}>{t('calendars.shareExpiry')}</label>
+              <label htmlFor={`invite-expiry-${calendar.id}`}>{t('calendars.invitationExpiry')==='calendars.invitationExpiry'?(locale==='uk'?'Термін дії запрошення':'Invitation expires after'):t('calendars.invitationExpiry')}</label>
               <select id={`invite-expiry-${calendar.id}`} value={String(invite.expiresInMinutes)} onChange={(event) => setInviteSettings((current) => ({ ...current, [calendar.id]: { ...invite, expiresInMinutes: Number(event.target.value) } }))}>
                 <option value="60">{t('durationLabels.oneHour')}</option><option value="1440">{t('durationLabels.oneDay')}</option><option value="43200">{t('durationLabels.thirtyDays')}</option>
               </select>
-              <button type="button" disabled={!invite.emails.trim() || Boolean(invitingCalendars[calendar.id])} onClick={() => { void createInvitations(calendar.id); }}>{invitingCalendars[calendar.id] ? t('common.loading') : t('calendars.invite')}</button>
-              <button type="button" onClick={() => { void loadInvitations(calendar.id); }}>{t('calendars.showInvites')}</button>
+              <div className="cm-invite-actions"><button type="button" disabled={!invite.emails.trim() || Boolean(invitingCalendars[calendar.id])} onClick={() => { void createInvitations(calendar.id); }}>{invitingCalendars[calendar.id] ? t('common.loading') : t('calendars.invite')}</button>
+              <button type="button" onClick={() => { void loadInvitations(calendar.id); }}>{t('calendars.showInvites')}</button></div>
               {(invitations[calendar.id] || []).map((item) => <p key={item.id}>{item.email} · {calendarRoleLabel(t, item.role)} · {statusLabel(t, item.status)}{item.status === 'pending' && item.deliveryStatus === 'queued' ? ` · ${t('calendars.invitationStatus.queued')}` : item.deliveryStatus === 'failed' ? ` · ${t('calendars.invitationStatus.failed')}` : ''} {item.status === 'pending' && <button type="button" onClick={() => { void revokeInvitation(calendar.id, item.id); }}>{t('calendars.revoke')}</button>}</p>)}
               {(invitationResults[calendar.id] || []).map((item, index) => <p key={`${item.email}-${index}`}>{item.email} · {t(`calendars.invitationStatus.${item.status}`)}</p>)}
             </details>
