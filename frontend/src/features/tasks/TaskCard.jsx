@@ -1,14 +1,17 @@
+import { useAuth } from '../auth/AuthContext';
+import { formatEventTime } from '../events/timeDisplay';
 import { useLocale } from '../../i18n/LocaleProvider';
 import { TablerIcon as Icon } from '../../components/layout/TablerIcon';
 import { EventPreviewButton } from '../events/EventPreviewButton';
 import { TaskCompletion } from '../events/CalendarEventActions';
 import { eventDayKey } from '../events/eventForm';
-import { TASK_STATES, taskTime, canWriteTask } from './taskBoardModel';
+import { TASK_STATES, canWriteTask } from './taskBoardModel';
 
 const safeColor = color => /^#[0-9a-f]{6}$/i.test(color || '') ? color : '#F5BC5A';
 
 export function TaskCard({ task, calendar, zone, onOpen, onChange, busy, onDragStart, onDragEnd, bulk, picked, onPick }) {
   const { t, locale } = useLocale(), uk = locale === 'uk';
+  const {user}=useAuth();
   const writable = canWriteTask(calendar);
   const participants = (task.attendees || []).filter(person => typeof person?.email === 'string');
   const category = task.categories?.[0];
@@ -25,7 +28,7 @@ export function TaskCard({ task, calendar, zone, onOpen, onChange, busy, onDragS
     </div>
     <div className="tb-card-bottom">
       <div className="tb-avatars" aria-label={uk ? 'Учасники' : 'Participants'}>{participants.slice(0, 4).map(a => <span key={a.email} title={a.email}>{a.email.slice(0, 2).toUpperCase()}</span>)}{participants.length > 4 && <span>+{participants.length - 4}</span>}</div>
-      <span className={"tb-card-time"+(task.status!=="done"&&Date.parse(task.deadline)<Date.now()?" ux-overdue":"")} title={date ? dateLabel + ' · ' + taskTime(task, zone) : undefined}>{task.isRecurring && <Icon name="refresh" size={13}/>}<Icon name="calendar" size={13}/>{dateLabel}</span>
+      <span className={"tb-card-time"+(task.status!=="done"&&Date.parse(task.deadline)<Date.now()?" ux-overdue":"")} title={date ? dateLabel + ' · ' + formatEventTime(task.deadline,locale,zone,user?.settings?.timeFormat) : undefined}>{task.isRecurring && <Icon name="refresh" size={13}/>}<Icon name="calendar" size={13}/>{dateLabel}</span>
       {writable && <label className="tb-status-control" title={t('calendarView.event.status')}><Icon name="chevron-down" size={14}/><select aria-label={t('calendarView.event.status') + ': ' + task.title} disabled={busy} value={task.status} onChange={e => onChange(task, e.target.value)}>{TASK_STATES.map(s => <option key={s} value={s}>{t('statuses.' + s)}</option>)}</select></label>}
     </div>
   </article>;
