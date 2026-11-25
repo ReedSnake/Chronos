@@ -54,12 +54,12 @@ export function CommandMenu({user,items,onClose}) {
     }
     for(const c of data.calendars.filter(c=>match(c.name)))rows.push({key:'cal:'+c.id,icon:'calendar',label:c.name,detail:uk?'Календар':'Calendar',path:'/calendars/view/'+encodeURIComponent(c.id)});
     if(searchEvents&&query.trim()&&!loading&&!error)for(const e of data.events.filter(e=>matchesEvent(e,query)).slice(0,80)){
-      const calendar=data.calendars.find(c=>c.id===e.calendarId),eventZone=calendar?.timeZone||zone;
+      const eventZone=zone;
       const day=eventDayKey(e,eventZone);
-      if(day)rows.push({key:e.calendarId+':'+(e.occurrenceId||e.id),icon:e.type==='task'?'checkbox':e.type==='reminder'?'bell':'calendar-event',label:e.title,detail:e.calendarName+' · '+eventDateLabel(e,locale,eventZone),path:'/calendars/view/'+encodeURIComponent(e.calendarId)+'?date='+encodeURIComponent(day)+'&event='+encodeURIComponent(e.occurrenceId||e.id)});
+      if(day)rows.push({key:e.calendarId+':'+(e.occurrenceId||e.id),icon:e.type==='task'?'checkbox':e.type==='reminder'?'bell':'calendar-event',label:e.title,detail:e.calendarName+' · '+eventDateLabel(e,locale,eventZone,user.settings?.timeFormat||'24h'),path:'/calendars/view/'+encodeURIComponent(e.calendarId)+'?date='+encodeURIComponent(day)+'&event='+encodeURIComponent(e.occurrenceId||e.id)});
     }
     return rows;
-  },[query,items,data,main,searchEvents,loading,error,locale,zone]);
+  },[query,items,data,main,searchEvents,loading,error,locale,zone,user.settings?.timeFormat]);
   function choose(row){if(!row)return;onClose();const [path,params]=row.path.split('?');navigate(localizedPath(path)+(params?'?'+params:''));}
   useEffect(()=>{setActive(0);},[query,searchEvents,from,to]);
   useEffect(()=>{list.current?.querySelector('[aria-selected=true]')?.scrollIntoView({block:'nearest'});},[active]);
