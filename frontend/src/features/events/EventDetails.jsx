@@ -1,3 +1,4 @@
+import { useAuth } from '../auth/AuthContext';
 import { TaskCompletion, EventSymbol } from './CalendarEventActions';
 import { useState } from 'react';
 import { TablerIcon } from '../../components/layout/TablerIcon';
@@ -6,9 +7,11 @@ import { getLocalizedApiError } from '../../i18n/apiErrors';
 import { useLocale } from '../../i18n/LocaleProvider';
 import { eventDateLabel } from './eventForm';
 
-export function EventDetails({ event, calendar, onClose, onEdit, onDelete, onQuickActions, canEdit, busy, onInvite }) {
+export function EventDetails({ event, calendar, onClose, onEdit, onDelete, onQuickActions, canEdit, busy, onInvite, displayZone, timeFormat }) {
   const { locale, t } = useLocale();
-  const timeZone = calendar.timeZone || 'UTC';
+  const {user}=useAuth();
+  const timeZone = displayZone || user?.settings?.timeZone || calendar.timeZone || 'UTC';
+  const format=timeFormat||user?.settings?.timeFormat||'24h';
   const [tab,setTab]=useState('info');
   const uk=locale==='uk';
   const stages=event.type==='task'?['todo','in_progress','done']:[];
@@ -28,8 +31,8 @@ export function EventDetails({ event, calendar, onClose, onEdit, onDelete, onQui
     {stages.length>0&&<div className="event-stage-track">{stages.map((status,i)=><span key={status} className={i<=stages.indexOf(event.status)?'reached':''} aria-current={event.status===status?'step':undefined}><i>{i<stages.indexOf(event.status)?<TablerIcon name="check" size={12}/>:i+1}</i>{t('statuses.'+status)}</span>)}</div>}
     <dl>
       <dt>{t('calendarView.event.type')}</dt><dd>{t(`calendarView.type.${event.type}`)}</dd>
-      <dt>{t(`calendarView.event.${event.type === 'task' ? 'deadline' : event.type === 'reminder' ? 'remindAt' : event.type === 'holiday' ? 'date' : 'startsAt'}`)}</dt><dd>{eventDateLabel(event, locale, timeZone)}</dd>
-      {event.endsAt && <><dt>{t('calendarView.event.endsAt')}</dt><dd>{new Date(event.endsAt).toLocaleString(locale, { dateStyle: 'medium', timeStyle: 'short', timeZone })}</dd></>}
+      <dt>{t(`calendarView.event.${event.type === 'task' ? 'deadline' : event.type === 'reminder' ? 'remindAt' : event.type === 'holiday' ? 'date' : 'startsAt'}`)}</dt><dd>{eventDateLabel(event, locale, timeZone, format)}</dd>
+      {event.endsAt && <><dt>{t('calendarView.event.endsAt')}</dt><dd>{new Date(event.endsAt).toLocaleString(locale, { dateStyle: 'medium', timeStyle: 'short', timeZone, hour12:format==='12h' })}</dd></>}
       {event.status && <><dt>{t('calendarView.event.status')}</dt><dd>{t(`statuses.${event.status}`)}</dd></>}
       {event.isRecurring && <><dt>{t('calendarView.event.repeatLabel')}</dt><dd>{t(`calendarView.event.repeat.${event.recurrenceInterval}`)}{event.recurrenceEndDate ? ` · ${event.recurrenceEndDate.slice(0, 10)}` : ''}</dd></>}
       {event.locationUrl && <><dt>{t('calendarView.event.locationUrl')}</dt><dd><a href={event.locationUrl} target="_blank" rel="noopener noreferrer">{event.locationUrl}</a></dd></>}
