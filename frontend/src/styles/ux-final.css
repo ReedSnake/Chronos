@@ -1,0 +1,58 @@
+/* Responsive agenda and consistent feedback; retain the original desktop calendar. */
+.ux-icon-tooltip {position:fixed;z-index:2500;max-width:min(240px,calc(100vw - 24px));transform:translateX(-50%);background:#303030;color:#fff;border-radius:7px;padding:6px 10px;font-size:11px;line-height:1.4;pointer-events:none;text-align:center;overflow-wrap:anywhere;box-shadow:0 4px 12px #30303020}
+.ux-icon-tooltip.above {transform:translate(-50%,-100%)}
+.ux-feedback-skeleton {display:grid;gap:13px;padding:14px;min-width:0}
+.ux-feedback-skeleton>div {display:flex;align-items:center;gap:12px;animation:ux-skeleton 1.6s ease infinite}
+.ux-feedback-skeleton>div>i {display:block;width:34px;height:34px;flex:none;border-radius:10px;background:#E8EFF6}
+.ux-feedback-skeleton>div>span {display:grid;gap:7px;flex:1;min-width:0}
+.ux-feedback-skeleton b {height:9px;width:75%;border-radius:6px;background:#E8EFF6}
+.ux-feedback-skeleton b:last-child {width:42%;height:7px}
+.ux-feedback-empty {display:grid;justify-items:center;align-content:center;text-align:center;gap:10px;min-height:130px;padding:20px 12px;color:#303030}
+.ux-feedback-empty strong {font-size:13px;font-weight:550;line-height:1.5}
+.ux-feedback-empty p {font-size:12px;color:#30303099;margin:0;line-height:1.4}
+.ux-feedback-symbol {width:42px;height:42px;display:grid;place-items:center;border-radius:13px;background:#E8EFF6;color:#303030}
+.ux-mobile-layout-toggle {display:none}
+.ux-mobile-agenda {min-width:0;padding:12px;display:grid;gap:13px;align-content:start}
+.ux-mobile-agenda header {display:flex;justify-content:space-between;gap:10px;align-items:center}
+.ux-mobile-agenda header h3 {margin:0;font-size:16px;font-weight:620;letter-spacing:-.025em}
+.ux-mobile-agenda header p {margin:4px 0 0;font-size:11px;color:#30303099}
+.chrono-calendar .ux-mobile-agenda .ux-primary {display:flex;align-items:center;gap:5px;min-height:40px;padding:8px 12px;background:#F5BC5A;border-radius:9px}
+.ux-mobile-days {display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
+.chrono-calendar .ux-mobile-days button {display:grid;justify-items:center;gap:4px;padding:9px 0;min-height:52px;background:#E8EFF6;border-radius:9px}
+.ux-mobile-days small {font-size:10px;text-transform:capitalize;color:inherit}
+.ux-mobile-days strong {font-size:16px;font-weight:600}
+.chrono-calendar .ux-mobile-days button[aria-pressed=true] {background:#303030;color:white}
+.ux-mobile-events {display:grid;gap:6px;min-width:0}
+.chrono-calendar .ux-mobile-events .ux-mobile-event {display:grid;grid-template-columns:46px 28px minmax(0,1fr) auto;align-items:center;gap:7px;min-height:54px;width:100%;padding:8px;text-align:left;border-radius:9px;background:#E8EFF655}
+.ux-mobile-events .calendar-event-wrap {border-radius:9px;background:#E8EFF655}
+.chrono-calendar .ux-mobile-events .calendar-event-open {width:0;background:transparent}
+.chrono-calendar .ux-mobile-events .calendar-task-toggle {min-width:35px;min-height:44px;padding:4px}
+.ux-mobile-time {font-variant-numeric:tabular-nums;font-size:10px;line-height:1.4;display:grid;gap:3px}
+.ux-mobile-time small {font-size:9px;color:#30303099}
+.ux-mobile-event-name {min-width:0;display:grid;gap:4px}
+.ux-mobile-event-name strong,.ux-mobile-event-name small {overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ux-mobile-event-name strong {font-size:12px;font-weight:550}
+.ux-mobile-event-name small {font-size:10px;color:#30303099}
+.chrono-calendar .ux-mobile-events .calendar-event-symbol {width:28px;height:28px}
+.ux-mobile-events .calendar-event-status {max-width:65px;overflow:hidden;text-overflow:ellipsis;font-size:9px;padding:3px 5px}
+@media(max-width:700px){
+ .workspace .chrono-calendar.ux-narrow-calendar {height:auto;min-height:0}
+ .chrono-calendar.ux-narrow-calendar .chrono-rail {display:none}
+ .chrono-calendar.ux-narrow-calendar .chrono-board {height:auto}
+ .chrono-calendar.ux-narrow-calendar .chrono-view {overflow:visible}
+ .chrono-calendar.ux-narrow-calendar .chrono-heading-actions {flex-wrap:wrap}
+ .chrono-calendar.ux-narrow-calendar .chrono-segments {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));width:100%}
+ .chrono-calendar.ux-narrow-calendar .chrono-segments button {min-height:40px;padding:7px 4px;white-space:normal}
+ .chrono-calendar.ux-narrow-calendar .ux-mobile-layout-toggle {display:inline-flex;align-items:center;justify-content:center;min-height:40px;background:#fff;border:1px solid #30303016;border-radius:8px;padding:8px 12px;font-size:12px}
+ .chrono-calendar.ux-narrow-calendar .chrono-tools {flex-wrap:wrap}
+ .chrono-calendar.ux-narrow-calendar .chrono-period button {min-height:40px;min-width:32px}
+ .chrono-calendar.ux-narrow-calendar .chrono-range {padding:10px}
+ .chrono-calendar.ux-narrow-calendar .fitted-agenda {min-height:280px}
+ .chrono-calendar.ux-narrow-calendar .chrono-view>.planner-viewport {overflow:auto}
+}
+@media(max-width:390px){
+ .chrono-calendar .ux-mobile-events .ux-mobile-event {grid-template-columns:43px 24px minmax(0,1fr);gap:5px}
+ .chrono-calendar .ux-mobile-events .calendar-event-status {grid-column:3;justify-self:start}
+ .chrono-calendar .ux-mobile-events .calendar-event-symbol {width:24px;height:24px}
+}
+@media(prefers-reduced-motion:reduce){.ux-feedback-skeleton>div{animation:none}}
