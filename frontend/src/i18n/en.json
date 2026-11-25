@@ -344,7 +344,11 @@
     },
     "view": {
       "month": "Month",
+      "year": "Year",
       "agenda": "Agenda"
+    },
+    "year": {
+      "events": "events"
     },
     "event": {
       "editorTitle": "Event form",

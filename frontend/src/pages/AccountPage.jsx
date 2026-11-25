@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { TablerIcon as Icon } from '../components/layout/TablerIcon';
 import '../styles/account-settings.css';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useOutletContext } from 'react-router-dom';
 import { applicationContainer } from '../app/applicationContainer';
 import { useAuth } from '../features/auth/AuthContext';
 import { formatCountryName } from '../i18n/formatters';
@@ -42,6 +42,7 @@ function groupTimeZones(timeZones, locale) {
 
 export function AccountPage() {
   const navigate = useNavigate();
+  const { setAccountExitState, signOutPending = false } = useOutletContext() || {};
   const { setAuthenticated, setAnonymous } = useAuth();
   const { locale, localizedPath, t } = useLocale();
   const uk = locale === 'uk';
@@ -60,7 +61,8 @@ export function AccountPage() {
   const [timeZoneReload, setTimeZoneReload] = useState(0);
   const [settings, setSettings] = useState(DEFAULT_SETTINGS);
   const [loading, setLoading] = useState(true);
-  const [busy, setBusy] = useState(false);
+  const [accountBusy, setBusy] = useState(false);
+  const busy = accountBusy || signOutPending;
   const [error, setError] = useState('');
   const [status, setStatus] = useState('');
 
@@ -109,7 +111,7 @@ export function AccountPage() {
   }, [timeZoneReload]);
 
   async function run(action) {
-    if (lock.current) return;
+    if (lock.current || signOutPending) return;
     lock.current = true;
     setBusy(true); setError(''); setStatus('');
     try { await action(); }
@@ -121,6 +123,12 @@ export function AccountPage() {
   const countryChanged = !!user && country !== (user.country || '');
   const preferencesChanged = !!user && JSON.stringify(settings) !== JSON.stringify(normalizeSettings(user.settings));
   const dirty = profileChanged || countryChanged || preferencesChanged;
+
+  useLayoutEffect(() => {
+    if (!setAccountExitState) return undefined;
+    setAccountExitState({ dirty, busy: accountBusy || loading });
+    return () => setAccountExitState({ dirty: false, busy: false });
+  }, [setAccountExitState, dirty, accountBusy, loading]);
 
   function discard() {
     if (user && !lock.current) { updateState(user); setError(''); setStatus(''); }
@@ -150,19 +158,8 @@ export function AccountPage() {
     });
   }
 
-  function signOut() {
-    if (dirty && !window.confirm(uk ? 'Вийти без збереження змін?' : 'Sign out without saving changes?')) return;
-    void run(async () => {
-      try {
-        await applicationContainer.authService.logout();
-        setAnonymous();
-        navigate(localizedPath('/login'), { replace: true });
-      } catch (requestError) { setError(getLocalizedApiError(requestError, t, 'account.signOutError')); }
-    });
-  }
-
   function deleteAccount() {
-    if (lock.current || !window.confirm(t('account.actions.confirmDelete'))) return;
+    if (busy || lock.current || !window.confirm(t('account.actions.confirmDelete'))) return;
     void run(async () => {
       try {
         await users.deleteAccount();
@@ -244,7 +241,7 @@ export function AccountPage() {
           <details className="as-security">
             <summary>{t('account.actions.title')}<Icon name="chevron-down" size={15}/></summary>
             <div className="as-row"><span>{t('account.id')}</span><code>{user.id}</code></div>
-            <div className="as-row as-row-actions"><button type="button" disabled={busy} onClick={signOut}>{t('account.actions.signOut')}</button><button type="button" className="as-danger" disabled={busy} onClick={deleteAccount}>{t('account.actions.delete')}</button></div>
+            <div className="as-row as-row-actions"><button type="button" className="as-danger" disabled={busy} onClick={deleteAccount}>{t('account.actions.delete')}</button></div>
           </details>
         </div>}
       </form>

@@ -1,3 +1,4 @@
+import { useRef, useState } from 'react';
 import { Link, NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { TablerIcon } from '../components/layout/TablerIcon';
 import { applicationContainer } from '../app/applicationContainer';
@@ -6,6 +7,7 @@ import '../styles/secondary-surfaces.css';
 import { useAuth } from '../features/auth/AuthContext';
 import { SUPPORTED_LOCALES } from '../i18n/locales';
 import { useLocale } from '../i18n/LocaleProvider';
+import { getLocalizedApiError } from '../i18n/apiErrors';
 
 function getNavigationClass({ isActive }) {
   return isActive ? 'navigation-link active' : 'navigation-link';
@@ -15,8 +17,12 @@ export function ApplicationPage() {
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const isAuthScreen = /\/(login|register)\/?$/.test(pathname);
-  const { status, user } = useAuth();
+  const { status, user, setAnonymous } = useAuth();
   const { locale, t, localizedPath, locationForLocale } = useLocale();
+  const [signOutPending, setSignOutPending] = useState(false);
+  const [signOutError, setSignOutError] = useState('');
+  const [accountExitState, setAccountExitState] = useState({ dirty: false, busy: false });
+  const signOutLock = useRef(false);
   const signedIn = status === 'authenticated';
   const isPublicHome = status === 'anonymous' && pathname.replace(/\/$/, '') === localizedPath('/').replace(/\/$/, '');
   const authResolved = status !== 'loading';
@@ -24,7 +30,34 @@ export function ApplicationPage() {
   const inWorkspace = signedIn && (workspaceRoute === '' || /^\/(account|calendars|integrations|users|tasks)(\/|$)/.test(workspaceRoute)) && workspaceRoute !== '/integrations/approve';
   const isSharedScreen = workspaceRoute === '/calendar-share';
   const isSupportScreen = isSharedScreen || ['/verify-email','/calendar-invite','/event-invite','/integrations/approve'].includes(workspaceRoute) || (!inWorkspace && !isAuthScreen && !isPublicHome && workspaceRoute !== '');
+  async function signOut() {
+    if (signOutLock.current || accountExitState.busy) return;
+    if (accountExitState.dirty && !window.confirm(locale === 'uk'
+      ? 'Вийти без збереження змін?' : 'Sign out without saving changes?')) return;
+    signOutLock.current = true;
+    setSignOutPending(true);
+    setSignOutError('');
+    try {
+      await applicationContainer.authService.logout();
+      setAnonymous();
+      navigate(localizedPath('/login'), { replace: true });
+    } catch (error) {
+      setSignOutError(getLocalizedApiError(error, t, 'account.signOutError'));
+    } finally {
+      signOutLock.current = false;
+      setSignOutPending(false);
+    }
+  }
+
   if (inWorkspace) {
+    const signOutLabel = t('account.actions.signOut');
+    const signOutButton = (
+      <button type="button" className="workspace-sign-out" onClick={signOut}
+        disabled={signOutPending || accountExitState.busy}
+        aria-label={signOutLabel} title={signOutLabel} aria-busy={signOutPending}>
+        <TablerIcon name="logout" size={20}/><span>{signOutLabel}</span>
+      </button>
+    );
     const items = [
       ['/', 'layout-dashboard', locale === 'uk' ? 'Огляд' : 'Dashboard'],
       ['/calendars/view', 'calendar-week', locale === 'uk' ? 'Розклад' : 'Schedule'],
@@ -43,9 +76,13 @@ export function ApplicationPage() {
         <div className="workspace-side-bottom">
           <label className="workspace-language"><span className="visually-hidden">{t('languageSwitcher.label')}</span><select value={locale} aria-label={t('languageSwitcher.label')} onChange={event=>navigate(locationForLocale(event.target.value),{replace:true})}>{SUPPORTED_LOCALES.map(lang=><option key={lang} value={lang}>{t(`languageSwitcher.${lang}`)}</option>)}</select></label>
           <Link className="workspace-user" aria-label={t('navigation.account')} to={localizedPath('/account')}><span className="workspace-avatar">{avatar?<img src={avatar} alt=""/>:String(user?.name||'?').trim().slice(0,1).toUpperCase()}</span><span className="workspace-user-name"><strong>{user?.name}</strong><small>{t('navigation.account')}</small></span><TablerIcon name="chevron-right" size={16}/></Link>
+          {signOutButton}
         </div>
       </aside>
-      <div className="workspace-main"><label className="workspace-language workspace-mobile-language"><span className="visually-hidden">{t('languageSwitcher.label')}</span><select value={locale} aria-label={t('languageSwitcher.label')} onChange={event=>navigate(locationForLocale(event.target.value),{replace:true})}>{SUPPORTED_LOCALES.map(lang=><option key={lang} value={lang}>{t(`languageSwitcher.${lang}`)}</option>)}</select></label><Outlet/></div>
+      <div className="workspace-main"><div className="workspace-mobile-actions"><label className="workspace-language workspace-mobile-language"><span className="visually-hidden">{t('languageSwitcher.label')}</span><select value={locale} aria-label={t('languageSwitcher.label')} onChange={event=>navigate(locationForLocale(event.target.value),{replace:true})}>{SUPPORTED_LOCALES.map(lang=><option key={lang} value={lang}>{t(`languageSwitcher.${lang}`)}</option>)}</select></label>{signOutButton}</div>
+        {signOutError && <p className="workspace-sign-out-error" role="alert">{signOutError}</p>}
+        <Outlet context={{ setAccountExitState, signOutPending }}/>
+      </div>
     </main>;
   }
   return (

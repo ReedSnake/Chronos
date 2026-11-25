@@ -1,0 +1,27 @@
+.chrono-calendar.chrono-mode-year .chrono-view { overflow: auto; }
+.year-planner { flex: 1; min-width: 0; padding: 4px 14px 12px; container-type: inline-size; }
+.year-months { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.year-month { min-width: 0; padding: 8px; border: 1px solid var(--chronos-border); border-radius: 12px; }
+.chrono-calendar .year-month h3 { margin: 0 0 5px; }
+.chrono-calendar .year-month h3 button { font-size: 14px; font-weight: 650; text-transform: capitalize; text-align: left; padding: 4px; }
+.chrono-calendar .year-month h3 button:hover { background: var(--chronos-background); }
+.year-month-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 2px; text-align: center; }
+.year-weekday { font-size: 10px; color: var(--chronos-muted); line-height: 20px; }
+.chrono-calendar .year-day { position: relative; display: grid; place-content: center; justify-items: center; min-width: 0; min-height: 26px; padding: 2px 0 6px; font-size: 11px; font-variant-numeric: tabular-nums; }
+.chrono-calendar .year-day:hover { background: var(--chronos-background); }
+.chrono-calendar .year-day.selected { background: var(--chronos-ink); color: white; }
+.chrono-calendar .year-day.today { box-shadow: inset 0 0 0 1px var(--chronos-ink); }
+.chrono-calendar .year-day:focus-visible, .chrono-calendar .year-month h3 button:focus-visible { outline: 2px solid var(--chronos-ink); outline-offset: 1px; }
+.year-day-dots { position: absolute; bottom: 2px; left: 0; right: 0; display: flex; justify-content: center; gap: 1px; }
+.year-day-dots i, .year-legend i { display: inline-block; width: 5px; height: 5px; border-radius: 50%; background: var(--chronos-muted); }
+.year-day-dots .arrangement, .year-legend .arrangement { background: #303030; }
+.year-day-dots .task, .year-legend .task { background: #F5BC5A; }
+.year-day-dots .reminder, .year-legend .reminder { background: #aebdcb; }
+.year-day-dots .holiday, .year-legend .holiday { background: #c8c9c9; }
+.year-day.selected .year-day-dots .arrangement { background: white; }
+.year-legend { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; padding-top: 12px; font-size: 11px; color: var(--chronos-muted); }
+.year-legend span { display: flex; align-items: center; gap: 5px; }
+@container (max-width: 850px) { .year-months { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@container (max-width: 620px) { .year-months { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@container (max-width: 390px) { .year-months { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 700px) { .year-planner { padding-inline: 8px; } .chrono-calendar .year-day { min-height: 34px; } }

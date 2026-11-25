@@ -344,7 +344,11 @@
     },
     "view": {
       "month": "Місяць",
+      "year": "Рік",
       "agenda": "Список"
+    },
+    "year": {
+      "events": "подій"
     },
     "event": {
       "editorTitle": "Форма події",

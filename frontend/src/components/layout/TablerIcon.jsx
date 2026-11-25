@@ -1,6 +1,7 @@
 // Tabler Icons — https://tabler.io/icons (MIT).
 // Original icon path data from github.com/tabler/tabler-icons.
 const paths = {
+  "logout": ["M11 7V5a2 2 0 0 0 -2 -2H5a2 2 0 0 0 -2 2v14a2 2 0 0 0 2 2h4a2 2 0 0 0 2 -2v-2", "M10 12h11", "M17 8l4 4l-4 4"],
   "world": ["M3 12a9 9 0 1 0 18 0a9 9 0 0 0 -18 0","M3.6 9h16.8","M3.6 15h16.8","M11.5 3a17 17 0 0 0 0 18","M12.5 3a17 17 0 0 1 0 18"],
   "lock": ["M5 13a2 2 0 0 1 2 -2h10a2 2 0 0 1 2 2v6a2 2 0 0 1 -2 2h-10a2 2 0 0 1 -2 -2z","M11 16a1 1 0 1 0 2 0a1 1 0 0 0 -2 0","M8 11v-4a4 4 0 1 1 8 0v4"],
   "x": ["M18 6l-12 12","M6 6l12 12"],

@@ -12,8 +12,8 @@
 .workspace-side-bottom { margin-top:auto; display:grid; gap:15px; }
 .workspace-language select { width:100%; color:inherit; background:#ffffff80; border:0; border-radius:12px; padding:10px; font-size:13px; }
 .workspace-user { display:flex; align-items:center; gap:9px; border-radius:16px; background:#ffffffab; padding:10px; min-width:0; }
-.workspace-avatar { display:grid; place-items:center; flex:0 0 38px; height:38px; background:var(--chronos-accent); border-radius:50%; font-weight:700; overflow:hidden; }
-.workspace-avatar img { width:100%; height:100%; object-fit:cover; }
+.workspace-avatar { position:relative; display:grid; place-items:center; flex:0 0 38px; width:38px; height:38px; background:var(--chronos-accent); border-radius:50%; font-weight:700; overflow:hidden; }
+.workspace-avatar img { position:absolute; inset:0; display:block; width:100%; height:100%; min-width:0; min-height:0; object-fit:cover; object-position:center; }
 .workspace-user-name { flex:1; min-width:0; display:grid; gap:4px; }
 .workspace-user-name strong { font-size:12px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }.workspace-user-name small { font-size:11px; color:var(--chronos-muted); }
 .workspace-main { min-width:0; padding:30px clamp(18px,3vw,46px) 30px; }
@@ -57,3 +57,22 @@
 .dash-task-open { display:grid; gap:5px; border:0; padding:0; background:none; color:inherit; text-align:left; cursor:pointer; min-width:0; }.dash-task-state { padding:0; cursor:pointer; background:white; }.dash-task-state:disabled { cursor:default; opacity:.6; }
 .dash-calendar-toggle { display:flex; align-items:center; gap:8px; }.dash-calendar-toggle>a { flex:1; min-width:0; }.dash-calendar-toggle input { accent-color:var(--chronos-ink); }
 @media(max-width:850px){.dash-grid .dash-agenda,.dash-grid .dash-upcoming{grid-row:auto;grid-column:auto}}
+
+/* Account sign-out follows the workspace navigation, not destructive settings. */
+.workspace-sidebar { overflow-y:auto; }
+.workspace-side-bottom { gap:8px; }
+.workspace .workspace-sign-out { display:flex; align-items:center; gap:10px; min-height:44px; width:100%; padding:10px 12px; border:0; border-radius:10px; background:transparent; color:var(--chronos-muted); font-size:13px; font-weight:550; text-align:left; cursor:pointer; }
+.workspace-sign-out svg { flex:none; }
+.workspace-sign-out:hover:not(:disabled) { background:#ffffffa0; color:var(--chronos-ink); }
+.workspace-sign-out:disabled { opacity:.55; cursor:default; }
+.workspace-sign-out-error { margin:0 0 12px; padding:10px 12px; border-radius:10px; background:var(--chronos-danger-soft); color:var(--chronos-danger); font-size:13px; }
+.workspace-mobile-actions { display:none; }
+@media(max-width:850px) {
+  .workspace-side-bottom .workspace-sign-out { justify-content:center; padding:10px 0; }
+  .workspace-side-bottom .workspace-sign-out span { display:none; }
+}
+@media(max-width:540px) {
+  .workspace-mobile-actions { display:flex; align-items:center; justify-content:flex-end; gap:8px; margin-bottom:10px; }
+  .workspace-mobile-actions .workspace-mobile-language { margin:0; }
+  .workspace-mobile-actions .workspace-sign-out { width:auto; min-height:44px; background:#fff; padding:8px 10px; }
+}
