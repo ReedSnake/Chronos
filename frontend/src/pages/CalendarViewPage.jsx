@@ -89,6 +89,7 @@ function FittedAgenda({eventsByDay,locale,t,zone,onSelect,typeName,loading}) {
     if(!el)return;
     const measure=()=>setCapacity(Math.max(1,Math.floor(el.clientHeight/56)));
     measure();
+    if(typeof ResizeObserver==='undefined')return;
     const observer=new ResizeObserver(measure);
     observer.observe(el);
     return()=>observer.disconnect();
@@ -120,7 +121,7 @@ function CalendarViewContent() {
   const [calendar, setCalendar] = useState(null);
   const [allEvents, setEvents] = useState([]);
   const [search, setSearch] = useState('');
-  const events = useMemo(() => allEvents.filter(e => matchesEvent(e, search)), [allEvents, search]);
+  const events = useMemo(() => search.trim() ? allEvents.filter(e => matchesEvent(e, search)) : allEvents, [allEvents, search]);
   const [infoOpen, setInfoOpen] = useState(false);
   const [partial, setPartial] = useState(false);
   const { search: locationSearch } = useLocation();
@@ -330,6 +331,7 @@ function CalendarViewContent() {
   }
   function createOn(key, minute = null){if(!canEdit)return;setSelection(null);setEditing(null);setEventsError('');setCreateSlot({day:key,minute});setPlannerDate(key);setEditorOpen(true);}
   const horizontal=eventView==='day'||eventView==='week'&&!weekGrid;
+  const rangeLabel = eventView==='week'||eventView==='overview' ? (uk?'Тиждень ':'Week ')+weekRowNumber(plannerDays[0],startsOn) : null;
   return <CalendarEventActionsProvider value={{canChange:canChangeTask,toggle:toggleTask,busy:busy||eventsLoading}}><section className={'chrono-calendar chrono-mode-'+eventView+(horizontal?' chrono-mode-horizontal':'')}>
     <header className="chrono-heading">
       <div><h1>{uk?'Календар':'Calendar'}</h1><p>{calendar?.timeZone||user?.settings?.timeZone||'UTC'}</p></div>
@@ -359,7 +361,7 @@ function CalendarViewContent() {
       </aside>
       <div className="chrono-board">
         <div className="chrono-toolbar">
-          <div className="chrono-period"><button type="button" aria-label={uk?'Назад':'Previous'} onClick={()=>navigatePeriod(-1)}><Icon name="chevron-left" size={19}/></button><h2>{title}</h2><button type="button" aria-label={uk?'Далі':'Next'} onClick={()=>navigatePeriod(1)}><Icon name="chevron-right" size={19}/></button><button className="chrono-today" type="button" onClick={()=>setPlannerDate(today)}>{uk?'Сьогодні':'Today'}</button></div>
+          <div className="chrono-period"><button type="button" aria-label={uk?'Назад':'Previous'} onClick={()=>navigatePeriod(-1)}><Icon name="chevron-left" size={19}/></button><h2>{title}</h2>{rangeLabel&&<span className="chrono-week-label">{rangeLabel}</span>}<button type="button" aria-label={uk?'Далі':'Next'} onClick={()=>navigatePeriod(1)}><Icon name="chevron-right" size={19}/></button><button className="chrono-today" type="button" onClick={()=>setPlannerDate(today)}>{uk?'Сьогодні':'Today'}</button></div>
           <div className="chrono-tools"><label className="chrono-search"><Icon name="search" size={16}/><input type="search" aria-label={uk?'Пошук подій':'Search events'} placeholder={uk?'Пошук подій':'Search events'} value={search} onChange={e=>setSearch(e.target.value)}/>{search&&<button type="button" aria-label={uk?'Очистити пошук':'Clear search'} onClick={()=>setSearch('')}><Icon name="x" size={14}/></button>}</label>{eventView==='week'&&<button type="button" className="chrono-hours" aria-pressed={weekGrid} onClick={()=>setWeekGrid(v=>!v)}>{weekGrid?(uk?'Сітка':'Grid'):(uk?'Горизонтально':'Horizontal')}</button>}{(['overview','month','year'].includes(eventView)||horizontal)&&<details className="chrono-filter chrono-overview-sources"><summary>{uk?'Календарі':'Calendars'}<Icon name="chevron-down" size={15}/></summary><div className="chrono-filter-pop"><label>{uk?'Дата':'Date'}<input type="date" value={day} onChange={e=>{if(e.target.value)setPlannerDate(e.target.value)}}/></label><label>{uk?'Нові події в':'New events in'}<select value={calendarId} onChange={e=>chooseCalendar(e.target.value)}>{visibleCalendars.map(item=><option key={item.id} value={item.id}>{item.name}</option>)}</select></label>{visibleCalendars.map(item=><div className="chrono-source" key={item.id}><input type="checkbox" aria-label={item.name} checked={!hiddenCalendars.includes(item.id)} onChange={()=>setHiddenCalendars(old=>old.includes(item.id)?old.filter(id=>id!==item.id):[...old,item.id])}/><i style={{background:item.color||'var(--chronos-accent)'}}/><span>{item.name}</span></div>)}<Link to={localizedPath('/calendars')}>{t('calendarView.manageCalendars')}</Link></div></details>}{['week','day'].includes(eventView)&&<button type="button" className="chrono-hours" aria-pressed={fullDay} onClick={()=>setFullDay(v=>!v)}>{uk?'24 год':'24h'}</button>}<details className="chrono-filter"><summary>{uk?'Фільтри':'Filters'}{filters.types.length+filters.categories.length>0&&<span>{filters.types.length+filters.categories.length}</span>}<Icon name="chevron-down" size={15}/></summary><div className="chrono-filter-pop"><strong>{t('calendarView.types')}</strong>{EVENT_TYPES.map(type=><label key={type}><input type="checkbox" checked={filters.types.includes(type)} onChange={()=>toggleType(type)}/>{typeName(type)}</label>)}<label className="chrono-filter-categories">{t('calendarView.categories')}<input value={categoryInput} onChange={e=>updateCategories(e.target.value)} placeholder={t('calendarView.categoriesPlaceholder')}/></label><button type="button" onClick={()=>{setCategoryInput('');setFilters(old=>({...old,types:[],categories:[]}));}}>{uk?'Скинути':'Reset'}</button></div></details></div>
         </div>
         {horizontal&&<div className="chrono-day-strip">{weekDays(day,startsOn).map(key=><button type="button" key={key} aria-pressed={key===day} onClick={()=>setPlannerDate(key)}><small>{new Date(key+'T12:00:00Z').toLocaleDateString(locale,{weekday:'short',timeZone:'UTC'})}</small><strong>{Number(key.slice(-2))}</strong>{key===today&&<i/>}</button>)}</div>}
