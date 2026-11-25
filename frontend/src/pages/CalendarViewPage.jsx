@@ -279,9 +279,11 @@ function CalendarViewContent() {
     }
     setBusy(true); setEventsError('');
     try {
-      if (editing&&!eventCanEdit||!editing&&!canEdit) return;
+      if ((editing&&!eventCanEdit)||(!editing&&!canEdit)) throw Error(t('calendarView.event.saveError'));
       if (editing) await applicationContainer.calendarService.updateEvent(eventCalendar.id, editing.id, values);
       else await applicationContainer.calendarService.createEvent(calendarId, values);
+      const savedDay=eventDayKey({...editing,...values},zone);
+      if(savedDay)setPlannerDate(savedDay);
       setEditing(null); setEditorOpen(false); setSelection(null);
       notify(locale==='uk'?'Подію збережено':'Event saved');
       setRefresh((current) => current + 1);
