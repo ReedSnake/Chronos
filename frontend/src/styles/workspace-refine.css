@@ -47,5 +47,13 @@
 @media(max-width:1100px) { .dash-focus-grid { grid-template-columns:minmax(0,1.55fr) minmax(210px,1fr); gap:12px; } .dash-focused .dash-card { padding:14px; } }
 @media(max-width:850px) { .workspace-collapse-row { display:none; } .dash-focus-grid { grid-template-columns:minmax(0,1fr); } .dash-focus-main,.dash-focus-side { gap:12px; } .dash-focused .dash-side-widgets { grid-template-columns:repeat(2,minmax(0,1fr)); } .workspace-main.has-topbar>.tb-page { height:auto; min-height:0; } }
 @media(max-width:700px) { .workspace-main.has-topbar>.chrono-calendar { height:auto; min-height:0; } }
-@media(max-width:540px) { .workspace-main.has-topbar { display:flex; flex-direction:column; } .workspace-main.has-topbar>.workspace-mobile-actions { order:-2; } .workspace-main.has-topbar>.workspace-topbar { order:-1; } .workspace-topbar { margin-bottom:12px; } .workspace-topbar-actions { width:100%; } .workspace-topbar .workspace-global-search { flex:1; width:auto; min-width:0; } .workspace-global-search kbd { display:none; } .dash-focused .dash-side-widgets { grid-template-columns:minmax(0,1fr); } .dash-focused .dash-event-list,.dash-focused .dash-task-list { max-height:none; } }
+@media(max-width:540px) { .workspace-main.has-topbar { display:flex; flex-direction:column; } .workspace-main.has-topbar>.workspace-mobile-actions { order:0; } .workspace-main.has-topbar>.workspace-topbar { order:-1; } .workspace-topbar { margin-bottom:12px; } .workspace-topbar-actions { width:100%; } .workspace-topbar .workspace-global-search { flex:1; width:auto; min-width:0; } .workspace-global-search kbd { display:none; } .dash-focused .dash-side-widgets { grid-template-columns:minmax(0,1fr); } .dash-focused .dash-event-list,.dash-focused .dash-task-list { max-height:none; } }
 @media(prefers-reduced-motion:reduce) { .workspace .workspace-nav-link,.workspace-topbar button,.workspace-collapse { transition:none; } }
+
+.dash-task-header-actions { display:flex; align-items:center; gap:10px; flex-wrap:wrap; justify-content:flex-end; }
+.dash-add-inline { display:inline-flex; align-items:center; gap:4px; background:#F5BC5A; border:0; border-radius:7px; padding:6px 9px; color:#303030; font:inherit; font-size:11px; font-weight:550; cursor:pointer; }
+.dash-add-inline:disabled { opacity:.5; cursor:not-allowed; }
+.dash-deadline { display:grid; gap:3px; border-bottom:1px solid #3030300b; padding:6px 0; }
+.dash-deadline:last-child { border-bottom:0; }
+.dash-deadline strong { font-weight:550; }
+.dash-deadline small { font-size:10px; color:inherit; opacity:.75; }
