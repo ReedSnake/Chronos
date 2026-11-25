@@ -112,8 +112,8 @@ export function buildEventPayload(draft, timeZone = 'UTC') {
 
 export function eventDayKey(event, timeZone = 'UTC') {
   if (event.type === 'holiday') return event.date?.slice(0, 10) || null;
-  const date = event.startsAt || event.deadline || event.remindAt;
-  if (!date) return null;
+  const date = event.type==='task'?event.deadline:event.type==='reminder'?event.remindAt:(event.startsAt||event.deadline||event.remindAt);
+  if (!date || !Number.isFinite(new Date(date).getTime())) return null;
   const part = parts(new Date(date), timeZone);
   return `${part.year}-${pad(part.month)}-${pad(part.day)}`;
 }
