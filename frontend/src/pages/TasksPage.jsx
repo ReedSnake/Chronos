@@ -1,3 +1,4 @@
+import { EventPreviewButton } from '../features/events/EventPreviewButton';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../features/auth/AuthContext';
@@ -28,10 +29,10 @@ function TaskCard({ task, calendar, zone, onOpen, onChange, busy, onDragStart, o
   const done = task.status === 'done';
   return <article className={'tb-card ' + task.status} style={{ '--task-color': done ? '#65a982' : safeColor(task.color || calendar?.color) }} draggable={writable && !busy} onDragStart={onDragStart} onDragEnd={onDragEnd}>
     <div className="tb-card-main">
-      <button type="button" className="tb-card-open" onClick={() => onOpen(task)}>
+      <EventPreviewButton event={{...task,calendarName:task.calendarName||calendar?.name}} zone={zone} className="tb-card-open" onClick={() => onOpen(task)}>
         <span className="tb-card-icon"><Icon name={done ? 'check' : task.status === 'in_progress' ? 'clock' : 'checkbox'} size={19}/></span>
         <span className="tb-card-copy"><strong>{task.title}</strong>{task.description && <span className="tb-description">{task.description}</span>}{(category || task.calendarName || calendar?.name) && <small>{category || task.calendarName || calendar?.name}</small>}</span>
-      </button>
+      </EventPreviewButton>
       <TaskCompletion event={task}/>
     </div>
     <div className="tb-card-bottom">
