@@ -46,7 +46,7 @@ export function plannerRows(events,calendars,day,zone,view,days=[day]){
  }));
 }
 
-export function DayPlanner({events,calendars,day,zone,timeFormat,fullDay,loading,error,partial,onSelect,onCreate,onCreateAt,canEdit,view='day',days=[day],onDaySelect}){
+export function DayPlanner({events,calendars,day,zone,timeFormat,fullDay,workHours,loading,error,partial,onSelect,onCreate,onCreateAt,canEdit,view='day',days=[day],onDaySelect}){
  const {locale,t}=useLocale(),uk=locale==='uk';
  const clock=n=>formatMinute(n,locale,timeFormat);
  const drop=useCalendarDrop();
@@ -54,10 +54,10 @@ export function DayPlanner({events,calendars,day,zone,timeFormat,fullDay,loading
  useEffect(()=>{const timer=setInterval(()=>setNow(new Date()),30000);return()=>clearInterval(timer)},[]);
  const model=dailyPlannerModel(events,calendars,day,zone);
  const rows=plannerRows(events,calendars,day,zone,view,days);
- const {first,last}=visibleHours(rows.flatMap(r=>r.blocks),fullDay);
+ const {first,last}=visibleHours(rows.flatMap(r=>r.blocks),fullDay,workHours);
  const gridRef=useRef(null);
  const [gridWidth,setGridWidth]=useState(700);
- useEffect(()=>{const el=gridRef.current;if(!el)return;const measure=()=>setGridWidth(el.clientWidth);measure();const observer=new ResizeObserver(measure);observer.observe(el);return()=>observer.disconnect();},[]);
+ useEffect(()=>{const el=gridRef.current;if(!el)return;const measure=()=>setGridWidth(el.clientWidth);measure();if(typeof ResizeObserver==='undefined')return;const observer=new ResizeObserver(measure);observer.observe(el);return()=>observer.disconnect();},[]);
  const todayKey=toCalendarInput(now,zone).slice(0,10);
  const span=(last-first)*60;
  const pos=n=>(n-first*60)/span*100;
