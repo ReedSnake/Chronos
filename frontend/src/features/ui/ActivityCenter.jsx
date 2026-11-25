@@ -39,8 +39,8 @@ export function ActivityCenter({user,onClose}){
         {!requests.length?<p>{errors.includes('requests')?'—':uk?'Немає нових запитів':'No pending requests'}</p>:requests.map(r=><button type="button" className="ux-activity-row" key={r.id} onClick={()=>go(localizedPath('/integrations'))}><Icon name="plug" size={18}/><span><strong>{r.integration?.name||t('integrations.unknown')}</strong><small>{uk?'Запит доступу':'Access request'}</small></span><Icon name="chevron-right" size={15}/></button>)}
         <h3>{uk?'Нагадування · учора та наступні 7 днів':'Reminders · yesterday and next 7 days'}</h3>
         {!sorted.length?<p>{errors.includes('reminders')?'—':uk?'Немає нагадувань':'No reminders scheduled'}</p>:sorted.map(e=>{
-          const calendar=data.calendars.find(c=>c.id===e.calendarId),eventZone=calendar?.timeZone||zone,day=eventDayKey(e,eventZone);
-          return <button type="button" className="ux-activity-row" key={e.calendarId+':'+(e.occurrenceId||e.id)} onClick={()=>go(localizedPath('/calendars/view/'+encodeURIComponent(e.calendarId))+'?date='+encodeURIComponent(day)+'&event='+encodeURIComponent(e.occurrenceId||e.id))}><Icon name="bell" size={18}/><span><strong>{e.title}</strong><small>{eventDateLabel(e,locale,eventZone)} · {e.calendarName}</small></span><Icon name="chevron-right" size={15}/></button>;
+          const eventZone=zone,day=eventDayKey(e,eventZone);
+          return <button type="button" className="ux-activity-row" key={e.calendarId+':'+(e.occurrenceId||e.id)} onClick={()=>go(localizedPath('/calendars/view/'+encodeURIComponent(e.calendarId))+'?date='+encodeURIComponent(day)+'&event='+encodeURIComponent(e.occurrenceId||e.id))}><Icon name="bell" size={18}/><span><strong>{e.title}</strong><small>{eventDateLabel(e,locale,eventZone,user.settings?.timeFormat||'24h')} · {e.calendarName}</small></span><Icon name="chevron-right" size={15}/></button>;
         })}
       </>}
       <footer><button type="button" onClick={()=>setRefresh(n=>n+1)} disabled={loading}><Icon name="refresh" size={15}/>{uk?'Оновити':'Refresh'}</button></footer>
