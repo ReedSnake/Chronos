@@ -32,7 +32,6 @@ export function TasksPage() {
   const today = eventDayKey({ startsAt: new Date().toISOString() }, zone);
   const [boardRange, setBoardRange] = useState(() => ({ from: shiftDate(today, -30), to: shiftDate(today, 60) }));
   const [data, setData] = useState(emptyData), [loading, setLoading] = useState(true), [error, setError] = useState(''), [reload, setReload] = useState(0);
-  const [search,setSearch]=useState('');
   const [hidden,setHidden]=useLocalPreference(user?.id?'task-calendars:'+user.id:null,[]);
   const [category,setCategory]=useLocalPreference(user?.id?'task-category:'+user.id:null,'');
   const [statusFilter,setStatusFilter]=useLocalPreference(user?.id?'task-status:'+user.id:null,'');
@@ -58,9 +57,9 @@ export function TasksPage() {
     return () => { alive = false; };
   }, [status, zone, from, to, reload, t]);
   const tasks = useMemo(() => {
-    const items=filterTasks(data.events,{hidden,category,status:statusFilter,search}).filter(e=>(!overdue||(e.status!=='done'&&Date.parse(e.deadline)<Date.now()))&&(!hideDone||e.status!=='done'));
+    const items=filterTasks(data.events,{hidden,category,status:statusFilter}).filter(e=>(!overdue||(e.status!=='done'&&Date.parse(e.deadline)<Date.now()))&&(!hideDone||e.status!=='done'));
     return sort==='latest'?items.sort((a,b)=>String(b.createdAt||'').localeCompare(String(a.createdAt||''))||String(a.title).localeCompare(String(b.title))):sort==='title'?items.sort((a,b)=>a.title.localeCompare(b.title,locale)):items;
-  },[data.events,hidden,category,statusFilter,search,overdue,hideDone,sort,locale]);
+  },[data.events,hidden,category,statusFilter,overdue,hideDone,sort,locale]);
   const categories = [...new Set(data.events.flatMap(e => e.categories || []))].sort();
   const editable = data.calendars.filter(canWriteTask);
   const calendar = data.calendars.find(c => c.id === (mode === 'create' ? calId : selected?.calendarId));
@@ -108,7 +107,7 @@ export function TasksPage() {
         else await service.createEvent(calendar.id, values);
         const savedDay = eventDayKey({ type: 'task', deadline: values.deadline }, zone);
         if (savedDay && (savedDay < from || savedDay > to)) setBoardRange({ from: shiftDate(savedDay,-30), to: shiftDate(savedDay,60) });
-        if (mode === 'create') { setHidden(old => old.filter(id => id !== calendar.id)); setSearch(''); setCategory(''); setStatusFilter(''); }
+        if (mode === 'create') { setHidden(old => old.filter(id => id !== calendar.id));  setCategory(''); setStatusFilter(''); }
         setOverdue(false); if (mode === 'create') setHideDone(false);
         setMode(null); setSelected(null); setEdit(null); setReload(n => n + 1);notify(uk?'Завдання збережено':'Task saved');
       });
@@ -134,7 +133,7 @@ export function TasksPage() {
   const quickCalendar=editable.find(c=>c.isMain&&!hidden.includes(c.id))||editable.find(c=>!hidden.includes(c.id));
   async function quickAdd(e){
     e.preventDefault();if(!quickTitle.trim()||!quickCalendar||lock.current||loading)return;
-    try{await mutate(async()=>{await service.createEvent(quickCalendar.id,{type:'task',title:quickTitle.trim(),description:'',color:safeColor(quickCalendar.color),deadline:fromCalendarInput(today+'T23:59',zone),status:'todo',categories:[],attendees:[],isRecurring:false});setQuickTitle('');setOverdue(false);setStatusFilter('');setCategory('');setSearch('');setBoardRange({from:shiftDate(today,-30),to:shiftDate(today,60)});setReload(n=>n+1);notify(uk?'Завдання додано':'Task added');});}
+    try{await mutate(async()=>{await service.createEvent(quickCalendar.id,{type:'task',title:quickTitle.trim(),description:'',color:safeColor(quickCalendar.color),deadline:fromCalendarInput(today+'T23:59',zone),status:'todo',categories:[],attendees:[],isRecurring:false});setQuickTitle('');setOverdue(false);setStatusFilter('');setCategory('');setBoardRange({from:shiftDate(today,-30),to:shiftDate(today,60)});setReload(n=>n+1);notify(uk?'Завдання додано':'Task added');});}
     catch(err){setError(getLocalizedApiError(err,t,'calendarView.event.saveError'));}
   }
   const selectedTasks=tasks.filter(e=>picked.includes(taskKey(e))&&canChange(e)&&!e.isRecurring);
@@ -167,14 +166,13 @@ export function TasksPage() {
       <header className="tb-heading"><div><h1>{uk ? 'Завдання' : 'Tasks'}</h1><p>{displayCount(tasks.length)} {uk ? 'завдань' : 'tasks'} · {displayCount(done)} {uk ? 'виконано' : 'done'}</p></div><button type="button" className="tb-primary" disabled={!editable.length || loading || busy} onClick={() => create()}><Icon name="plus" size={17}/>{uk ? 'Нове завдання' : 'New task'}</button></header>
       <div className="tb-main" aria-busy={loading}>
         <div className="tb-toolbar">
-          <label className="tb-search"><Icon name="search" size={17}/><input aria-label={uk ? 'Пошук завдань' : 'Search tasks'} placeholder={uk ? 'Пошук завдань' : 'Search tasks'} value={search} onChange={e => setSearch(e.target.value)}/>{search && <button type="button" aria-label={uk ? 'Очистити пошук' : 'Clear search'} onClick={() => setSearch('')}><Icon name="x" size={14}/></button>}</label>
           <details className="tb-filter"><summary>{uk ? 'Календарі' : 'Calendars'}<Icon name="chevron-down" size={15}/></summary><div className="tb-filter-pop">{data.calendars.map(c => <label className="tb-source" key={c.id}><input type="checkbox" checked={!hidden.includes(c.id)} onChange={() => setHidden(old => old.includes(c.id) ? old.filter(id => id !== c.id) : [...old, c.id])}/><i style={{ background: safeColor(c.color) }}/><span>{c.name}</span></label>)}<button type="button" onClick={() => setHidden([])}>{uk ? 'Усі календарі' : 'All calendars'}</button></div></details>
           <details className="tb-filter"><summary>{uk ? 'Фільтри' : 'Filters'}<Icon name="chevron-down" size={15}/></summary><div className="tb-filter-pop">
             <label>{uk ? 'Категорія' : 'Category'}<select value={category} onChange={e => setCategory(e.target.value)}><option value="">{uk ? 'Усі' : 'All'}</option>{[...new Set([...categories, ...(category ? [category] : [])])].map(c => <option key={c} value={c}>{c}</option>)}</select></label>
             <label>{t('calendarView.event.status')}<select value={statusFilter} onChange={e => setStatusFilter(e.target.value)}><option value="">{uk ? 'Усі' : 'All'}</option>{TASK_STATES.map(s => <option key={s} value={s}>{t('statuses.' + s)}</option>)}</select></label>
             <label>{uk ? 'Від' : 'From'}<input type="date" value={from} max={to} onChange={e => { if (e.target.value && e.target.value <= to) setBoardRange(r => ({ ...r, from: e.target.value, to: r.to>shiftDate(e.target.value,365)?shiftDate(e.target.value,365):r.to })); }}/></label>
             <label>{uk ? 'До' : 'To'}<input type="date" value={to} min={from} onChange={e => { if (e.target.value && e.target.value >= from) setBoardRange(r => ({ ...r, to: e.target.value, from: r.from<shiftDate(e.target.value,-365)?shiftDate(e.target.value,-365):r.from })); }}/></label>
-            <button type="button" onClick={() => { setSearch(''); setCategory(''); setHidden([]); setStatusFilter(''); setOverdue(false); setHideDone(false); setBoardRange({ from: shiftDate(today, -30), to: shiftDate(today, 60) }); }}>{uk ? 'Скинути фільтри' : 'Reset filters'}</button>
+            <button type="button" onClick={() => {  setCategory(''); setHidden([]); setStatusFilter(''); setOverdue(false); setHideDone(false); setBoardRange({ from: shiftDate(today, -30), to: shiftDate(today, 60) }); }}>{uk ? 'Скинути фільтри' : 'Reset filters'}</button>
           </div></details>
           <div className="ux-task-tools"><button type="button" aria-pressed={overdue} onClick={toggleOverdue}>{uk?'Прострочені':'Overdue'}</button>{overdue&&<button type="button" disabled={busy||loading||!!data.failed||!overdueTasks(tasks,Date.now()).some(e=>canChange(e)&&!e.isRecurring)} onClick={()=>void moveOverdueToToday()}>{uk?'Перенести видимі на сьогодні':'Move visible to today'}</button>}<button type="button" aria-pressed={hideDone} onClick={()=>setHideDone(v=>!v)}>{uk?'Приховати виконані':'Hide completed'}</button><select aria-label={uk?'Сортування':'Sort'} value={sort} onChange={e=>setSort(e.target.value)}><option value="due">{uk?'За дедлайном':'Due date'}</option><option value="latest">{uk?'За новизною':'Newest'}</option><option value="title">{uk?'За назвою':'Name'}</option></select><button type="button" aria-pressed={bulk} onClick={()=>{setBulk(v=>!v);setPicked([]);}}>{uk?'Вибрати':'Select'}</button></div>
           <span className="tb-period-label">{format(from, { day: 'numeric', month: 'short' })} – {format(to, { day: 'numeric', month: 'short' })}</span>
