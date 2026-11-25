@@ -12,6 +12,7 @@ import { TasksPage } from '../pages/TasksPage';
 import { HomePage } from '../pages/HomePage';
 import { PublicProfilePage } from '../pages/PublicProfilePage';
 import { CalendarsPage } from '../pages/CalendarsPage';
+import { CreateEventPage } from '../pages/CreateEventPage';
 import { CalendarViewPage } from '../pages/CalendarViewPage';
 import { CalendarSharePage } from '../pages/CalendarSharePage';
 import { IntegrationsPage } from '../pages/IntegrationsPage';
@@ -47,6 +48,7 @@ export function AppRoutes() {
             <Route path="calendars" element={<CalendarsPage />} />
             <Route path="calendars/view" element={<CalendarViewPage />} />
             <Route path="calendars/view/:calendarId" element={<CalendarViewPage />} />
+            <Route path="calendars/view/:calendarId/new" element={<CreateEventPage />} />
             <Route path="calendar-share" element={<CalendarSharePage />} />
             <Route path="calendar-invite" element={<CalendarInvitationPage />} />
             <Route path="event-invite" element={<EventInvitationPage />} />
