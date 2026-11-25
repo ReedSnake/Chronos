@@ -33,6 +33,8 @@ export function Dashboard({ user }) {
   const starts=user.settings?.weekStartsOn||'monday';
   const [now,setNow]=useState(()=>new Date());
   const [offset,setOffset]=useState(0);
+  const [taskScope,setTaskScope]=useState('day');
+  const [showCompleted,setShowCompleted]=useState(false);
   const [reload,setReload]=useState(0);
   const [data,setData]=useState({calendars:[],events:[],failed:0});
   const [loading,setLoading]=useState(true);
@@ -73,10 +75,13 @@ export function Dashboard({ user }) {
   const model=useMemo(()=>summarizeDashboard(data.events.filter(e=>!hidden.includes(e.calendarId)),{...range,today:actualToday},zone),[data.events,weekKey,actualToday,zone,hidden]);
   const activeDay=range.days.includes(selected)?selected:range.days.includes(actualToday)?actualToday:range.days[0];
   const chosen=model.days.find(day=>day.key===activeDay);
-  const dayEvents=(chosen?.events||[]).filter(e=>filter==='all'||e.type===filter).sort(byTime);
+  const dayEvents=(chosen?.events||[]).filter(e=>filter==='all'?e.type!=='task':e.type===filter).sort(byTime);
+  const scopedTasks=taskScope==='week'?model.tasks:model.tasks.filter(e=>eventDayKey(e,zone)===activeDay);
+  const scopedDone=scopedTasks.filter(e=>e.status==='done').length;
+  const visibleTasks=scopedTasks.filter(e=>showCompleted||e.status!=='done');
   const editable=data.calendars.filter(canWrite);
   const activeCalendar=mode==='create'?(editable.find(cal=>cal.id===calendarId)||editable.find(cal=>cal.isMain)||editable[0]):data.calendars.find(cal=>cal.id===selection?.calendarId);
-  const percent=model.tasks.length?Math.round(model.done/model.tasks.length*100):0;
+  const percent=scopedTasks.length?Math.round(scopedDone/scopedTasks.length*100):0;
   const incomplete=loading||error||data.failed>0;
   const value=n=>incomplete?'—':n;
   const weekday=key=>new Date(key+'T12:00:00Z').toLocaleDateString(locale,{weekday:'short',timeZone:'UTC'});
@@ -131,7 +136,7 @@ export function Dashboard({ user }) {
   const todayItems=upcoming.events.filter(e=>!hidden.includes(e.calendarId)&&e.status!=='canceled'&&eventDayKey(e,zone)===actualToday);
   const todayTasks=todayItems.filter(e=>e.type==='task'),todayDone=todayTasks.filter(e=>e.status==='done').length;
   const nextMeeting=nextEvents.find(e=>e.type==='arrangement');
-  const nextDue=nextEvents.filter(e=>e.type==='task'&&e.status!=='done').slice(0,3);
+  const nextDue=upcoming.events.filter(e=>e.type==='task'&&e.status!=='done'&&!hidden.includes(e.calendarId)).sort(byTime).slice(0,4);
   const uk=locale==='uk';
   const names={next:uk?'Наступна зустріч':'Next meeting',progress:uk?'Прогрес дня':'Daily progress',free:uk?'Вільний час':'Unbooked time',deadlines:uk?'Найближчі терміни':'Upcoming deadlines',notes:uk?'Швидкі нотатки':'Quick notes'};
   const widgets={
@@ -141,40 +146,40 @@ export function Dashboard({ user }) {
     deadlines:<>{!upcomingReady?<p>—</p>:nextDue.length?nextDue.map(e=><button type="button" key={eventKey(e)} className="ux-widget-link" onClick={()=>openEvent(e)}>{e.title} · {shortDay(eventDayKey(e,zone))}</button>):<p>{uk?'Немає найближчих термінів':'No upcoming deadlines'}</p>}</>,
     notes:<><textarea aria-label={names.notes} rows={3} maxLength={4000} value={notes} onChange={e=>setNotes(e.target.value)} placeholder={uk?'Запишіть думку…':'Write something…'}/><p>{uk?'Збережено на цьому пристрої':'Saved on this device'}</p></>,
   };
-  const filters=[['all',c.all],['arrangement',c.meetings],['task',c.tasks],['reminder',c.reminders],['holiday',c.holidays]];
-  return <section className="dashboard">
+  const filters=[['all',uk?'Усі':'All'],['arrangement',c.meetings],['task',c.tasks],['reminder',c.reminders],['holiday',c.holidays]];
+  return <section className="dashboard dash-focused">
     <header className="dash-header">
       <div><span className="dash-kicker">{fullDay(actualToday)}</span><h1>{c.welcome}, {user.name?.trim().split(/\s+/)[0]||''}</h1></div>
       <button className="dash-action dash-action-accent" type="button" disabled={loading||!editable.length} onClick={openCreate}><Icon name="plus" size={18}/>{c.add}</button>
     </header>
     {(error||data.failed>0)&&<div className="dash-error" role="alert">{error?c.error:c.partial}<button type="button" onClick={()=>setReload(n=>n+1)}>{t('common.retry')}</button></div>}
     {!loading&&!error&&!editable.length&&<p className="dash-muted">{c.noEditable} <Link to={localizedPath('/calendars')}>{c.manage}</Link></p>}
+    <div className="dash-focus-grid"><div className="dash-focus-main">
     <section className="dash-card dash-week-top" aria-busy={loading}>
       <div className="dash-card-head"><h2>{c.week}</h2><div className="dash-week-controls">{offset!==0&&<button className="dash-text-button" type="button" onClick={()=>{setOffset(0);setSelected(null);}}>{c.today}</button>}<button type="button" className="dash-round" aria-label={c.previous} onClick={()=>setOffset(n=>n-1)}><Icon name="chevron-left" size={18}/></button><strong>{dateLabel}</strong><button type="button" className="dash-round" aria-label={c.next} onClick={()=>setOffset(n=>n+1)}><Icon name="chevron-right" size={18}/></button></div></div>
       <div className="dash-week-days">{model.days.map(day=><button type="button" key={day.key} className={day.key===activeDay?'active':''} onClick={()=>setSelected(day.key)} aria-pressed={day.key===activeDay} aria-label={fullDay(day.key)}><small>{weekday(day.key)}</small><strong>{Number(day.key.slice(-2))}</strong><span>{loading||error?'—':day.events.length?day.events.length:'·'}</span></button>)}</div>
     </section>
-    <div className="dash-summary" aria-busy={loading}>{[[c.weekMeetings,model.meetings.length],[c.weekTasks,model.tasks.length],[c.weekReminders,model.reminders.length]].map(([label,n])=><div key={label}><span>{label}</span><strong>{value(n)}</strong></div>)}</div>
-    <div className="ux-widget-controls"><details><summary>{uk?'Налаштувати віджети':'Customize widgets'}</summary>{widgetOrder.filter(k=>names[k]).map((key,i)=><div className="ux-widget-choice" key={key}><label><input type="checkbox" checked={!hiddenWidgets.includes(key)} onChange={()=>setHiddenWidgets(old=>old.includes(key)?old.filter(k=>k!==key):[...old,key])}/>{names[key]}</label><button type="button" disabled={i===0} aria-label={names[key]+(uk?' вище':' up')} onClick={()=>setWidgetOrder(old=>moveWidget(old,key,-1))}>↑</button><button type="button" disabled={i===widgetOrder.length-1} aria-label={names[key]+(uk?' нижче':' down')} onClick={()=>setWidgetOrder(old=>moveWidget(old,key,1))}>↓</button></div>)}</details></div>
-    <div className="ux-dashboard-widgets">{widgetOrder.filter(key=>names[key]&&!hiddenWidgets.includes(key)).map(key=><section key={key} className="dash-card"><h2>{names[key]}</h2>{widgets[key]}</section>)}</div>
     <Notice notice={notice} onDismiss={dismissNotice} closeLabel={uk?'Закрити':'Dismiss'}/>
     {quickError&&<p role="alert" className="dash-error">{quickError}</p>}
-    <div className="dash-grid">
       <section className="dash-card dash-agenda" aria-busy={loading}>
-        <div className="dash-card-head"><h2>{c.agenda}</h2><span className="dash-muted">{fullDay(activeDay)}</span></div>
+        <div className="dash-card-head"><h2>{c.agenda}</h2><Link className="dash-manage" to={localizedPath('/calendars/view')}>{uk?'Календар':'Open schedule'} <Icon name="chevron-right" size={14}/></Link></div><p className="dash-selected-date">{fullDay(activeDay)}</p>
         <div className="dash-filters" role="group" aria-label={c.agenda}>{filters.map(([type,label])=><button type="button" key={type} aria-pressed={type===filter} className={type===filter?'active':''} onClick={()=>setFilter(type)}>{label}</button>)}</div>
         <div className="dash-event-list">{loading?<SkeletonRows label={t('common.loading')}/>:!dayEvents.length?<EmptyState title={error?c.error:c.noEvents} action={!error&&editable.length?c.add:null} onAction={openCreate}/>:dayEvents.map(event=><EventPreviewButton event={event} zone={zone} className="dash-event-row" key={eventKey(event)} onClick={()=>openEvent(event)}><span className="dash-event-time">{formatTime(event)}</span><span className="dash-event-body"><i style={{background:event.color||'var(--chronos-accent)'}}/><span><strong>{event.title}</strong><small>{event.calendarName} · {t('calendarView.type.'+event.type)}</small></span></span><Icon name="chevron-right" size={16}/></EventPreviewButton>)}</div>
       </section>
       <section className="dash-card dash-tasks" aria-busy={loading}>
-        <div className="dash-card-head"><h2>{c.weekTasks}</h2><strong className="dash-task-count">{value(model.done)}/{value(model.tasks.length)}</strong></div>
+        <div className="dash-card-head"><h2>{taskScope==='week'?c.weekTasks:(uk?'Завдання дня':'Tasks for the day')}</h2><Link className="dash-manage" to={localizedPath('/tasks')}>{uk?'Усі завдання':'All tasks'} <Icon name="chevron-right" size={14}/></Link></div><div className="dash-task-controls"><div className="dash-filters" role="group" aria-label={uk?'Період завдань':'Task period'}><button type="button" aria-pressed={taskScope==='day'} className={taskScope==='day'?'active':''} onClick={()=>setTaskScope('day')}>{uk?'День':'Day'}</button><button type="button" aria-pressed={taskScope==='week'} className={taskScope==='week'?'active':''} onClick={()=>setTaskScope('week')}>{uk?'Тиждень':'Week'}</button></div><strong className="dash-task-count">{value(scopedDone)}/{value(scopedTasks.length)}</strong></div>
         <div className="dash-task-progress" aria-hidden="true"><span style={{width:incomplete?'0%':percent+'%'}}/></div>
-        <div className="dash-task-list">{loading?<SkeletonRows label={t('common.loading')}/>:!model.tasks.length?<EmptyState icon="checkbox" title={error?c.error:c.noTasks}/>:model.tasks.map(event=><div className="dash-task" key={eventKey(event)}><button type="button" className={'dash-task-state'+(event.status==='done'?' done':'')} aria-label={locale==='uk'?'Змінити статус':'Toggle completion'} aria-pressed={event.status==='done'} disabled={taskBusy||loading||!canWrite(data.calendars.find(c=>c.id===event.calendarId))} onClick={()=>void toggleTask(event)}>{event.status==='done'&&<Icon name="check" size={13}/>}</button><EventPreviewButton event={event} zone={zone} className="dash-task-open" onClick={()=>openEvent(event)}><strong>{event.title}</strong><small>{shortDay(eventDayKey(event,zone))} · {formatTime(event)} · {t('statuses.'+event.status)}</small></EventPreviewButton></div>)}</div>
+        <div className="dash-task-list">{loading?<SkeletonRows label={t('common.loading')}/>:!visibleTasks.length?<EmptyState icon="checkbox" title={error?c.error:scopedTasks.length?(uk?'Усі завдання виконано':'All tasks completed'):(uk?'Немає завдань':'No tasks planned')}/>:visibleTasks.map(event=><div className="dash-task" key={eventKey(event)}><button type="button" className={'dash-task-state'+(event.status==='done'?' done':'')} aria-label={locale==='uk'?'Змінити статус':'Toggle completion'} aria-pressed={event.status==='done'} disabled={taskBusy||loading||!canWrite(data.calendars.find(c=>c.id===event.calendarId))} onClick={()=>void toggleTask(event)}>{event.status==='done'&&<Icon name="check" size={13}/>}</button><EventPreviewButton event={event} zone={zone} className="dash-task-open" onClick={()=>openEvent(event)}><strong>{event.title}</strong><small>{shortDay(eventDayKey(event,zone))} · {formatTime(event)} · {t('statuses.'+event.status)}</small></EventPreviewButton></div>)}</div>
+        {scopedDone>0&&<button className="dash-completed-toggle" type="button" aria-pressed={showCompleted} onClick={()=>setShowCompleted(v=>!v)}>{showCompleted?(uk?'Приховати виконані':'Hide completed'):(uk?'Показати виконані':'Show completed')} · {scopedDone}</button>}
       </section>
-      {['arrangement','reminder'].map(type=><section className="dash-card dash-upcoming" key={type}><div className="dash-card-head"><h2>{type==='arrangement'?(locale==='uk'?'Найближчі зустрічі':'Upcoming meetings'):(locale==='uk'?'Найближчі нагадування':'Upcoming reminders')}</h2><span className="dash-muted">{locale==='uk'?'7 днів':'7 days'}</span></div>{upcoming.loading?<SkeletonRows count={2} label={t('common.loading')}/>:upcoming.error?<p className="dash-empty">{c.partial}</p>:!nextEvents.some(e=>e.type===type)?<p className="dash-empty">{locale==='uk'?'Нічого не заплановано':'Nothing upcoming'}</p>:nextEvents.filter(e=>e.type===type).slice(0,3).map(e=><EventPreviewButton event={e} zone={zone} key={eventKey(e)} className="dash-upcoming-row" onClick={()=>openEvent(e)}><span><strong>{e.title}</strong><small>{e.calendarName}</small></span><span>{shortDay(eventDayKey(e,zone))}<small>{formatTime(e)}</small></span></EventPreviewButton>)}</section>)}
-      <section className="dash-card dash-calendars">
-        <div className="dash-card-head"><h2>{c.calendars}</h2><Link className="dash-manage" to={localizedPath('/calendars')}>{c.manage}</Link></div>
+      </div><aside className="dash-focus-side">
+      <div className="dash-side-heading"><h2>{uk?'Найближче':'Coming up'}</h2><div className="ux-widget-controls"><details><summary>{uk?'Налаштувати віджети':'Customize widgets'}</summary>{widgetOrder.filter(k=>names[k]).map((key,i)=><div className="ux-widget-choice" key={key}><label><input type="checkbox" checked={!hiddenWidgets.includes(key)} onChange={()=>setHiddenWidgets(old=>old.includes(key)?old.filter(k=>k!==key):[...old,key])}/>{names[key]}</label><button type="button" disabled={i===0} aria-label={names[key]+(uk?' вище':' up')} onClick={()=>setWidgetOrder(old=>moveWidget(old,key,-1))}>↑</button><button type="button" disabled={i===widgetOrder.length-1} aria-label={names[key]+(uk?' нижче':' down')} onClick={()=>setWidgetOrder(old=>moveWidget(old,key,1))}>↓</button></div>)}</details></div></div>
+      <div className="ux-dashboard-widgets dash-side-widgets">{widgetOrder.filter(key=>names[key]&&!hiddenWidgets.includes(key)).map(key=><section key={key} className="dash-card"><h2>{names[key]}</h2>{widgets[key]}</section>)}</div>
+      {['reminder'].map(type=><section className="dash-card dash-upcoming" key={type}><div className="dash-card-head"><h2>{type==='arrangement'?(locale==='uk'?'Найближчі зустрічі':'Upcoming meetings'):(locale==='uk'?'Найближчі нагадування':'Upcoming reminders')}</h2><span className="dash-muted">{locale==='uk'?'7 днів':'7 days'}</span></div>{upcoming.loading?<SkeletonRows count={2} label={t('common.loading')}/>:upcoming.error?<p className="dash-empty">{c.partial}</p>:!nextEvents.some(e=>e.type===type)?<p className="dash-empty">{locale==='uk'?'Нічого не заплановано':'Nothing upcoming'}</p>:nextEvents.filter(e=>e.type===type).slice(0,3).map(e=><EventPreviewButton event={e} zone={zone} key={eventKey(e)} className="dash-upcoming-row" onClick={()=>openEvent(e)}><span><strong>{e.title}</strong><small>{e.calendarName}</small></span><span>{shortDay(eventDayKey(e,zone))}<small>{formatTime(e)}</small></span></EventPreviewButton>)}</section>)}
+      <details className="dash-card dash-calendars dash-calendar-disclosure"><summary>{c.calendars}<Icon name="chevron-down" size={16}/></summary><div className="dash-card-head"><Link className="dash-manage" to={localizedPath('/calendars')}>{c.manage}</Link></div>
         <div className="dash-calendar-list">{loading?<SkeletonRows count={2} label={t('common.loading')}/>:!data.calendars.length?<p className="dash-empty">{error?c.error:c.noCalendars}</p>:data.calendars.map(cal=><div className="dash-calendar-toggle" key={cal.id}><input type="checkbox" checked={!hidden.includes(cal.id)} aria-label={cal.name} onChange={()=>setHidden(old=>old.includes(cal.id)?old.filter(id=>id!==cal.id):[...old,cal.id])}/><Link to={localizedPath('/calendars/view/'+encodeURIComponent(cal.id))}><i style={{background:cal.color||'var(--chronos-accent)'}}/><span>{cal.isHolidayCalendar?t('calendarBasics.holidays'):cal.name}</span><Icon name="chevron-right" size={16}/></Link></div>)}</div>
-      </section>
-    </div>
+      </details>
+    </aside></div>
     <details className="dash-lookup"><summary>{c.lookup}</summary><form onSubmit={e=>{e.preventDefault();if(lookup.trim())navigate(localizedPath('/users/'+encodeURIComponent(lookup.trim())));}}><input aria-label={c.profileId} placeholder={c.profileId} value={lookup} onChange={e=>setLookup(e.target.value)} required/><button type="submit">{c.find}</button></form></details>
     {mode&&activeCalendar&&<dialog ref={dialog} className="dash-modal" aria-label={mode==='create'?c.add:t('calendarView.event.details')} onCancel={e=>{e.preventDefault();if(!e.currentTarget.querySelector('[data-unsaved="true"]')||window.confirm(locale==='uk'?'Закрити без збереження?':'Discard unsaved changes?'))close();}}>
       {actionError&&<p role="alert" className="dash-error">{actionError}</p>}
