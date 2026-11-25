@@ -7,10 +7,10 @@
 .ux-feedback-skeleton>div>span {display:grid;gap:7px;flex:1;min-width:0}
 .ux-feedback-skeleton b {height:9px;width:75%;border-radius:6px;background:var(--chronos-background)}
 .ux-feedback-skeleton b:last-child {width:42%;height:7px}
-.ux-feedback-empty {display:grid;justify-items:center;align-content:center;text-align:center;gap:10px;min-height:130px;padding:20px 12px;color:var(--chronos-ink)}
+.ux-feedback-empty {display:grid;justify-items:start;align-content:center;text-align:left;gap:8px;min-height:90px;padding:16px 12px;color:var(--chronos-ink)}
 .ux-feedback-empty strong {font-size:13px;font-weight:550;line-height:1.5}
 .ux-feedback-empty p {font-size:12px;color:#30303099;margin:0;line-height:1.4}
-.ux-feedback-symbol {width:42px;height:42px;display:grid;place-items:center;border-radius:13px;background:var(--chronos-background);color:var(--chronos-ink)}
+.ux-feedback-symbol {display:none}
 .ux-mobile-layout-toggle {display:none}
 .ux-mobile-agenda {min-width:0;padding:12px;display:grid;gap:13px;align-content:start}
 .ux-mobile-agenda header {display:flex;justify-content:space-between;gap:10px;align-items:center}
