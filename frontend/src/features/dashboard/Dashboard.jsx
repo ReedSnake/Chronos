@@ -1,3 +1,5 @@
+import { overdueTasks, overdueWindow, nextMeeting, countdownMinutes } from '../events/planningPreferences';
+import { useRefreshOnFocus } from '../ui/useRefreshOnFocus';
 import { SkeletonRows } from '../ui/Feedback';
 import { useLocalPreference } from '../ui/useLocalPreference';
 import { Notice,useNotice } from '../ui/useNotice';
@@ -34,6 +36,8 @@ export function Dashboard({ user }) {
   const [now,setNow]=useState(()=>new Date());
   const [offset,setOffset]=useState(0);
   const [taskScope,setTaskScope]=useState('day');
+  const [overdueData,setOverdueData]=useState({events:[],loading:false,error:false,partial:false});
+  const mutationLock=useRef(false);
   const [showCompleted,setShowCompleted]=useState(false);
   const [createType,setCreateType]=useState('arrangement');
   const [reload,setReload]=useState(0);
@@ -58,6 +62,16 @@ export function Dashboard({ user }) {
   const range=weekWindow(now,zone,starts,offset);
   const weekKey=range.days[0];
   const actualToday=currentRange.today;
+  useRefreshOnFocus(()=>setReload(n=>n+1),!busy&&!taskBusy&&!mode);
+  useEffect(()=>{
+    if(taskScope!=='overdue')return;
+    let alive=true;
+    setOverdueData({events:[],loading:true,error:false,partial:false});
+    Promise.resolve().then(()=>loadDashboard(service,overdueWindow(actualToday,zone))).then(result=>{
+      if(alive)setOverdueData({events:result.events,loading:false,error:false,partial:!!result.failed});
+    }).catch(()=>{if(alive)setOverdueData({events:[],loading:false,error:true,partial:false});});
+    return()=>{alive=false};
+  },[taskScope,actualToday,zone,reload,user.id]);
   useEffect(()=>{
     let alive=true;
     setLoading(true);setError(false);
@@ -72,7 +86,10 @@ export function Dashboard({ user }) {
   const model=useMemo(()=>summarizeDashboard(data.events.filter(e=>!hidden.includes(e.calendarId)),{...range,today:actualToday},zone),[data.events,weekKey,actualToday,zone,hidden]);
   const activeDay=range.days.includes(selected)?selected:range.days.includes(actualToday)?actualToday:range.days[0];
   const {schedule}=useMemo(()=>overviewModel(data.events.filter(e=>!hidden.includes(e.calendarId)),range.days,activeDay,zone),[data.events,hidden,weekKey,activeDay,zone]);
-  const scopedTasks=taskScope==='week'?model.tasks:model.tasks.filter(e=>eventDayKey(e,zone)===activeDay);
+  const scopedTasks=taskScope==='overdue'?overdueTasks(overdueData.events.filter(e=>!hidden.includes(e.calendarId)),now):taskScope==='week'?model.tasks:model.tasks.filter(e=>eventDayKey(e,zone)===activeDay);
+  const taskLoading=taskScope==='overdue'?overdueData.loading:loading;
+  const taskError=taskScope==='overdue'?overdueData.error:error;
+  const taskIncomplete=taskLoading||taskError||(taskScope==='overdue'?overdueData.partial:data.failed>0);
   const scopedDone=scopedTasks.filter(e=>e.status==='done').length;
   const visibleTasks=scopedTasks.filter(e=>showCompleted||e.status!=='done');
   const editable=data.calendars.filter(canWrite);
@@ -93,14 +110,14 @@ export function Dashboard({ user }) {
     finally{setBusy(false);}
   }
   async function save(values){
-    if(!canWrite(activeCalendar))return;
-    setBusy(true);setActionError('');
+    if(!canWrite(activeCalendar)||mutationLock.current)throw Error(t('calendarView.event.saveError'));
+    mutationLock.current=true;setBusy(true);setActionError('');
     try{
       if(mode==='edit')await service.updateEvent(activeCalendar.id,selection.id,values);
       else {await service.createEvent(activeCalendar.id,values);setHidden(old=>old.filter(id=>id!==activeCalendar.id));}
       setMode(null);setEditing(null);setSelection(null);setReload(n=>n+1);notify(locale==='uk'?'Подію збережено':'Event saved');
     }catch(err){throw new Error(getLocalizedApiError(err,t,'calendarView.event.saveError'));}
-    finally{setBusy(false);}
+    finally{mutationLock.current=false;setBusy(false);}
   }
   async function remove(){
     if(!selection||!canWrite(activeCalendar)||busy||!window.confirm(t(selection.isRecurring?'calendarView.event.confirmDeleteSeries':'calendarView.event.confirmDelete')))return;
@@ -121,15 +138,18 @@ export function Dashboard({ user }) {
     }
     setReload(n=>n+1);
   }
-  async function toggleTask(e){if(taskBusy||!canWrite(data.calendars.find(c=>c.id===e.calendarId)))return;if(e.isRecurring&&!window.confirm(t('calendarView.event.editSeriesOnly')))return;setTaskBusy(true);setQuickError('');const next=e.status==='done'?'todo':'done';const update=status=>item=>item.id===e.id&&item.calendarId===e.calendarId?{...item,status}:item;setData(old=>({...old,events:old.events.map(update(next))}));setSelection(old=>old?update(next)(old):null);setUpcoming(old=>({...old,events:old.events.map(update(next))}));try{await service.updateEvent(e.calendarId,e.id,{status:next});setReload(n=>n+1);notify(locale==='uk'?'Статус оновлено':'Status updated')}catch(err){setData(old=>({...old,events:old.events.map(update(e.status))}));setSelection(old=>old?update(e.status)(old):null);setUpcoming(old=>({...old,events:old.events.map(update(e.status))}));setQuickError(getLocalizedApiError(err,t,'calendarView.event.saveError'))}finally{setTaskBusy(false)}}
+  async function toggleTask(e){if(taskBusy||busy||mutationLock.current||!canWrite(data.calendars.find(c=>c.id===e.calendarId)))return;if(e.isRecurring&&!window.confirm(t('calendarView.event.editSeriesOnly')))return;mutationLock.current=true;setTaskBusy(true);setQuickError('');const next=e.status==='done'?'todo':'done';const update=status=>item=>item.id===e.id&&item.calendarId===e.calendarId?{...item,status}:item;setData(old=>({...old,events:old.events.map(update(next))}));setSelection(old=>old?update(next)(old):null);setUpcoming(old=>({...old,events:old.events.map(update(next))}));setOverdueData(old=>({...old,events:old.events.map(update(next))}));try{await service.updateEvent(e.calendarId,e.id,{status:next});setReload(n=>n+1);notify(locale==='uk'?'Статус оновлено':'Status updated')}catch(err){setData(old=>({...old,events:old.events.map(update(e.status))}));setSelection(old=>old?update(e.status)(old):null);setUpcoming(old=>({...old,events:old.events.map(update(e.status))}));setOverdueData(old=>({...old,events:old.events.map(update(e.status))}));setQuickError(getLocalizedApiError(err,t,'calendarView.event.saveError'))}finally{mutationLock.current=false;setTaskBusy(false)}}
   const uk=locale==='uk';
   const timeFormat=user.settings?.timeFormat||'24h';
   const mainCalendar=data.calendars.find(c=>c.isMain&&!c.isArchived)||data.calendars[0];
   const schedulePath=mainCalendar?localizedPath('/calendars/view/'+encodeURIComponent(mainCalendar.id))+'?date='+encodeURIComponent(activeDay):localizedPath('/calendars/view');
   const upcomingItems=upcoming.events.filter(e=>!hidden.includes(e.calendarId)&&e.status!=='canceled'&&['arrangement','task','reminder'].includes(e.type)&&(e.type==='task'?e.status!=='done':Date.parse(dateOf(e))>=now.getTime())).sort(byTime);
+  const upcomingMeeting=nextMeeting(upcomingItems,now);
+  const minutesLeft=upcomingMeeting?countdownMinutes(upcomingMeeting,now):0;
+  const countdown=minutesLeft>=1440?Math.floor(minutesLeft/1440)+(uk?' д ':'d ')+Math.floor(minutesLeft%1440/60)+(uk?' год':'h'):minutesLeft>=60?Math.floor(minutesLeft/60)+(uk?' год ':'h ')+minutesLeft%60+(uk?' хв':'m'):minutesLeft+(uk?' хв':' min');
   const openSchedule=()=>navigate(schedulePath);
   const arrow=(label,action)=><button type="button" className="overview-arrow" title={label} aria-label={label} onClick={action}><Icon name="arrow-up-right" size={18}/></button>;
-  return <CalendarEventActionsProvider value={{canChange:e=>canWrite(data.calendars.find(c=>c.id===e.calendarId)),toggle:toggleTask,busy:busy||taskBusy||loading,zone}}>
+  return <CalendarEventActionsProvider value={{canChange:e=>canWrite(data.calendars.find(c=>c.id===e.calendarId)),toggle:toggleTask,busy:busy||taskBusy||loading||taskLoading,zone}}>
   <section className="dashboard dashboard-home">
     <header className="dash-header">
       <div><span className="dash-kicker">{activeDay===actualToday?c.today:(uk?'Обраний день':'Selected day')}</span><h1>{fullDay(activeDay)}</h1></div>
@@ -145,10 +165,11 @@ export function Dashboard({ user }) {
         <OverviewScheduleList schedule={schedule} onSelect={openEvent} loading={loading} error={error?c.error:''} timeFormat={timeFormat}/>
         {editable.length>0&&<button className="overview-add" type="button" disabled={busy||loading} onClick={()=>openCreate()}><Icon name="plus" size={16}/>{c.add}</button>}
       </section>
-      <section className="overview-card overview-tasks home-tasks" aria-busy={loading}>
-        <header><h3>{taskScope==='week'?c.weekTasks:(uk?'Завдання дня':'Tasks for the day')}</h3>{arrow(uk?'Усі завдання':'All tasks',()=>navigate(localizedPath('/tasks')))}</header>
-        <div className="dash-task-controls"><div className="dash-filters" role="group" aria-label={uk?'Період завдань':'Task period'}><button type="button" aria-pressed={taskScope==='day'} className={taskScope==='day'?'active':''} onClick={()=>setTaskScope('day')}>{uk?'День':'Day'}</button><button type="button" aria-pressed={taskScope==='week'} className={taskScope==='week'?'active':''} onClick={()=>setTaskScope('week')}>{uk?'Тиждень':'Week'}</button></div><small className="dash-muted">{incomplete?'—':scopedDone+' / '+scopedTasks.length}</small></div>
-        <OverviewTasksTable tasks={visibleTasks} zone={zone} onSelect={openEvent} loading={loading} error={error?c.error:''} timeFormat={timeFormat} emptyLabel={scopedTasks.length&&!visibleTasks.length?(uk?'Усі завдання виконано':'All tasks completed'):(uk?'Немає завдань на обраний період':'No tasks in the selected period')}/>
+      <section className="overview-card overview-tasks home-tasks" aria-busy={taskLoading}>
+        <header><h3>{taskScope==='overdue'?(uk?'Прострочені завдання':'Overdue tasks'):taskScope==='week'?c.weekTasks:(uk?'Завдання дня':'Tasks for the day')}</h3>{arrow(uk?'Усі завдання':'All tasks',()=>navigate(localizedPath('/tasks')))}</header>
+        <div className="dash-task-controls"><div className="dash-filters" role="group" aria-label={uk?'Період завдань':'Task period'}><button type="button" aria-pressed={taskScope==='day'} className={taskScope==='day'?'active':''} onClick={()=>setTaskScope('day')}>{uk?'День':'Day'}</button><button type="button" aria-pressed={taskScope==='week'} className={taskScope==='week'?'active':''} onClick={()=>setTaskScope('week')}>{uk?'Тиждень':'Week'}</button><button type="button" aria-pressed={taskScope==='overdue'} className={taskScope==='overdue'?'active':''} onClick={()=>setTaskScope('overdue')}>{uk?'Прострочені':'Overdue'}</button></div><small className="dash-muted">{taskIncomplete?'—':taskScope==='overdue'?scopedTasks.length:scopedDone+' / '+scopedTasks.length}</small></div>
+        {taskScope==='overdue'&&<p className="overview-date">{uk?'За останні 365 днів':'Past 365 days'}{overdueData.partial?' · '+c.partial:''}</p>}
+        <OverviewTasksTable tasks={visibleTasks} zone={zone} onSelect={openEvent} loading={taskLoading} error={taskError?c.error:''} timeFormat={timeFormat} emptyLabel={scopedTasks.length&&!visibleTasks.length?(uk?'Усі завдання виконано':'All tasks completed'):(uk?'Немає завдань на обраний період':'No tasks in the selected period')}/>
         {scopedDone>0&&<button className="home-completed" type="button" aria-pressed={showCompleted} onClick={()=>setShowCompleted(v=>!v)}>{showCompleted?(uk?'Приховати виконані':'Hide completed'):(uk?'Показати виконані':'Show completed')} · {scopedDone}</button>}
       </section>
       <section className="overview-card home-week">
@@ -163,6 +184,7 @@ export function Dashboard({ user }) {
       <section className="overview-card overview-meetings home-upcoming" aria-busy={upcoming.loading}>
         <header><h3>{uk?'Найближчі справи':'Upcoming'}</h3>{arrow(uk?'Відкрити календар':'Open schedule',openSchedule)}</header>
         <p className="overview-date">{uk?'Наступні 7 днів':'Next 7 days'}</p>
+        {!upcoming.loading&&!upcoming.error&&upcomingMeeting&&<button type="button" className="home-next-countdown" onClick={()=>openEvent(upcomingMeeting)}><small>{uk?'Наступна зустріч через':'Next meeting in'}</small><strong>{countdown}</strong><span>{upcomingMeeting.title}</span></button>}
         {upcoming.partial&&<p className="overview-empty" role="status">{c.partial}</p>}
         <OverviewUpcomingList events={upcomingItems} zone={zone} onSelect={openEvent} loading={upcoming.loading} error={upcoming.error?c.error:''} timeFormat={timeFormat} emptyLabel={uk?'Немає найближчих справ':'Nothing upcoming'}/>
       </section>
