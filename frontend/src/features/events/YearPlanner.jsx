@@ -16,7 +16,7 @@ export function YearPlanner({ day, today, startsOn, events, zone, onDaySelect, o
   return <div className="year-planner">
     <div className="year-months">
       {months.map(({ first, days }) => <section className="year-month" key={first}>
-        <h3><button type="button" onClick={() => onMonthSelect(first)} aria-label={format(first, { month: 'long', year: 'numeric' })}>{format(first, { month: 'long' })}</button><small>{days.filter(key=>key&&grouped[key]?.length).length || ''}</small></h3>
+        <h3><button type="button" onClick={() => onMonthSelect(first)} aria-label={format(first, { month: 'long', year: 'numeric' })}>{format(first, { month: 'long' })}</button><small title={locale==='uk'?'Дні з подіями':'Days with events'}>{days.filter(key=>key&&grouped[key]?.length).length || ''}</small></h3>
         <div className="year-month-grid">
           <span className="year-week-number" title="ISO 8601">#</span>{weekdayKeys.map(key => <span className="year-weekday" key={key}>{t(`calendarView.weekday.${key}`).slice(0, 2)}</span>)}
           {days.map((key, index) => {
