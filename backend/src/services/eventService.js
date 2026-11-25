@@ -1,6 +1,7 @@
 const { listHolidays, getHoliday } = require('./holidayService');
 const Event = require('../models/Event');
 const AppError = require('../utils/AppError');
+const { notifyCalendarChange } = require('./notificationService');
 const { getUserCalendarAccess } = require('./calendarService');
 const { occurrencesForEvent, MAX_OCCURRENCES, localParts } = require('./eventRecurrence');
 
@@ -144,6 +145,7 @@ async function createCalendarEvent(userId, calendarId, values) {
   validateRecurrenceBound(values, calendar);
   try {
     const event = await Event.create({ ...values, calendarId });
+    await notifyCalendarChange(calendar, userId, 'event_created', event);
     return eventResponse(event);
   } catch (error) { handleEventValidationError(error); }
 }
@@ -157,18 +159,22 @@ async function updateCalendarEvent(userId, calendarId, eventId, validateValues) 
     const existing = new Map(event.attendees.map((attendee) => [attendee.email, attendee]));
     values.attendees = values.attendees.map((attendee) => existing.get(attendee.email) || attendee);
   }
+  const previousStatus = event.status;
   event.set(values);
+  const changed = event.isModified();
   validateRecurrenceBound(event, calendar);
   try {
     await event.save(); // Full Mongoose document validation, not findOneAndUpdate bypass.
   } catch (error) { handleEventValidationError(error); }
+  if (changed) await notifyCalendarChange(calendar, userId, event.status === 'canceled' && previousStatus !== 'canceled' ? 'event_canceled' : 'event_updated', event);
   return eventResponse(event);
 }
 
 async function deleteCalendarEvent(userId, calendarId, eventId) {
-  await getUserCalendarAccess(userId, calendarId, 'editor');
-  const deleted = await Event.deleteOne({ _id: eventId, calendarId });
-  if (!deleted.deletedCount) throw missing();
+  const { calendar } = await getUserCalendarAccess(userId, calendarId, 'editor');
+  const deleted = await Event.findOneAndDelete({ _id: eventId, calendarId });
+  if (!deleted) throw missing();
+  await notifyCalendarChange(calendar, userId, 'event_deleted', deleted);
 }
 
 module.exports = {

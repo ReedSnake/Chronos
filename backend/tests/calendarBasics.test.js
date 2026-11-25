@@ -65,6 +65,7 @@ test('main calendar cannot be demoted, archived or deleted even through an admin
     '../models/Calendar': { findById: async () => calendar, findByIdAndUpdate: async () => { writes += 1; return calendar; } },
     '../models/CalendarMember': { findOne: async () => ({ role: 'admin' }) },
     '../models/CalendarShareLink': {}, '../models/CalendarInvitation': {}, '../models/Event': {},
+    '../models/Notification': {}, './notificationService': { notifyCalendarChange: async () => {} },
     './personalCalendarService': {},
   });
   for (const task of [
@@ -165,4 +166,19 @@ test('failed SMTP clears the active invitation token and does not report success
   });
   await assert.rejects(() => service.sendInvitation('owner', 'calendar', 'event', 'friend@example.test', 'en'), { code: 'EMAIL_DELIVERY_FAILED' });
   assert.equal(revoked, true);
+});
+
+test('shared calendar settings notify only after a real successful change', async () => {
+  const changes = [];
+  let current = { _id: 'team', ownerUserId: 'owner', name: 'Team' };
+  const service = loadWithMocks('../src/services/calendarService.js', {
+    '../models/Calendar': { findById: async () => current, findByIdAndUpdate: async (_, update) => { current = { ...current, ...update.$set }; return current; } },
+    '../models/CalendarMember': { findOne: async () => ({ role: 'editor' }) },
+    '../models/CalendarShareLink': {}, '../models/CalendarInvitation': {}, '../models/Event': {}, '../models/Notification': {}, './personalCalendarService': {},
+    './notificationService': { notifyCalendarChange: async (calendar, actor, kind) => changes.push([calendar.name, actor, kind]) },
+  });
+  await service.updateCalendarForUser('editor', 'team', { name: 'Team' });
+  assert.equal(changes.length, 0);
+  await service.updateCalendarForUser('editor', 'team', { name: 'Work' });
+  assert.deepEqual(changes, [['Work','editor','calendar_updated']]);
 });

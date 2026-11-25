@@ -73,3 +73,56 @@ test('mark read scopes the write to authenticated user and currently accessible 
   assert.equal(filter.readAt, null);
   assert.deepEqual(filter.$or, [{ kind: 'welcome' }, { calendarId: { $in: ['allowed'] } }]);
 });
+
+const { upcomingDeadlines, deadlineRecord, calendarRecipients, changeRecord } = require('../src/services/notificationModel');
+const task = { ...event, type: 'task', status: 'todo', startsAt: new Date('2026-11-25T09:00:00Z'), deadline: new Date('2026-11-25T09:00:00Z') };
+const calendar = { _id: 'calendar', ownerUserId: 'owner', name: 'Team' };
+
+test('deadline warnings cover only unfinished tasks in the next 24 hours, including newly created tasks', () => {
+  assert.equal(upcomingDeadlines(task, from, 'UTC').length, 0);
+  assert.equal(upcomingDeadlines(task, new Date('2026-11-24T09:00:00Z'), 'UTC').length, 1);
+  assert.equal(upcomingDeadlines({ ...task, status: 'in_progress', createdAt: to }, to, 'UTC').length, 1);
+  assert.equal(upcomingDeadlines({ ...task, status: 'done' }, to, 'UTC').length, 0);
+  assert.equal(upcomingDeadlines(task, task.deadline, 'UTC').length, 0);
+});
+test('recurring task warnings use each occurrence deadline and stable per-user IDs', () => {
+  const recurring = { ...task, isRecurring: true, recurrenceInterval: 'daily' };
+  const first = upcomingDeadlines(recurring, to, 'Europe/Kyiv')[0];
+  const second = upcomingDeadlines(recurring, new Date('2026-11-25T10:00:00Z'), 'Europe/Kyiv')[0];
+  const record = deadlineRecord('owner', first, calendar, to);
+  assert.equal(record.eventAt.toISOString(), '2026-11-25T09:00:00.000Z');
+  assert.equal(record._id, deadlineRecord('owner', first, calendar, new Date(to.getTime()+1000))._id);
+  assert.notEqual(record._id, deadlineRecord('owner', second, calendar, to)._id);
+  assert.notEqual(record._id, deadlineRecord('other', first, calendar, to)._id);
+  assert.ok(record.occurrenceId);
+});
+test('calendar change recipients are unique current members and owner, excluding actor', () => {
+  const members = [{ userId: 'editor' }, { userId: 'viewer' }, { userId: 'owner' }];
+  assert.deepEqual(calendarRecipients(calendar, members, 'editor'), ['owner', 'viewer']);
+  assert.deepEqual(calendarRecipients(calendar, members, 'owner'), ['editor', 'viewer']);
+  const deleted = changeRecord('viewer', calendar, 'event_deleted', task, 'change-id', to);
+  assert.equal(deleted.eventId, null);
+  assert.equal(deleted.title, task.title);
+  assert.equal(deleted.calendarName, 'Team');
+});
+test('shared calendar changes persist for others only; private calendars send nothing', async () => {
+  const writes = [];
+  let members = [{ userId: 'editor' }, { userId: 'viewer' }];
+  const service = mockService({ mongoose: {}, '../models/Notification': { updateOne: async (_, update) => writes.push(update.$setOnInsert) }, '../models/Calendar': {}, '../models/CalendarMember': { find: () => ({ select: () => ({ lean: async () => members }) }) }, '../models/Event': {}, '../config/logger': { warn: () => assert.fail('unexpected error') } });
+  await service.notifyCalendarChange(calendar, 'editor', 'event_updated', task);
+  assert.deepEqual(writes.map(n => n.userId), ['owner','viewer']);
+  assert.ok(writes.every(n => n.kind === 'event_updated' && n.eventId === task._id));
+  members = [];
+  await service.notifyCalendarChange(calendar, 'owner', 'event_created', task);
+  assert.equal(writes.length, 2);
+});
+test('deadline worker uses upcoming task window and skips inaccessible archived calendars', async () => {
+  const writes = [];
+  const archivedTask = { ...task, calendarId: 'archived' };
+  let query;
+  const service = mockService({ mongoose: {}, '../models/Notification': { updateOne: async (_, update) => writes.push(update.$setOnInsert) }, '../models/Calendar': { findOne: filter => ({ select: () => ({ lean: async () => filter._id === 'calendar' ? calendar : null }) }) }, '../models/CalendarMember': { find: () => ({ select: () => ({ lean: async () => [{ userId: 'viewer' }] }) }) }, '../models/Event': { find: q => { query = q; return { lean: () => ({ cursor: () => [task, archivedTask] }) }; } }, '../config/logger': {} });
+  await service.generateUpcomingDeadlines(to);
+  assert.deepEqual(query.status.$in, ['todo', 'in_progress']);
+  assert.deepEqual(writes.map(n => n.userId), ['owner','viewer']);
+  assert.ok(writes.every(n => n.kind === 'task_deadline'));
+});

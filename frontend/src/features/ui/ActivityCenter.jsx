@@ -33,9 +33,12 @@ export function ActivityCenter({user,onClose,notifications}){
   function go(path){onClose();navigate(path);}
   async function openNotification(n){
     if(!n.readAt && !(await notifications.markRead(n.id)))return;
-    if(n.kind==='reminder'&&n.calendarId&&n.eventId){
-      const day=eventDayKey({startsAt:n.dueAt},zone);
-      go(localizedPath('/calendars/view/'+encodeURIComponent(n.calendarId))+'?date='+encodeURIComponent(day)+'&event='+encodeURIComponent(n.occurrenceId||n.eventId));
+    if(n.calendarId){
+      const path=localizedPath('/calendars/view/'+encodeURIComponent(n.calendarId));
+      if(n.eventId){
+        const day=eventDayKey({startsAt:n.eventAt||n.dueAt},zone);
+        go(path+'?date='+encodeURIComponent(day)+'&event='+encodeURIComponent(n.occurrenceId||n.eventId));
+      }else go(path);
     }
   }
   const sorted=data.events.filter(e=>e.type==='reminder'&&e.status!=='canceled').sort((a,b)=>String(a.remindAt).localeCompare(String(b.remindAt)));
@@ -44,7 +47,7 @@ export function ActivityCenter({user,onClose,notifications}){
       <div className="notification-inbox-heading"><h3>{uk?'Вхідні':'Inbox'} {notifications.unreadCount>0&&`· ${notifications.unreadCount}`}</h3>{notifications.unreadCount>0&&<button type="button" onClick={()=>void notifications.markRead()}>{uk?'Прочитати всі':'Mark all read'}</button>}</div>
       {notifications.error&&<p role="alert">{uk?'Не вдалося оновити сповіщення':'Could not update notifications'} <button type="button" onClick={notifications.refresh}>{t('common.retry')}</button></p>}
       {notifications.loading?<div className="ux-skeleton" role="status" aria-label={t('common.loading')}><i/><i/></div>:!notifications.notifications.length?<p>{uk?'Поки немає сповіщень':'No notifications yet'}</p>:<div className="notification-inbox-list">{notifications.notifications.map(n=>{
-        const text=notificationText(n,locale);
+        const text=notificationText(n,locale,zone);
         return <button key={n.id} type="button" className={'ux-activity-row notification-inbox-item'+(!n.readAt?' is-unread':'')} onClick={()=>void openNotification(n)}><Icon name={n.kind==='welcome'?'clock':'bell'} size={19}/><span><strong>{text.title}</strong><small>{text.body}</small><small>{new Intl.DateTimeFormat(locale,{dateStyle:'medium',timeStyle:'short',timeZone:zone}).format(new Date(n.dueAt))}</small></span>{!n.readAt&&<i className="notification-unread-dot" aria-label={uk?'Непрочитане':'Unread'}/>}</button>;
       })}</div>}
 

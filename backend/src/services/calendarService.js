@@ -4,6 +4,7 @@ const CalendarShareLink = require('../models/CalendarShareLink');
 const CalendarInvitation = require('../models/CalendarInvitation');
 const Event = require('../models/Event');
 const Notification = require('../models/Notification');
+const { notifyCalendarChange } = require('./notificationService');
 const { ensurePersonalCalendars } = require('./personalCalendarService');
 const AppError = require('../utils/AppError');
 const { hasCalendarRole } = require('../constants/calendarRoles');
@@ -108,6 +109,9 @@ async function updateCalendarForUser(userId, calendarId, values) {
   try {
     const calendar = await Calendar.findByIdAndUpdate(calendarId, { $set: values }, { new: true, runValidators: true });
     if (!calendar) throw calendarNotFound();
+    if (Object.keys(values).some(key => existing[key] !== calendar[key])) {
+      await notifyCalendarChange(calendar, userId, 'calendar_updated');
+    }
     return calendarResponse(calendar, role);
   } catch (error) {
     if (error?.code === 11000 && values.isMain) {
@@ -153,6 +157,9 @@ async function updateCalendarForShareLink(link, values) {
     { new: true, runValidators: true },
   );
   if (!calendar || calendar.isHolidayCalendar) throw calendarNotFound();
+  if (Object.keys(values).some(key => existing[key] !== calendar[key])) {
+    await notifyCalendarChange(calendar, null, 'calendar_updated');
+  }
   return calendarResponse(calendar, link.role);
 }
 

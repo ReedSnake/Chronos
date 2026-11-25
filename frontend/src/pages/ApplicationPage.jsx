@@ -116,7 +116,7 @@ export function ApplicationPage() {
         </WorkspaceErrorBoundary>
       </div>
       {activity&&<ActivityCenter user={user} notifications={notifications} onClose={()=>setActivity(false)}/>}
-      {!activity&&<NotificationToast notification={notifications.toast} onOpen={()=>{notifications.dismissToast();setActivity(true);}} onDismiss={notifications.dismissToast}/>}
+      {!activity&&<NotificationToast timeZone={user?.settings?.timeZone || 'UTC'} notification={notifications.toast} onOpen={()=>{notifications.dismissToast();setActivity(true);}} onDismiss={notifications.dismissToast}/>}
       <IconTooltips/>
     </main>;
   }

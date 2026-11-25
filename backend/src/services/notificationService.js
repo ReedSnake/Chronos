@@ -1,10 +1,12 @@
 const mongoose = require('mongoose');
+const { randomUUID } = require('node:crypto');
 const Notification = require('../models/Notification');
 const Calendar = require('../models/Calendar');
 const CalendarMember = require('../models/CalendarMember');
 const Event = require('../models/Event');
 const logger = require('../config/logger');
-const { CATCH_UP_MS, dueReminders, reminderRecord, welcomeRecord } = require('./notificationModel');
+const { CATCH_UP_MS, DEADLINE_LEAD_MS, dueReminders, reminderRecord, welcomeRecord,
+  upcomingDeadlines, deadlineRecord, calendarRecipients, changeRecord } = require('./notificationModel');
 
 async function insertOnce(record) {
   try {
@@ -31,7 +33,7 @@ async function list(user) {
     Notification.find(filter).sort({ readAt: 1, dueAt: -1, _id: -1 }).limit(100).lean(),
     Notification.countDocuments({ ...filter, readAt: null }),
   ]);
-  return { notifications: rows.map(row => ({ id: row._id, kind: row.kind, title: row.title, calendarId: row.calendarId, eventId: row.eventId, occurrenceId: row.occurrenceId, dueAt: row.dueAt, readAt: row.readAt || null })), unreadCount };
+  return { notifications: rows.map(row => ({ id: row._id, kind: row.kind, title: row.title, calendarName: row.calendarName || '', eventAt: row.eventAt || null, calendarId: row.calendarId, eventId: row.eventId, occurrenceId: row.occurrenceId, dueAt: row.dueAt, readAt: row.readAt || null })), unreadCount };
 }
 
 async function markRead(userId, id) {
@@ -58,6 +60,40 @@ async function generateDueReminders(from, to) {
   }
 }
 
+async function generateUpcomingDeadlines(now) {
+  const end = new Date(now.getTime() + DEADLINE_LEAD_MS);
+  const query = { type: 'task', status: { $in: ['todo', 'in_progress'] }, startsAt: { $lte: end }, $or: [
+    { isRecurring: { $ne: true }, startsAt: { $gt: now, $lte: end } },
+    { isRecurring: true, $or: [{ recurrenceEndDate: null }, { recurrenceEndDate: { $gte: new Date(now.getTime() - 2 * 86400000) } }] },
+  ] };
+  for await (const event of Event.find(query).lean().cursor()) {
+    const calendar = await Calendar.findOne({ _id: event.calendarId, isArchived: { $ne: true } }).select('ownerUserId timeZone name').lean();
+    if (!calendar) continue;
+    const upcoming = upcomingDeadlines(event, now, calendar.timeZone || 'UTC');
+    if (!upcoming.length) continue;
+    const members = await CalendarMember.find({ calendarId: calendar._id }).select('userId').lean();
+    for (const occurrence of upcoming) {
+      for (const userId of calendarRecipients(calendar, members)) await insertOnce(deadlineRecord(userId, occurrence, calendar, now));
+    }
+  }
+}
+
+// Notification delivery must not turn a successfully persisted calendar edit into a failed API request.
+async function notifyCalendarChange(calendar, actorUserId, kind, event = null) {
+  if (!calendar || calendar.isHolidayCalendar) return;
+  try {
+    const members = await CalendarMember.find({ calendarId: calendar._id }).select('userId').lean();
+    if (!members.length) return;
+    const changeId = randomUUID();
+    const now = new Date();
+    for (const userId of calendarRecipients(calendar, members, actorUserId)) {
+      await insertOnce(changeRecord(userId, calendar, kind, event, changeId, now));
+    }
+  } catch (error) {
+    logger.warn({ code: error.code || 'CALENDAR_NOTIFICATION_FAILED' }, 'Calendar change notification delivery failed');
+  }
+}
+
 function startNotificationWorker() {
   let stopped = false;
   let timer;
@@ -71,9 +107,10 @@ function startNotificationWorker() {
         const from = new Date(Math.max(now.getTime() - CATCH_UP_MS, lastSuccessfulScan ? lastSuccessfulScan.getTime() - 120000 : 0));
         await generateDueReminders(from, now);
         lastSuccessfulScan = now;
+        await generateUpcomingDeadlines(now);
       }
     } catch (error) {
-      logger.warn({ code: error.code || 'NOTIFICATION_SCAN_FAILED' }, 'Reminder notification scan failed');
+      logger.warn({ code: error.code || 'NOTIFICATION_SCAN_FAILED' }, 'Scheduled notification scan failed');
     } finally {
       if (!stopped) { timer = setTimeout(run, 30000); timer.unref(); }
     }
@@ -83,4 +120,4 @@ function startNotificationWorker() {
   return async () => { stopped = true; clearTimeout(timer); await running; };
 }
 
-module.exports = { ensureWelcome, list, markRead, generateDueReminders, startNotificationWorker };
+module.exports = { ensureWelcome, list, markRead, generateDueReminders, generateUpcomingDeadlines, notifyCalendarChange, startNotificationWorker };

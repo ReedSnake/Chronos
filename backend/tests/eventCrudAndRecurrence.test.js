@@ -70,13 +70,15 @@ test('recurring occurrences retain the calendar local wall clock across DST', ()
 
 test('CRUD checks editor/viewer permissions and scopes events to the selected calendar', async () => {
   const calls = [];
+  const changes = [];
   let eventExists = true;
-  const stored = { _id: EVENT_ID, calendarId: CALENDAR, type: 'task', title: 'Draft', deadline: new Date('2026-12-01T10:00:00Z'), startsAt: new Date('2026-12-01T10:00:00Z'), attendees: [], set(values) { Object.assign(this, values); }, save: async () => { calls.push('saved'); } };
+  const stored = { _id: EVENT_ID, calendarId: CALENDAR, type: 'task', title: 'Draft', deadline: new Date('2026-12-01T10:00:00Z'), startsAt: new Date('2026-12-01T10:00:00Z'), attendees: [], set(values) { Object.assign(this, values); }, isModified: () => true, save: async () => { calls.push('saved'); } };
   const service = loadWithMocks('../src/services/eventService.js', {
+    './notificationService': { notifyCalendarChange: async (calendar, actor, kind) => changes.push(kind) },
     '../models/Event': {
       create: async (values) => ({ _id: EVENT_ID, ...values }),
       findOne: (query) => { calls.push(query); const value = eventExists ? stored : null; return { then: (resolve) => Promise.resolve(value).then(resolve), select: async () => value }; },
-      deleteOne: async (query) => { calls.push(query); return { deletedCount: eventExists ? 1 : 0 }; },
+      findOneAndDelete: async (query) => { calls.push(query); return eventExists ? stored : null; },
     },
     './calendarService': {
       getUserCalendarAccess: async (userId, calendarId, role) => { calls.push({ userId, calendarId, role }); return { calendar: { timeZone: 'UTC' }, role }; },
@@ -92,6 +94,7 @@ test('CRUD checks editor/viewer permissions and scopes events to the selected ca
   assert.equal(stored.title, 'Final');
   await service.deleteCalendarEvent('u', CALENDAR, EVENT_ID);
   assert.deepEqual(calls.at(-1), { _id: EVENT_ID, calendarId: CALENDAR });
+  assert.deepEqual(changes, ['event_created', 'event_updated', 'event_deleted']);
   eventExists = false;
   await assert.rejects(service.getCalendarEvent('u', CALENDAR, EVENT_ID), (error) => error.code === 'EVENT_NOT_FOUND');
 });
@@ -99,6 +102,7 @@ test('CRUD checks editor/viewer permissions and scopes events to the selected ca
 test('event listing expands and paginates occurrences without disclosing attendee tokens', async () => {
   let observedQuery;
   const service = loadWithMocks('../src/services/eventService.js', {
+    './notificationService': { notifyCalendarChange: async () => {} },
     '../models/Event': { find: (query) => { observedQuery = query; return { limit: () => ({ lean: async () => [{
       _id: EVENT_ID, calendarId: CALENDAR, type: 'task', title: 'Daily work',
       startsAt: new Date('2026-12-01T12:00:00.000Z'), deadline: new Date('2026-12-01T12:00:00.000Z'),
@@ -121,6 +125,7 @@ test('event listing expands and paginates occurrences without disclosing attende
 test('permission denial occurs before any event mutation', async () => {
   let written = false;
   const service = loadWithMocks('../src/services/eventService.js', {
+    './notificationService': { notifyCalendarChange: async () => {} },
     '../models/Event': { create: async () => { written = true; }, deleteOne: async () => { written = true; } },
     './calendarService': { getUserCalendarAccess: async () => { throw new Error('No editor role'); } },
   });
