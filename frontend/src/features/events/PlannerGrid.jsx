@@ -1,3 +1,4 @@
+import { formatMinute } from './timeDisplay';
 import { slotMinute } from './calendarInteractions';
 import { CalendarEventButton, useCalendarDrop } from './CalendarEventActions';
 import { useEffect, useRef, useState } from 'react';
@@ -39,8 +40,9 @@ export function visibleHours(blocks,fullDay=false){
  const last=Math.min(24,Math.max(20,...blocks.map(b=>Math.ceil(Math.max(b.end,b.start+35)/60))));
  return {first,last};
 }
-export function PlannerGrid({view,days,events,calendars,zone,onSelect,selectedDay,onDaySelect,fullDay=false,canEdit=false,onCreateAt}){
+export function PlannerGrid({view,days,events,calendars,zone,timeFormat,onSelect,selectedDay,onDaySelect,fullDay=false,canEdit=false,onCreateAt}){
  const {locale}=useLocale(),now=useClock();
+ const timeLabel=n=>formatMinute(n,locale,timeFormat);
  const drop=useCalendarDrop();
  const viewport=useRef(null);
  const today=eventDayKey({startsAt:now},zone),nowMinute=minute(now,zone);
