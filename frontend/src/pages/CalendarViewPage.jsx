@@ -470,7 +470,7 @@ function CalendarViewContent() {
   const rangeLabel = eventView==='week'||eventView==='overview' ? (uk?'Тиждень ':'Week ')+weekRowNumber(plannerDays[0],startsOn) : null;
   return <CalendarEventActionsProvider value={{canChange:canChangeTask,toggle:toggleTask,busy:busy||eventsLoading,zone:zone,timeFormat,canEditEvent,context:setQuickMenu,dragging,startDrag,endDrag,drop:dropEvent,resizeEnabled:horizontal||eventView==='week'}}><section className={'chrono-calendar chrono-mode-'+eventView+(horizontal?' chrono-mode-horizontal':'')+(dragging?' ux-dragging':'')+(narrow?' ux-narrow-calendar':'')}>
     <header className="chrono-heading">
-      <div><h1>{uk?'Календар':'Calendar'}</h1><p>{calendar.name} · {zone}</p></div>
+      <div><h1>{uk?'Календар':'Calendar'}</h1><p>{calendar?.name?calendar.name+' · ':''}{zone}</p></div>
       <div className="chrono-heading-actions">
         <div className="chrono-segments" role="group" aria-label={t('calendarView.event.viewSwitch')}>
           {CALENDAR_VIEWS.map(view=><button key={view} type="button" aria-pressed={eventView===view} onClick={()=>switchView(view)}>{viewLabels[view]}</button>)}
