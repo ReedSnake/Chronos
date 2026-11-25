@@ -7,7 +7,7 @@ import './event-preview.css';
 
 // Preserve the original button and its grid positioning. A portal avoids clipping
 // in fitted calendar grids, Kanban columns and independently scrolling panels.
-export function EventPreviewButton({ event, zone = 'UTC', children, title: _nativeTitle, onClick, ...props }) {
+export function EventPreviewButton({ event, zone = 'UTC', children, title: _nativeTitle, onClick, onDragStart, onContextMenu, ...props }) {
   const { locale, t } = useLocale();
   const uk = locale === 'uk';
   const id = useId();
@@ -81,7 +81,7 @@ export function EventPreviewButton({ event, zone = 'UTC', children, title: _nati
       onPointerDown={()=>{focused.current=false;hide();}}
       onFocus={e=>{if(e.currentTarget.matches(':focus-visible')){focused.current=true;show();}}}
       onBlur={()=>{focused.current=false;if(!hovered.current)hide();}}
-      onClick={e=>{hide();onClick?.(e);}}>{children}</button>
+      onDragStart={e=>{hide();onDragStart?.(e);}} onContextMenu={onContextMenu?e=>{hide();onContextMenu(e);}:undefined} onClick={e=>{hide();onClick?.(e);}}>{children}</button>
     {open && createPortal(<div ref={card} id={id} role="tooltip" className="event-preview" onPointerEnter={clearTimer} onPointerLeave={leave} onClick={e=>e.stopPropagation()} style={position || {left:0,top:0,visibility:'hidden'}}>
       <div className="event-preview-heading"><span className={'event-preview-symbol '+event.type}><Icon name={icon} size={17}/></span><div><strong>{event.title}</strong><small>{type}{event.calendarName ? ' · '+event.calendarName : ''}</small></div></div>
       {date&&<div className="event-preview-meta"><Icon name="clock" size={15}/><span>{task?(uk?'Термін: ':'Due: '):''}{date}{finish?' – '+finish:''}</span></div>}
