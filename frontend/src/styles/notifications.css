@@ -24,3 +24,11 @@
 @media(max-width:540px) { .notification-toast { right:16px; bottom:calc(80px + env(safe-area-inset-bottom)); } }
 .event-dialog:has(.ux-activity) { scrollbar-width:none; }
 .event-dialog:has(.ux-activity)::-webkit-scrollbar { display:none; }
+
+.ux-activity .notification-filters { display:flex; gap:4px; padding:4px; background:#e8eff6; border-radius:11px; }
+.ux-activity .notification-filters button { flex:1; min-width:0; padding:7px 5px; font-size:12px; line-height:1.4; border-radius:8px; overflow-wrap:anywhere; }
+.ux-activity .notification-filters button[aria-pressed=true] { background:#303030; color:#fff; }
+.ux-activity .notification-filters button:not([aria-pressed=true]):hover { background:#ffffffb8; }
+.notification-date-group { display:grid; gap:6px; min-width:0; }
+.notification-date-group h4 { margin:6px 0 2px; font-size:11px; font-weight:600; color:var(--chronos-muted,#696969); }
+.notification-date-group + .notification-date-group { margin-top:6px; }
