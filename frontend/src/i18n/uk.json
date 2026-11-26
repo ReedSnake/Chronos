@@ -296,6 +296,7 @@
     "editTitle": "Редагувати налаштування календаря"
   },
   "calendarView": {
+    "goToToday": "Перейти на сьогодні",
     "title": "Огляд календаря",
     "manageCalendars": "Керувати календарями",
     "chooseCalendar": "Оберіть календар",

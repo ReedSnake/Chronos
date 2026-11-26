@@ -227,10 +227,14 @@ export function CalendarCollaborationPanel({ calendar, section = null }) {
       {invitationUrl && (!section || section === 'invite') && <section className="account-card"><h3>{t('calendars.inviteReady')}</h3><input aria-label={t('calendars.inviteReady')} readOnly value={invitationUrl} /></section>}
             <details className="account-form" hidden={section !== null && section !== 'share'} open={section !== null ? section === 'share' : undefined}>
               <summary hidden={section !== null}>{t('calendars.shareTitle')}</summary>
+              <div className="cm-collab-fields">
+              <div className="cm-collab-field">
               <label htmlFor={`share-role-${calendar.id}`}>{t('calendars.shareRole')}</label>
               <select id={`share-role-${calendar.id}`} value={share.role} onChange={(event) => setShareSettings((current) => ({ ...current, [calendar.id]: { ...share, role: event.target.value } }))}>
                 <option value="viewer">{t('calendars.viewer')}</option><option value="editor">{t('calendars.editor')}</option><option value="admin">{t('calendars.admin')}</option>
               </select>
+              </div>
+              <div className="cm-collab-field">
               <label htmlFor={`share-expiry-${calendar.id}`}>{t('calendars.shareExpiry')}</label>
               <select id={`share-expiry-${calendar.id}`} value={share.expiresInMinutes === null ? 'permanent' : String(share.expiresInMinutes)}
                 onChange={(event) => setShareSettings((current) => ({
@@ -245,7 +249,8 @@ export function CalendarCollaborationPanel({ calendar, section = null }) {
                 <option value="1440">{t('durationLabels.oneDay')}</option>
                 <option value="43200">{t('durationLabels.thirtyDays')}</option>
               </select>
-              <div className="button-row"><button type="button" onClick={() => { void createShareLink(calendar.id); }}>{t('calendars.createShare')}</button><button type="button" onClick={() => { void loadShareLinks(calendar.id); }}>{t('calendars.showShares')}</button></div>
+              </div>
+              <div className="button-row cm-collab-actions"><button type="button" className="cm-collab-primary" onClick={() => { void createShareLink(calendar.id); }}>{t('calendars.createShare')}</button><button type="button" onClick={() => { void loadShareLinks(calendar.id); }}>{t('calendars.showShares')}</button></div>
               {(shareLinks[calendar.id] || []).map((link) => (
                 <p key={link.id}>
                   {calendarRoleLabel(t, link.role)} · {statusLabel(t, link.status)} · {link.expiresAt ? new Date(link.expiresAt).toLocaleString() : t('calendars.permanent')}
@@ -256,35 +261,49 @@ export function CalendarCollaborationPanel({ calendar, section = null }) {
                   )}
                 </p>
               ))}
+              </div>
             </details>
             <details className="account-form" hidden={section !== null && section !== 'invite'} open={section !== null ? section === 'invite' : undefined}>
               <summary hidden={section !== null}>{t('calendars.inviteTitle')}</summary>
+              <div className="cm-collab-fields">
+              <div className="cm-collab-field">
               <label htmlFor={`invite-emails-${calendar.id}`}>{t('calendars.inviteEmails')}</label>
               <textarea id={`invite-emails-${calendar.id}`} value={invite.emails} onChange={(event) => setInviteSettings((current) => ({ ...current, [calendar.id]: { ...invite, emails: event.target.value } }))} />
+              </div>
+              <div className="cm-collab-field">
               <label htmlFor={`invite-role-${calendar.id}`}>{t('calendars.memberRole')}</label>
               <select id={`invite-role-${calendar.id}`} value={invite.role} onChange={(event) => setInviteSettings((current) => ({ ...current, [calendar.id]: { ...invite, role: event.target.value } }))}>
                 <option value="viewer">{t('calendars.viewer')}</option><option value="editor">{t('calendars.editor')}</option><option value="admin">{t('calendars.admin')}</option>
               </select>
+              </div>
+              <div className="cm-collab-field">
               <label htmlFor={`invite-expiry-${calendar.id}`}>{t('calendars.invitationExpiry')==='calendars.invitationExpiry'?(locale==='uk'?'Термін дії запрошення':'Invitation expires after'):t('calendars.invitationExpiry')}</label>
               <select id={`invite-expiry-${calendar.id}`} value={String(invite.expiresInMinutes)} onChange={(event) => setInviteSettings((current) => ({ ...current, [calendar.id]: { ...invite, expiresInMinutes: Number(event.target.value) } }))}>
                 <option value="60">{t('durationLabels.oneHour')}</option><option value="1440">{t('durationLabels.oneDay')}</option><option value="43200">{t('durationLabels.thirtyDays')}</option>
               </select>
-              <div className="cm-invite-actions"><button type="button" disabled={!invite.emails.trim() || Boolean(invitingCalendars[calendar.id])} onClick={() => { void createInvitations(calendar.id); }}>{invitingCalendars[calendar.id] ? t('common.loading') : t('calendars.invite')}</button>
+              </div>
+              <div className="cm-invite-actions cm-collab-actions"><button type="button" className="cm-collab-primary" disabled={!invite.emails.trim() || Boolean(invitingCalendars[calendar.id])} onClick={() => { void createInvitations(calendar.id); }}>{invitingCalendars[calendar.id] ? t('common.loading') : t('calendars.invite')}</button>
               <button type="button" onClick={() => { void loadInvitations(calendar.id); }}>{t('calendars.showInvites')}</button></div>
               {(invitations[calendar.id] || []).map((item) => <p key={item.id}>{item.email} · {calendarRoleLabel(t, item.role)} · {statusLabel(t, item.status)}{item.status === 'pending' && item.deliveryStatus === 'queued' ? ` · ${t('calendars.invitationStatus.queued')}` : item.deliveryStatus === 'failed' ? ` · ${t('calendars.invitationStatus.failed')}` : ''} {item.status === 'pending' && <button type="button" onClick={() => { void revokeInvitation(calendar.id, item.id); }}>{t('calendars.revoke')}</button>}</p>)}
               {(invitationResults[calendar.id] || []).map((item, index) => <p key={`${item.email}-${index}`}>{item.email} · {t(`calendars.invitationStatus.${item.status}`)}</p>)}
+              </div>
             </details>
             <details className="account-form" hidden={section !== null && section !== 'members'} open={section !== null ? section === 'members' : undefined}>
               <summary hidden={section !== null}>{t('calendars.membersTitle')}</summary>
+              <div className="cm-collab-fields">
+              <div className="cm-collab-field">
               <label htmlFor={`member-email-${calendar.id}`}>{t('common.email')}</label>
               <input id={`member-email-${calendar.id}`} type="email" value={memberSettingsForCalendar.email} onChange={(event) => setMemberSettings((current) => ({ ...current, [calendar.id]: { ...memberSettingsForCalendar, email: event.target.value } }))} />
+              </div>
+              <div className="cm-collab-field">
               <label htmlFor={`member-role-${calendar.id}`}>{t('calendars.memberRole')}</label>
               <select id={`member-role-${calendar.id}`} value={memberSettingsForCalendar.role} onChange={(event) => setMemberSettings((current) => ({ ...current, [calendar.id]: { ...memberSettingsForCalendar, role: event.target.value } }))}>
                 <option value="viewer">{t('calendars.viewer')}</option><option value="editor">{t('calendars.editor')}</option><option value="admin">{t('calendars.admin')}</option>
               </select>
-              <div className="button-row"><button type="button" disabled={!memberSettingsForCalendar.email.trim()} onClick={() => { void createMember(calendar.id); }}>{t('calendars.addMember')}</button><button type="button" onClick={() => { void loadMembers(calendar.id); }}>{t('calendars.showMembers')}</button></div>
+              </div>
+              <div className="button-row cm-collab-actions"><button type="button" className="cm-collab-primary" disabled={!memberSettingsForCalendar.email.trim()} onClick={() => { void createMember(calendar.id); }}>{t('calendars.addMember')}</button><button type="button" onClick={() => { void loadMembers(calendar.id); }}>{t('calendars.showMembers')}</button></div>
               {(members[calendar.id] || []).map((member) => (
-                <div key={member.id || member.userId} className="button-row">
+                <div key={member.id || member.userId} className="button-row cm-collab-member">
                   <span>{member.name || member.email} ({member.email || t('calendars.owner')})</span>
                   {member.isOwner ? <span>{t('calendars.owner')}</span> : <>
                     <select aria-label={t('calendars.memberRole')} value={memberRoles[member.id] || member.role} onChange={(event) => setMemberRoles((current) => ({ ...current, [member.id]: event.target.value }))}>
@@ -295,6 +314,7 @@ export function CalendarCollaborationPanel({ calendar, section = null }) {
                   </>}
                 </div>
               ))}
+              </div>
             </details>
     </>
   );

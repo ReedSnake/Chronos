@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { isoWeek, weekRowNumber, isCalendarDay, slotMinute, seedEventTime } from './calendarInteractions.js';
+import { isoWeek, weekRowNumber, isCalendarDay, slotMinute, seedEventTime, updateAgendaRange } from './calendarInteractions.js';
 
 test('ISO weeks handle year boundaries', () => {
   assert.equal(isoWeek('2021-01-01'), 53);
@@ -30,4 +30,19 @@ test('quick creation seeds date and time for all supported event types', () => {
   assert.equal(seeded.remindAt,seeded.startsAt);
   assert.equal(seeded.date,'2026-11-25');
   assert.equal(seedEventTime(draft,'2026-11-25',null),draft);
+});
+
+test('Agenda date changes keep both user-selected endpoints and other filters', () => {
+  const initial = {from:'2026-11-01',to:'2026-11-30',types:['task'],categories:[]};
+  const from = updateAgendaRange(initial,'from','2026-11-15');
+  const to = updateAgendaRange(from,'to','2026-11-20');
+  assert.deepEqual(to,{...initial,from:'2026-11-15',to:'2026-11-20'});
+  assert.equal(updateAgendaRange(to,'from',''),to);
+  assert.equal(updateAgendaRange(to,'to','2026-02-30'),to);
+});
+test('Agenda date changes keep the range ordered and limited to 365 days', () => {
+  const range = {from:'2026-11-01',to:'2026-11-30'};
+  assert.deepEqual(updateAgendaRange(range,'from','2026-12-05'),{from:'2026-12-05',to:'2026-12-05'});
+  assert.deepEqual(updateAgendaRange(range,'to','2026-10-25'),{from:'2026-10-25',to:'2026-10-25'});
+  assert.deepEqual(updateAgendaRange(range,'to','2028-01-01'),{from:'2027-01-01',to:'2028-01-01'});
 });

@@ -296,6 +296,7 @@
     "editTitle": "Edit calendar settings"
   },
   "calendarView": {
+    "goToToday": "Go to today",
     "title": "Calendar overview",
     "manageCalendars": "Manage calendars",
     "chooseCalendar": "Choose a calendar",

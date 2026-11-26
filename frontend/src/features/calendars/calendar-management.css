@@ -114,3 +114,26 @@
 @media(max-width:420px){.cm-inspector .cm-form-body{padding-inline:15px}.cm-inspector .cm-property{font-size:11px;gap:5px}.cm-inspector .cm-property input:not([type=checkbox]),.cm-inspector .cm-property select{font-size:11px}.cm-inspector .cm-color-options{gap:8px}}
 
 .cm-dialog .cm-tabs {display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px;padding-inline:16px}.cm-dialog .cm-tabs button{justify-content:center;padding:8px 4px;white-space:normal;min-width:0;font-size:11px}.cm-dialog .cm-tabs button svg{flex:none}.cm-dialog .cm-collaboration .account-form[open]{display:grid;gap:10px}.cm-dialog .cm-collaboration .account-form[hidden],.cm-dialog .cm-collaboration[hidden]{display:none}.cm-dialog .cm-invite-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}.cm-dialog .cm-invite-actions button:first-child{background:var(--chronos-accent)}.cm-dialog .cm-invite-actions button:disabled{opacity:.5;cursor:not-allowed}@media(max-width:440px){.cm-dialog .cm-tabs{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* Collaboration tabs only: explicit grid inside details, shared Chronos controls. */
+.cm-dialog .cm-collaboration .cm-collab-fields{display:grid;gap:14px;min-width:0}
+.cm-dialog .cm-collaboration .cm-collab-field{display:grid;gap:6px;min-width:0}
+.cm-dialog .cm-collaboration .cm-collab-field>label{font-size:12px;line-height:1.4;color:var(--chronos-muted)}
+.cm-dialog .cm-collaboration .cm-collab-field :is(input,textarea,select),.cm-dialog .cm-collaboration .cm-collab-member select{font-family:inherit;font-size:13px;line-height:1.4;min-height:40px;padding:10px 12px;border:1px solid #30303020;border-radius:9px;background-color:#fff;color:#303030;margin:0}
+.cm-dialog .cm-collaboration .cm-collab-field textarea{min-height:82px;resize:vertical}
+.cm-dialog .cm-collaboration .cm-collab-fields select{appearance:none;cursor:pointer;padding-inline-end:36px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23646b73' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center}
+@supports (appearance:base-select){
+  .cm-dialog .cm-collaboration .cm-collab-fields select{appearance:base-select;background-image:none;padding-inline-end:12px}
+  .cm-dialog .cm-collaboration .cm-collab-fields select::picker-icon{content:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23646b73' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");display:grid;place-items:center}
+  .cm-dialog .cm-collaboration .cm-collab-fields select::picker(select){appearance:base-select}
+}
+.cm-dialog .cm-collaboration .cm-collab-fields :is(input,textarea,select):focus-visible{outline:2px solid #f5bc5a90;outline-offset:1px;border-color:var(--chronos-accent)}
+.cm-dialog .cm-collaboration .cm-collab-actions{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:2px}
+.cm-dialog .cm-collaboration .cm-collab-actions button,.cm-dialog .cm-collaboration .cm-collab-member button{min-height:38px;padding:9px 14px;border-radius:9px;font-size:12px;line-height:1.4;background:var(--chronos-background)}
+.cm-dialog .cm-collaboration .cm-collab-actions .cm-collab-primary{background:var(--chronos-accent);font-weight:600}
+.cm-dialog .cm-collaboration .cm-collab-actions button:not(:disabled):hover,.cm-dialog .cm-collaboration .cm-collab-member button:not(:disabled):hover{filter:brightness(.96)}
+.cm-dialog .cm-collaboration .cm-collab-member{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding-top:12px;border-top:1px solid #30303012}
+.cm-dialog .cm-collaboration .cm-collab-member>span:first-child{flex-basis:100%}
+.cm-dialog .cm-collaboration .cm-collab-member select{flex:1 1 110px;min-width:0;width:auto}
+.cm-dialog .cm-collaboration .cm-collab-member .danger-button{background:#fff0ee;color:#9c3434}
+.cm-dialog .cm-collaboration .cm-collab-fields>p{display:flex;align-items:center;flex-wrap:wrap;gap:8px;padding-top:10px;border-top:1px solid #30303012}

@@ -193,9 +193,6 @@ export function Dashboard({ user }) {
         <p className="overview-date home-completion-meta">{incomplete?'—':model.meetings.length} {uk?'зустрічей':'meetings'} · {incomplete?'—':model.reminders.length} {uk?'нагадувань':'reminders'}</p>
       </section>
     </div>
-      <details className="dash-card dash-calendars dash-calendar-disclosure"><summary>{c.calendars}<Icon name="chevron-down" size={16}/></summary><div className="dash-card-head"><Link className="dash-manage" to={localizedPath('/calendars')}>{c.manage}</Link></div>
-        <div className="dash-calendar-list">{loading?<SkeletonRows count={2} label={t('common.loading')}/>:!data.calendars.length?<p className="dash-empty">{error?c.error:c.noCalendars}</p>:data.calendars.map(cal=><div className="dash-calendar-toggle" key={cal.id}><input type="checkbox" checked={!hidden.includes(cal.id)} aria-label={cal.name} onChange={()=>setHidden(old=>old.includes(cal.id)?old.filter(id=>id!==cal.id):[...old,cal.id])}/><Link to={localizedPath('/calendars/view/'+encodeURIComponent(cal.id))}><i style={{background:cal.color||'var(--chronos-accent)'}}/><span>{cal.isHolidayCalendar?t('calendarBasics.holidays'):cal.name}</span><Icon name="chevron-right" size={16}/></Link></div>)}</div>
-      </details>
     {mode&&activeCalendar&&<dialog ref={dialog} className="dash-modal dashboard-event-modal" aria-label={mode==='create'?c.add:t('calendarView.event.details')} onCancel={e=>{e.preventDefault();if(!e.currentTarget.querySelector('[data-unsaved="true"]')||window.confirm(locale==='uk'?'Закрити без збереження?':'Discard unsaved changes?'))close();}}>
       {actionError&&<p role="alert" className="dash-error">{actionError}</p>}
       {mode==='details'&&selection?<EventDetails key={eventKey(selection)} event={selection} calendar={activeCalendar} displayZone={zone} timeFormat={timeFormat} busy={busy} canEdit={canWrite(activeCalendar)} onClose={close} onEdit={startEdit} onDelete={remove} onInvite={invite}/>:<>

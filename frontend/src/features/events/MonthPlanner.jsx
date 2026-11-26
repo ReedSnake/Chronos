@@ -46,7 +46,7 @@ export function monthModel(day,startsOn,events,zone){
  return {weeks,records,counts,active:active.length,selected:records.filter(r=>r.start<=day&&r.end>=day)};
 }
 
-export function MonthPlanner({day,today,startsOn,events,zone,timeFormat,calendarName,loading,error,partial,canEdit,onDaySelect,onSelect,onCreate}){
+export function MonthPlanner({day,selectedDay=null,today,startsOn,events,zone,timeFormat,calendarName,loading,error,partial,canEdit,onDaySelect,onSelect,onCreate}){
  const {locale,t}=useLocale(),uk=locale==='uk';
  const drop=useCalendarDrop();
  const model=useMemo(()=>monthModel(day,startsOn,events,zone),[day,startsOn,events,zone]);
@@ -70,8 +70,8 @@ export function MonthPlanner({day,today,startsOn,events,zone,timeFormat,calendar
    <div className="month-grid-scroll"><div className="month-grid">
     <div className="month-weekdays"><span className="month-week-number" title="ISO 8601">#</span>{model.weeks[0].days.map(d=><span key={d} className={weekend(d)?'weekend':''}>{format(d,{weekday:'short'})}</span>)}</div>
     {model.weeks.map(week=><div className="month-week-row" key={week.days[0]}><span className="month-week-number" style={{gridColumn:1,gridRow:"1 / 5"}}>{weekRowNumber(week.days[0],startsOn)}</span>
-     {week.days.map((d,i)=>{const outside=d.slice(0,7)!==day.slice(0,7);return <div key={d} {...drop(d)} className={'month-tile'+(outside?' outside':'')+(weekend(d)?' weekend':'')+(d===day?' selected':'')+(d===today?' today':'')} style={{gridColumn:i+2,gridRow:'1 / 5'}} onClick={e=>{if(!e.target.closest('button')){onDaySelect(d);if(canEdit&&!outside)onCreate(d);}}}>
-      <button className="month-tile-hit" type="button" aria-label={format(d,{dateStyle:'full'})} aria-pressed={d===day} onClick={e=>{onDaySelect(d);if(canEdit&&!outside&&e.target===e.currentTarget)onCreate(d);}}><span>{Number(d.slice(-2))}</span></button>
+     {week.days.map((d,i)=>{const outside=d.slice(0,7)!==day.slice(0,7);return <div key={d} {...drop(d)} className={'month-tile'+(outside?' outside':'')+(weekend(d)?' weekend':'')+(d===selectedDay?' selected':'')+(d===today?' today':'')} style={{gridColumn:i+2,gridRow:'1 / 5'}} onClick={e=>{if(!e.target.closest('button')){onDaySelect(d);if(canEdit&&!outside)onCreate(d);}}}>
+      <button className="month-tile-hit" type="button" aria-label={format(d,{dateStyle:'full'})} aria-pressed={d===selectedDay} onClick={e=>{onDaySelect(d);if(canEdit&&!outside&&e.target===e.currentTarget)onCreate(d);}}><span>{Number(d.slice(-2))}</span></button>
       {canEdit&&!outside&&<button className="month-tile-add" type="button" aria-label={t('calendarView.event.create')+' '+d} onClick={()=>onCreate(d)}><Icon name="plus" size={14}/></button>}
      </div>})}
      {week.segments.filter(s=>s.lane<2).map(s=><CalendarEventButton event={s.event} placement="grid" className={'month-event '+s.event.type+(s.event.status==='done'?' done':'')+(s.event.status==='canceled'?' canceled':'')} key={keyOf(s.event)} style={{gridColumn:(s.left+2)+' / '+(s.right+3),gridRow:s.lane+2}} onClick={()=>onSelect(s.event)} title={s.event.title+' · '+(s.start!==s.end?range(s):time(s.event))}><i/><span>{s.event.title}</span>{s.left!==s.right&&<small>{range(s)}</small>}</CalendarEventButton>)}

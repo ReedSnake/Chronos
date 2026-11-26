@@ -172,3 +172,15 @@
 .chrono-calendar .chrono-work-hours .chrono-filter-pop {min-width:200px}.chrono-work-hours .chrono-filter-pop small {font-size:11px;line-height:1.4;color:var(--chronos-muted)}
 
 .chrono-calendar .day-row-lane[style*='--selection-start']::after,.chrono-calendar .planner-day-lane[style*='--selection-start']::after {content:'';position:absolute;pointer-events:none;background:#F5BC5A40;border:1px solid #b7832d80;border-radius:5px;z-index:2}.chrono-calendar .day-row-lane[style*='--selection-start']::after{top:2px;bottom:2px;left:var(--selection-start);right:calc(100% - var(--selection-end))}.chrono-calendar .planner-day-lane[style*='--selection-start']::after{left:2px;right:2px;top:var(--selection-start);bottom:calc(100% - var(--selection-end))}.calendar-create-lane{user-select:none}
+
+/* One calendar selector: the rail, or the inline picker when the rail is hidden. */
+.chrono-selected-inline { min-width:0; }
+.chrono-selected-inline .chrono-overview-sources { min-width:0; max-width:210px; flex:1; }
+.chrono-selected-inline .chrono-overview-sources summary { background:white; border:1px solid var(--chronos-border); border-radius:8px; justify-content:space-between; min-width:0; }
+.chrono-selected-inline .chrono-overview-sources summary b { font-weight:400; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.chrono-selected-inline .chrono-overview-sources summary svg { flex:none; }
+.chrono-selected-inline .chrono-overview-sources[open] { z-index:10; }
+.chrono-selected-inline .chrono-overview-sources .chrono-filter-pop { left:0; right:auto; width:250px; max-width:calc(100vw - 110px); }
+.chrono-calendar .chrono-period .chrono-today { white-space:nowrap; height:auto; min-height:30px; }
+@media(max-width:850px) { .chrono-selected-inline .chrono-overview-sources { max-width:none; } }
+@media(max-width:540px) { .chrono-selected-inline .chrono-overview-sources .chrono-filter-pop { max-width:calc(100vw - 110px); } }

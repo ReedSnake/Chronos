@@ -6,6 +6,7 @@ import { useNotifications } from '../features/ui/useNotifications';
 import { NotificationToast } from '../features/ui/NotificationToast';
 import '../styles/notifications.css';
 import { useLocalPreference } from '../features/ui/useLocalPreference';
+import { useMediaQuery } from '../features/ui/useMediaQuery';
 import '../styles/ux-polish.css';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Link, NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
@@ -34,6 +35,8 @@ export function ApplicationPage() {
   const [accountExitState, setAccountExitState] = useState({ dirty: false, busy: false });
   const signOutLock = useRef(false);
   const [collapsed,setCollapsed]=useLocalPreference(user?.id?'sidebar:'+user.id:null,false);
+  const compactSidebar = useMediaQuery('(max-width: 850px)');
+  const shortLanguageLabels = collapsed || compactSidebar;
   const [activity,setActivity]=useState(false);
   useEffect(()=>{if(status!=='authenticated')setActivity(false);},[status]);
   const signedIn = status === 'authenticated';
@@ -102,7 +105,7 @@ export function ApplicationPage() {
           <NavLink aria-label={profileLabel} title={profileLabel} to={localizedPath('/account')} className={({isActive})=>'workspace-nav-link workspace-mobile-profile'+(isActive?' active':'')}><TablerIcon name="user" size={21}/><span>{profileLabel}</span></NavLink>
         </nav>
         <div className="workspace-side-bottom">
-          <label className="workspace-language"><span className="visually-hidden">{t('languageSwitcher.label')}</span><select value={locale} aria-label={t('languageSwitcher.label')} onChange={event=>navigate(locationForLocale(event.target.value),{replace:true})}>{SUPPORTED_LOCALES.map(lang=><option key={lang} value={lang}>{t(`languageSwitcher.${lang}`)}</option>)}</select></label>
+          <label className={"workspace-language"+(shortLanguageLabels?" workspace-language-compact":"")}><span className="visually-hidden">{t('languageSwitcher.label')}</span><select value={locale} aria-label={t('languageSwitcher.label')} onChange={event=>navigate(locationForLocale(event.target.value),{replace:true})}>{SUPPORTED_LOCALES.map(lang=><option key={lang} value={lang} aria-label={t(`languageSwitcher.${lang}`)}>{shortLanguageLabels?(lang==='uk'?'UA':'EN'):t(`languageSwitcher.${lang}`)}</option>)}</select></label>
           <Link className="workspace-user" aria-label={profileLabel} title={profileLabel} to={localizedPath('/account')}><span className="workspace-avatar">{avatar?<img src={avatar} alt=""/>:String(user?.name||'?').trim().slice(0,1).toUpperCase()}</span><span className="workspace-user-name"><strong>{user?.name}</strong><small>{profileLabel}</small></span><TablerIcon name="chevron-right" size={16}/></Link>
           {signOutButton}
         </div>

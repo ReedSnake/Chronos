@@ -4,7 +4,7 @@ import { useLocale } from '../../i18n/LocaleProvider';
 import { useAuth } from '../../features/auth/AuthContext';
 import { dayKey, parseDay, makeDay, todayKey, shiftMonth, monthDays, allowedDay, monthAvailable } from './datePickerModel.js';
 
-export function DateField({ value = '', onChange, min, max, required, disabled, readOnly, className = '', onClick, onKeyDown, ...props }) {
+export function DateField({ value = '', onChange, onValueChange, min, max, required, disabled, readOnly, className = '', onClick, onKeyDown, ...props }) {
   const { locale } = useLocale();
   const { user } = useAuth();
   const uk = locale === 'uk';
@@ -73,7 +73,8 @@ export function DateField({ value = '', onChange, min, max, required, disabled, 
   useEffect(() => { if (disabled || readOnly) setHost(null); }, [disabled, readOnly]);
   function choose(key) {
     if (key && !allowedDay(key, min, max)) return;
-    onChange?.({ target: { value: key, name: props.name }, currentTarget: { value: key, name: props.name } });
+    if (onValueChange) onValueChange(key);
+    else onChange?.({ target: { value: key, name: props.name }, currentTarget: { value: key, name: props.name } });
     close(true);
   }
   function keyboard(event) {
@@ -107,8 +108,8 @@ export function DateField({ value = '', onChange, min, max, required, disabled, 
     }
   }
   return <>
-    <input {...props} ref={input} type="date" value={value} onChange={onChange} min={min} max={max} required={required} disabled={disabled} readOnly={readOnly} className={`chronos-date-field ${className}`} aria-haspopup="dialog" aria-expanded={!!host} aria-controls={host ? id : undefined} onKeyDown={keyboard} onClick={event => { onClick?.(event); if (!event.defaultPrevented) { event.preventDefault(); open(); } }}/>
-    {host && createPortal(<div ref={panel} id={id} className="chronos-date-popup" popover="manual" role="dialog" aria-label={label} style={position} onKeyDown={navigateDays}>
+    <input {...props} ref={input} type="date" value={value} onChange={event => { if (onValueChange) onValueChange(event.currentTarget.value); else onChange?.(event); }} min={min} max={max} required={required} disabled={disabled} readOnly={readOnly} className={`chronos-date-field ${className}`} aria-haspopup="dialog" aria-expanded={!!host} aria-controls={host ? id : undefined} onKeyDown={keyboard} onClick={event => { onClick?.(event); if (!event.defaultPrevented) { event.preventDefault(); open(); } }}/>
+    {host && createPortal(<div ref={panel} id={id} className="chronos-date-popup" popover="manual" role="dialog" aria-label={label} style={position} onClick={event => event.stopPropagation()} onKeyDown={event => { event.stopPropagation(); navigateDays(event); }}>
       <div className="chronos-date-heading">
         <button type="button" aria-label={uk ? 'Попередній місяць' : 'Previous month'} disabled={!monthAvailable(previous, min, max)} onClick={() => setMonth(previous)}>‹</button>
         <div className="chronos-date-month">

@@ -15,8 +15,8 @@ const safeColor = value => /^#[0-9a-f]{6}$/i.test(value || '') ? value : '#F5BC5
 const canManage = calendar => !calendar.isHolidayCalendar && ['owner', 'admin'].includes(calendar.role);
 const canEdit = calendar => !calendar.isHolidayCalendar && ['owner', 'admin', 'editor'].includes(calendar.role);
 const palette = ['#F5BC5A', '#303030', '#8EB1D7', '#65A982', '#D68B85', '#A69BC8'];
-const defaultDraft = () => ({ name: '', description: '', color: '#F5BC5A', countryCode: '', timeZone: 'UTC', defaultView: 'month', defaultEventDurationMinutes: 60 });
-const editDraft = calendar => ({ name: calendar.name, description: calendar.description || '', color: safeColor(calendar.color), countryCode: calendar.countryCode || '', timeZone: calendar.timeZone || 'UTC', defaultView: calendar.defaultView || 'month', defaultEventDurationMinutes: calendar.defaultEventDurationMinutes || 60, isArchived: !!calendar.isArchived });
+const defaultDraft = () => ({ name: '', description: '', color: '#F5BC5A', timeZone: 'UTC', defaultView: 'month', defaultEventDurationMinutes: 60 });
+const editDraft = calendar => ({ name: calendar.name, description: calendar.description || '', color: safeColor(calendar.color), timeZone: calendar.timeZone || 'UTC', defaultView: calendar.defaultView || 'month', defaultEventDurationMinutes: calendar.defaultEventDurationMinutes || 60, isArchived: !!calendar.isArchived });
 
 function calendarRoleLabel(t, role) {
   const key = 'calendarRoles.' + role;
@@ -27,12 +27,6 @@ function calendarRoleLabel(t, role) {
 function CalendarForm({ draft, setDraft, calendar, busy, onSave, onClose }) {
   const { t, locale } = useLocale();
   const uk = locale === 'uk';
-  const [countries, setCountries] = useState([]);
-    useEffect(() => {
-    let active = true;
-    applicationContainer.countryService.getAvailableCountries().then(items => { if (active) setCountries(items); }).catch(() => {});
-    return () => { active = false; };
-  }, []);
   const set = (field, value) => setDraft(old => ({ ...old, [field]: value }));
   const row = (icon, label, control) => <label className="cm-property"><span><Icon name={icon} size={17}/>{label}</span>{control}</label>;
   return <form className="cm-form cm-inspector" onSubmit={onSave}>
@@ -46,8 +40,6 @@ function CalendarForm({ draft, setDraft, calendar, busy, onSave, onClose }) {
       </div>
       <div className="cm-color-options" role="group" aria-label={t('calendars.color')}>{palette.map(color => <button type="button" key={color} style={{ background: color }} aria-label={color} aria-pressed={draft.color.toUpperCase() === color} onClick={() => set('color', color)}>{draft.color.toUpperCase() === color && <Icon name="check" size={15}/>}</button>)}<input type="color" aria-label={t('calendars.color')} value={draft.color} onChange={e => set('color', e.target.value.toUpperCase())}/></div>
       <div className="cm-properties">
-        {row('world', t('calendars.countryCode'), <input list="cm-country-list" value={draft.countryCode} maxLength={2} placeholder={uk ? 'Не вибрано' : 'Not set'} onChange={e => set('countryCode', e.target.value.toUpperCase())}/>)}
-        <datalist id="cm-country-list">{countries.map(c => <option key={c.countryCode} value={c.countryCode}>{c.name}</option>)}</datalist>
         {row('layout-dashboard', t('calendars.defaultView'), <select value={draft.defaultView} onChange={e => set('defaultView', e.target.value)}><option value="month">{t('calendars.viewMonth')}</option><option value="agenda">{t('calendars.viewAgenda')}</option></select>)}
         {row('clock', t('calendars.defaultDuration'), <span className="cm-duration"><input type="number" min="5" max="1440" required value={draft.defaultEventDurationMinutes} onChange={e => set('defaultEventDurationMinutes', Number(e.target.value))}/><span>{uk ? 'хв' : 'min'}</span></span>)}
         {calendar && canManage(calendar) && !calendar.isMain && <label className="cm-archive-check"><input type="checkbox" checked={!!draft.isArchived} onChange={e => set('isArchived', e.target.checked)}/>{t('calendars.archived')}</label>}
@@ -101,7 +93,7 @@ export function CalendarsPage() {
     event.preventDefault();
     if (lock.current || (!createMode && (!selected || !canEdit(selected)))) return;
     lock.current = true; setBusy(true); setModalError('');
-    const values = { ...draft, name: draft.name.trim(), countryCode: draft.countryCode.trim() || null };
+    const values = { ...draft, name: draft.name.trim() };
     if (!values.name) { lock.current = false; setBusy(false); return; }
     if (createMode || selected.isMain) delete values.isArchived;
     if (!createMode) delete values.timeZone;
